@@ -1,0 +1,1145 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+<style>
+    /* Mobile-first responsive design */
+    .form-container {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin: 10px auto;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        width: 95%;
+        max-width: 1100px;
+        {% if not current_user.is_authenticated %}
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        {% endif %}
+    }
+    
+    /* Add login message styling */
+    .login-message {
+        width: 100%;
+        max-width: 600px;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        background-color: #e6f7ff;
+        border-left: 4px solid #1890ff;
+        color: #0c5460;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    /* Update form-fields layout */
+    .form-fields {
+        display: grid;
+        gap: 10px;
+        width: 100%;
+        {% if not current_user.is_authenticated %}
+        max-width: 600px;  /* Increased width for better suggestion visibility */
+        {% endif %}
+    }
+    
+    /* Mobile-first: stack vertically */
+    @media (min-width: 768px) {
+        .form-fields {
+            {% if current_user.is_authenticated %}
+            grid-template-columns: 50% 1fr; /* Ticker takes 50%, rest share remaining space */
+            {% endif %}
+        }
+        
+        .ticker-group {
+            {% if current_user.is_authenticated %}
+            grid-column: 1; /* Take first column */
+            {% else %}
+            width: 100%;  /* Full width when not logged in */
+            {% endif %}
+        }
+        
+        .other-inputs {
+            {% if current_user.is_authenticated %}
+            grid-column: 2; /* Take second column */
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Split into 3 equal columns */
+            gap: 10px;
+            {% endif %}
+        }
+
+        /* Adjust input sizes to fit content */
+        #end_date {
+            width: 100%;
+            min-width: 120px;
+        }
+
+        #lookback_days,
+        #crossover_days {
+            width: 100%;
+            min-width: 80px;
+        }
+    }
+    
+    /* Ensure form inputs have consistent height and padding */
+    .form-group input {
+        height: 38px;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        width: 100%;
+        font-size: 14px;
+    }
+
+    /* Ensure labels don't wrap */
+    .form-group label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .form-group {
+        width: 100%;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px 12px; /* Larger touch targets for mobile */
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 16px; /* Prevent auto-zoom on iOS */
+    }
+    
+    /* Update button styles to ensure consistent sizing */
+    .button-container {
+        width: 100%;
+        margin-top: 10px;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        {% if not current_user.is_authenticated %}
+        max-width: 600px;  /* Match form fields width */
+        {% endif %}
+    }
+
+    .button-container.has-news {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Common button styles */
+    .analyze-button,
+    .news-button {
+        width: 100%;
+        height: 44px;  /* Fixed height for both buttons */
+        padding: 0 12px;  /* Horizontal padding only */
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 16px;
+        display: flex;  /* Use flex */
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        text-decoration: none;
+        box-sizing: border-box;
+        margin: 0;  /* Remove any default margins */
+        appearance: none;  /* Remove default button styling */
+        -webkit-appearance: none;  /* For Safari */
+        text-align: center;  /* Ensure text is centered */
+    }
+
+    /* Ensure the span inside buttons takes full width */
+    .analyze-button span,
+    .news-button span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        height: 100%;  /* Make span take full height of button */
+        width: 100%;   /* Make span take full width of button */
+    }
+
+    .analyze-button {
+        background: linear-gradient(45deg, #22d3ee, #818cf8);
+        color: white;
+    }
+
+    .news-button {
+        background: linear-gradient(45deg, #10b981, #059669);
+        color: white;
+        display: none; /* Hidden by default */
+    }
+
+    .news-button:hover {
+        background: linear-gradient(45deg, #059669, #047857);
+    }
+
+    .analyze-button:hover {
+        background: linear-gradient(45deg, #0ea5e9, #6366f1);
+    }
+    
+    /* Full width chart styles */
+    #result-container {
+        width: 100%; 
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    
+    #analysis-result {
+        width: 100%;
+        min-height: 70vh;
+        margin: 0;
+        padding: 0;
+        display: none;
+        border: none;
+        overflow: hidden;
+    }
+    
+    /* Override any container width constraints */
+    main {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        overflow-x: hidden !important;
+    }
+    
+    /* Make sure Plotly elements take full width */
+    .js-plotly-plot, .plot-container {
+        width: 100% !important;
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.9);  /* Increase opacity */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        flex-direction: column;
+        display: none;
+        backdrop-filter: none;  /* Remove any backdrop blur */
+        -webkit-backdrop-filter: none;  /* For Safari */
+    }
+    
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #22d3ee;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Ticker input autocomplete styling */
+    .ticker-input-container {
+        position: relative;
+        width: 100%;
+        {% if not current_user.is_authenticated %}
+        min-width: 300px;  /* Minimum width for suggestions */
+        {% endif %}
+    }
+    
+    .suggestions {
+        position: absolute;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        z-index: 1000;
+        display: none;
+        font-size: 16px;
+    }
+    
+    .suggestion-item {
+        padding: 10px 12px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;  /* Add space between symbol and name */
+    }
+    
+    .suggestion-item:hover {
+        background-color: #f0f7ff;
+    }
+    
+    .suggestion-item .symbol {
+        font-weight: bold;
+        color: #3b82f6;
+        white-space: nowrap;
+        min-width: 80px;  /* Minimum width for symbol */
+    }
+    
+    .suggestion-item .name {
+        color: #6b7280;
+        flex-grow: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: left;  /* Align name to the left */
+    }
+    
+    /* Navigation section for links */
+    .result-navigation {
+        display: flex;
+        gap: 10px;
+        margin: 10px;
+        justify-content: center;
+    }
+    
+    .nav-button {
+        padding: 12px 15px; /* Larger touch target */
+        border-radius: 4px;
+        color: white;
+        text-decoration: none;
+        font-size: 16px;
+        display: inline-block;
+    }
+    
+    .error-message {
+        color: #ef4444;
+        background-color: #fee2e2;
+        border: 1px solid #fecaca;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 15px;
+        font-size: 16px;
+    }
+
+    .stat-label {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin-bottom: 0;
+    }
+
+    /* Table expansion modal styles */
+    .table-modal {
+        display: none;
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(3px);
+    }
+
+    .table-modal-content {
+        background-color: #fefefe;
+        margin: 2% auto;
+        padding: 20px;
+        border: none;
+        border-radius: 12px;
+        width: 95%;
+        max-width: 1200px;
+        max-height: 90%;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        position: relative;
+    }
+
+    .table-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .table-modal-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .table-modal-close {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .table-modal-close:hover {
+        background: #c0392b;
+        transform: scale(1.1);
+    }
+
+    .expanded-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        font-size: 14px;
+    }
+
+    .expanded-table th,
+    .expanded-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #e9ecef;
+        word-wrap: break-word;
+        max-width: 300px;
+    }
+
+    .expanded-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .expanded-table tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .expanded-table tr:nth-child(even) {
+        background-color: #fdfdfd;
+    }
+
+    .table-clickable-hint {
+        position: absolute;
+        bottom: 5px;
+        right: 10px;
+        font-size: 11px;
+        color: #6c757d;
+        opacity: 0.7;
+        pointer-events: none;
+        font-style: italic;
+    }
+
+    .plotly-table-hover {
+        cursor: pointer !important;
+        transition: opacity 0.2s ease;
+    }
+
+    .plotly-table-hover:hover {
+        opacity: 0.8;
+    }
+
+    @media (max-width: 768px) {
+        .table-modal-content {
+            margin: 5% auto;
+            width: 98%;
+            padding: 15px;
+        }
+
+        .expanded-table {
+            font-size: 12px;
+        }
+
+        .expanded-table th,
+        .expanded-table td {
+            padding: 8px 10px;
+            max-width: 200px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <p style="margin-top: 15px; font-size: 16px;">Analyzing data, please wait...</p>
+</div>
+
+<div class="form-container">
+    {% if not current_user.is_authenticated %}
+    <div class="login-message">
+        <p class="font-medium">Please login as a registered user to try more advanced analytical tools.</p>
+    </div>
+    {% endif %}
+    <form id="analyze-form">
+        <div class="form-fields">
+            <!-- Ticker input takes half width -->
+            <div class="ticker-group">
+                <div class="form-group">
+                    <label for="ticker">Ticker Symbol:</label>
+                    <div class="ticker-input-container">
+                        <input 
+                            type="text" 
+                            id="ticker" 
+                            name="ticker" 
+                            placeholder="E.g., AAPL..."
+                            autocomplete="off"
+                            required
+                        >
+                        <div class="suggestions"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other inputs share the other half horizontally -->
+            {% if current_user.is_authenticated %}
+            <div class="other-inputs">
+                <div class="form-group">
+                    <label for="end_date">End Date:</label>
+                    <input 
+                        type="date" 
+                        id="end_date" 
+                        name="end_date"
+                        max="{{ max_date }}"
+                        value="{{ max_date }}" 
+                        pattern="\d{4}-\d{2}-\d{2}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="lookback_days">Lookback (days):</label>
+                    <input 
+                        type="number" 
+                        id="lookback_days" 
+                        name="lookback_days"
+                        min="30"
+                        max="10000"
+                        value="365"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="crossover_days">Crossover (days):</label>
+                    <input 
+                        type="number" 
+                        id="crossover_days" 
+                        name="crossover_days"
+                        min="30"
+                        max="1000"
+                        value="365"
+                    >
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="button-container" id="button-container">
+            <button type="button" id="analyze-button" class="analyze-button">
+                <span>Analyze</span>
+            </button>
+            <a href="#" id="news-button" class="news-button" role="button">
+                <span>View News</span>
+            </a>
+        </div>
+    </form>
+</div>
+
+<div id="result-container" style="display: none;">
+    <div class="result-navigation" id="result-navigation">
+        <!-- Navigation buttons will be added here dynamically -->
+    </div>
+    <div id="analysis-result"></div>
+</div>
+
+<!-- Table Expansion Modal -->
+<div id="table-modal" class="table-modal">
+    <div class="table-modal-content">
+        <div class="table-modal-header">
+            <h3 id="table-modal-title" class="table-modal-title">Table Details</h3>
+            <button class="table-modal-close" onclick="closeTableModal()">&times;</button>
+        </div>
+        <div id="table-modal-body">
+            <!-- Expanded table content will be inserted here -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ticker autocomplete code
+        const tickerInput = document.getElementById('ticker');
+        const suggestionsDiv = document.querySelector('.suggestions');
+        let debounceTimeout;
+
+        function formatCompanyName(name) {
+            return name.replace(/\\'/g, "'");
+        }
+        
+        // Clear input on double click
+        tickerInput.addEventListener('dblclick', function() {
+            if (this.value) {
+                this.value = '';
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+        
+        tickerInput.addEventListener('input', function() {
+            clearTimeout(debounceTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 1) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+            
+            debounceTimeout = setTimeout(() => {
+                fetch(`/search_ticker?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        suggestionsDiv.innerHTML = '';
+                        
+                        if (data.length > 0) {
+                            // Show multiple results with enhanced display
+                            data.slice(0, 6).forEach(item => {
+                                if (item.symbol.toUpperCase() !== item.name.toUpperCase()) {
+                                    const div = document.createElement('div');
+                                    div.className = 'suggestion-item';
+                                    const formattedName = formatCompanyName(item.name);
+                                    
+                                                                         // Create symbol span
+                                     const symbolSpan = document.createElement('span');
+                                     symbolSpan.className = 'symbol';
+                                     symbolSpan.textContent = item.symbol;
+                                     
+                                     // Create name container with inline metadata
+                                     const nameContainer = document.createElement('div');
+                                     nameContainer.className = 'name';
+                                     
+                                     const companyNameSpan = document.createElement('span');
+                                     companyNameSpan.className = 'company-name';
+                                     companyNameSpan.textContent = formattedName;
+                                     nameContainer.appendChild(companyNameSpan);
+                                     
+                                     // Add asset type and exchange info inline after name
+                                     if (item.type || item.exchange) {
+                                         const metaSpan = document.createElement('span');
+                                         metaSpan.className = 'meta';
+                                         let metaText = [];
+                                         if (item.type) metaText.push(item.type);
+                                         if (item.exchange && item.exchange !== item.type) metaText.push(item.exchange);
+                                         metaSpan.textContent = metaText.join(' • ');
+                                         nameContainer.appendChild(metaSpan);
+                                     }
+                                     
+                                     div.appendChild(symbolSpan);
+                                     div.appendChild(nameContainer);
+                                    
+                                    div.addEventListener('click', function() {
+                                        // Set input value to just the symbol
+                                        tickerInput.value = item.symbol;
+                                        suggestionsDiv.style.display = 'none';
+                                    });
+                                    
+                                    suggestionsDiv.appendChild(div);
+                                }
+                            });
+                            suggestionsDiv.style.display = 'block';
+                        } else {
+                            suggestionsDiv.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        suggestionsDiv.style.display = 'none';
+                    });
+            }, 300);
+        });
+        
+        // Close suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!tickerInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+
+        // Prevent suggestions from closing when clicking inside the input
+        tickerInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (this.value.trim().length > 0) {
+                suggestionsDiv.style.display = 'block';
+            }
+        });
+
+        // Analysis with embedded Plotly
+        const analyzeButton = document.getElementById('analyze-button');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const analysisResult = document.getElementById('analysis-result');
+        const resultContainer = document.getElementById('result-container');
+        const resultNavigation = document.getElementById('result-navigation');
+        const analyzeForm = document.getElementById('analyze-form');
+        
+        analyzeButton.addEventListener('click', function() {
+            // Get form values
+            const formData = new FormData(analyzeForm);
+            const ticker = formData.get('ticker').trim().split(/\s+/)[0].toUpperCase(); // Get just the symbol
+            
+            if (!ticker) {
+                alert('Please enter a ticker symbol');
+                return;
+            }
+            
+            // Check if it's a mobile device
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) 
+                || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+            
+            // For mobile devices, use appropriate endpoint based on login status
+            if (isMobile) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                {% if current_user.is_authenticated %}
+                form.action = '/analyze';
+                {% else %}
+                form.action = '/quick_analyze';
+                {% endif %}
+                form.target = '_blank';
+                
+                const tickerInput = document.createElement('input');
+                tickerInput.type = 'hidden';
+                tickerInput.name = 'ticker';
+                tickerInput.value = ticker;
+                form.appendChild(tickerInput);
+                
+                // Add end_date parameter if it exists
+                const endDate = formData.get('end_date');
+                if (endDate) {
+                    const endDateInput = document.createElement('input');
+                    endDateInput.type = 'hidden';
+                    endDateInput.name = 'end_date';
+                    endDateInput.value = endDate;
+                    form.appendChild(endDateInput);
+                }
+                
+                // Add lookback_days parameter if it exists
+                const lookbackDays = formData.get('lookback_days');
+                if (lookbackDays) {
+                    const lookbackInput = document.createElement('input');
+                    lookbackInput.type = 'hidden';
+                    lookbackInput.name = 'lookback_days';
+                    lookbackInput.value = lookbackDays;
+                    form.appendChild(lookbackInput);
+                }
+                
+                // Add crossover_days parameter if it exists
+                const crossoverDays = formData.get('crossover_days');
+                if (crossoverDays) {
+                    const crossoverInput = document.createElement('input');
+                    crossoverInput.type = 'hidden';
+                    crossoverInput.name = 'crossover_days';
+                    crossoverInput.value = crossoverDays;
+                    form.appendChild(crossoverInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+                return;
+            }
+            
+            // Show loading overlay
+            loadingOverlay.style.display = 'flex';
+            
+            // Build the endpoint URL
+            {% if current_user.is_authenticated %}
+                const endpoint = '/analyze_json';
+            {% else %}
+                const endpoint = '/quick_analyze_json';
+            {% endif %}
+            
+            // Make the AJAX request
+            fetch(endpoint, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Analysis request failed');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+                
+                // Show results container
+                resultContainer.style.display = 'block';
+                analysisResult.style.display = 'block';
+                analysisResult.innerHTML = ''; // Clear any previous content
+                
+                // Convert Yahoo Finance symbol to TradingView format
+                function convertYahooToTradingView(symbol) {
+                    // Remove any whitespace and convert to uppercase
+                    symbol = symbol.trim().toUpperCase();
+                    
+                    // Handle special cases first
+                    switch (symbol) {
+                        // Cryptocurrencies
+                        case 'BTC-USD':
+                        case 'BTCUSD':
+                            return 'BITSTAMP:BTCUSD';
+                        case 'ETH-USD':
+                        case 'ETHUSD':
+                            return 'BITSTAMP:ETHUSD';
+                        
+                        // Indices
+                        case '^GSPC': return 'SP:SPX';
+                        case '^DJI': return 'DJ:DJI';
+                        case '^IXIC': return 'NASDAQ:IXIC';
+                        case '^HSI': return 'HKEX:HSI';
+                        case '^N225': return 'TSE:NI225';
+                        case '^FTSE': return 'LSE:FTSE';
+                        case '^NYA': return 'NYSE:NYA';
+                        
+                        // Commodities
+                        case 'GC=F': return 'COMEX:GC';
+                        case 'SI=F': return 'COMEX:SI';
+                        case 'HG=F': return 'COMEX:HG';
+                        case 'CL=F':
+                        case 'USOIL':
+                        case 'OIL':
+                            return 'NYMEX:CL1!';
+                        case 'BZ=F':
+                        case 'UKOIL':
+                            return 'TVC:UKOIL';
+                        case 'NG=F': return 'NYMEX:NG';
+                        
+                        // Forex
+                        case 'EURUSD=X': return 'FOREXCOM:EURUSD';
+                        case 'GBPUSD=X': return 'FOREXCOM:GBPUSD';
+                        case 'USDJPY=X': return 'FOREXCOM:USDJPY';
+                        case 'USDCNH=X': return 'FOREXCOM:USDCNH';
+                        
+                        // TradingView specific
+                        case 'XAUUSD':
+                        case 'GOLD': return 'TVC:GOLD';
+                        case 'SILVER': return 'TVC:SILVER';
+                        case 'DXY': return 'TVC:DXY';
+                        
+                        // US Dollar Index
+                        case 'DX-Y.NYB':
+                        case 'DXY':
+                        case 'USDX':
+                        case 'USD':
+                            return 'TVC:DXY';  // This is the main US Dollar Index symbol in DEFAULT_SYMBOLS
+                    }
+                    
+                    // Handle exchange suffixes
+                    if (symbol.endsWith('.HK')) {
+                        return `HKEX:${symbol.replace('.HK', '').replace(/^0+/, '')}`;
+                    } else if (symbol.endsWith('.SS')) {
+                        return `SSE:${symbol.replace('.SS', '')}`;
+                    } else if (symbol.endsWith('.SZ')) {
+                        return `SZSE:${symbol.replace('.SZ', '')}`;
+                    } else if (symbol.endsWith('.T')) {
+                        return `TSE:${symbol.replace('.T', '')}`;
+                    } else if (symbol.endsWith('.L')) {
+                        return `LSE:${symbol.replace('.L', '')}`;
+                    }
+                    
+                    // For US stocks, use comprehensive exchange mapping
+                    if (/^[A-Z]+$/.test(symbol)) {
+                        const nasdaqStocks = new Set([
+                            // Major Tech Stocks
+                            'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'META', 'NVDA', 'TSLA', 'AVGO', 
+                            'ADBE', 'CSCO', 'INTC', 'QCOM', 'AMD', 'INTU', 'AMAT', 'MU', 'NFLX', 
+                            'PYPL', 'WDAY', 'KLAC', 'LRCX', 'EA', 'ATVI', 'ISRG', 'VRTX', 'REGN', 
+                            'GILD', 'CMCSA', 'PEP', 'TMUS', 'COST',
+                            
+                            // Trump Media & Other Notable Stocks
+                            'DJT',  // Trump Media & Technology Group Corp. - NASDAQ
+                            
+                            // Other NASDAQ Stocks
+                            'ABNB', 'DOCU', 'ZM', 'ROKU', 'SHOP', 'SQ', 'TWLO', 'OKTA', 'DDOG',
+                            'CRWD', 'SNOW', 'PLTR', 'RBLX', 'HOOD', 'COIN', 'RIVN', 'LCID',
+                            'MRNA', 'BNTX', 'ZS', 'TEAM', 'SPLK', 'PANW', 'FTNT', 'CHTR',
+                            'DISH', 'SIRI', 'LULU', 'SBUX', 'MAR', 'BKNG', 'PCAR', 'FISV',
+                            'PAYX', 'FAST', 'CTAS', 'VRSK', 'CDNS', 'SNPS', 'ANSS', 'CTSH',
+                            'MCHP', 'ADI', 'XLNX', 'LAM', 'KLAC', 'MXIM', 'SWKS', 'QRVO',
+                            'MPWR', 'ALGN', 'IDXX', 'ILMN', 'MRTX', 'SGEN', 'BMRN', 'TECH',
+                            'EXAS', 'ARKG', 'ARKK', 'ARKQ', 'ARKW', 'PRNT', 'IZRL', 'FINX'
+                        ]);
+                        return nasdaqStocks.has(symbol) ? `NASDAQ:${symbol}` : `NYSE:${symbol}`;
+                    }
+                    
+                    return symbol;
+                }
+                
+                // Show and update news button
+                const buttonContainer = document.getElementById('button-container');
+                const newsButton = document.getElementById('news-button');
+                buttonContainer.classList.add('has-news');
+                newsButton.style.display = 'block';
+                const tradingViewSymbol = convertYahooToTradingView(data.ticker);
+                newsButton.href = `/news/search?symbol=${tradingViewSymbol}`;
+                
+                // Configure Plotly layout for responsive display
+                const layout = data.layout;
+                layout.autosize = true;
+                
+                // Set height based on device
+                const isMobile = window.innerWidth < 768;
+                layout.height = isMobile ? window.innerHeight * 0.6 : window.innerHeight * 0.8;
+                
+                // Adjust margins for mobile
+                layout.margin = isMobile 
+                    ? { l: 35, r: 10, t: 50, b: 35 } 
+                    : { l: 40, r: 20, t: 60, b: 40 };
+                
+                // Make font sizes responsive
+                layout.font = {
+                    size: isMobile ? 10 : 12
+                };
+                
+                // If on mobile, simplify the legend
+                if (isMobile) {
+                    layout.legend = {
+                        orientation: "h",
+                        yanchor: "bottom",
+                        y: 1.05,
+                        xanchor: "center",
+                        x: 0.5,
+                        font: { size: 10 }
+                    };
+                }
+                
+                // Add additional config options for better rendering
+                const config = {
+                    responsive: true,
+                    displayModeBar: !isMobile, // Hide on mobile
+                    scrollZoom: true,
+                    displaylogo: false, // Hide Plotly logo
+                    modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'], // Remove less used buttons
+                    toImageButtonOptions: {
+                        format: 'png',
+                        filename: `${data.ticker}_analysis`,
+                        scale: 2 // Higher resolution for mobile
+                    }
+                };
+                
+                // Render the chart
+                Plotly.newPlot('analysis-result', data.data, layout, config);
+                console.log('Chart rendered successfully');
+                
+                // Setup table click handlers after chart is rendered
+                setupTableClickHandlers(data);
+                
+                // Scroll to result
+                resultContainer.scrollIntoView({behavior: 'smooth'});
+            })
+            .catch(error => {
+                console.error('Analysis error:', error);
+                // In case of error, ensure news button is hidden
+                const buttonContainer = document.getElementById('button-container');
+                const newsButton = document.getElementById('news-button');
+                buttonContainer.classList.remove('has-news');
+                newsButton.style.display = 'none';
+                
+                // Show error with better styling
+                resultContainer.style.display = 'block';
+                analysisResult.style.display = 'block';
+                analysisResult.innerHTML = `
+                    <div class="error-message">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+                
+                resultContainer.scrollIntoView({behavior: 'smooth'});
+            })
+            .finally(() => {
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
+            });
+        });
+        
+        // Table expansion functionality
+        function setupTableClickHandlers(analysisData) {
+            // Wait for Plotly to fully render
+            setTimeout(() => {
+                const plotlyDiv = document.getElementById('analysis-result');
+                if (!plotlyDiv) return;
+                
+                // Find all table elements in the Plotly plot
+                const tables = plotlyDiv.querySelectorAll('.table');
+                tables.forEach((tableElement, index) => {
+                    tableElement.style.cursor = 'pointer';
+                    tableElement.addEventListener('click', function(e) {
+                        // Prevent event bubbling
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Extract table data and show modal
+                        showTableModal(analysisData, index);
+                    });
+                    
+                    // Add visual hint
+                    const hint = document.createElement('div');
+                    hint.className = 'table-clickable-hint';
+                    hint.textContent = 'Click to expand';
+                    tableElement.style.position = 'relative';
+                    tableElement.appendChild(hint);
+                });
+            }, 1000);
+        }
+        
+        function showTableModal(analysisData, tableIndex) {
+            const modal = document.getElementById('table-modal');
+            const modalTitle = document.getElementById('table-modal-title');
+            const modalBody = document.getElementById('table-modal-body');
+            
+            // Clear previous content
+            modalBody.innerHTML = '';
+            
+            // Get table data from the analysis data
+            const plotData = analysisData.data;
+            let tableData = null;
+            let tableTitle = 'Table Details';
+            
+            // Find the table data - Plotly tables are in the data array
+            let tableCount = 0;
+            for (let i = 0; i < plotData.length; i++) {
+                if (plotData[i].type === 'table') {
+                    if (tableCount === tableIndex) {
+                        tableData = plotData[i];
+                        break;
+                    }
+                    tableCount++;
+                }
+            }
+            
+            if (!tableData) {
+                modalBody.innerHTML = '<p>Table data not found.</p>';
+                modal.style.display = 'block';
+                return;
+            }
+            
+            // Determine table title based on data content
+            if (tableData.header && tableData.header.values) {
+                const firstHeader = tableData.header.values[0];
+                if (firstHeader && firstHeader.includes('Metric')) {
+                    tableTitle = 'Analysis Summary';
+                } else if (firstHeader && firstHeader.includes('Entry Date')) {
+                    tableTitle = 'Trading Signal Analysis';
+                } else if (firstHeader && firstHeader.includes('Symbol')) {
+                    tableTitle = 'Company Information';
+                } else if (firstHeader && firstHeader.includes('Financial')) {
+                    tableTitle = 'Financial Metrics';
+                } else {
+                    tableTitle = 'Table Details';
+                }
+            }
+            
+            modalTitle.textContent = tableTitle;
+            
+            // Create expanded table
+            const expandedTable = document.createElement('table');
+            expandedTable.className = 'expanded-table';
+            
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            if (tableData.header && tableData.header.values) {
+                tableData.header.values.forEach(headerText => {
+                    const th = document.createElement('th');
+                    // Remove HTML tags from header
+                    th.textContent = headerText.replace(/<[^>]*>/g, '');
+                    headerRow.appendChild(th);
+                });
+            }
+            thead.appendChild(headerRow);
+            expandedTable.appendChild(thead);
+            
+            // Create body
+            const tbody = document.createElement('tbody');
+            
+            if (tableData.cells && tableData.cells.values) {
+                const numColumns = tableData.cells.values.length;
+                const numRows = tableData.cells.values[0] ? tableData.cells.values[0].length : 0;
+                
+                for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+                    const row = document.createElement('tr');
+                    
+                    for (let colIndex = 0; colIndex < numColumns; colIndex++) {
+                        const td = document.createElement('td');
+                        const cellValue = tableData.cells.values[colIndex][rowIndex];
+                        // Remove HTML tags and format the text
+                        td.textContent = cellValue ? cellValue.toString().replace(/<[^>]*>/g, '') : '';
+                        row.appendChild(td);
+                    }
+                    
+                    tbody.appendChild(row);
+                }
+            }
+            
+            expandedTable.appendChild(tbody);
+            modalBody.appendChild(expandedTable);
+            
+            // Show modal
+            modal.style.display = 'block';
+        }
+        
+        // Close modal function (global scope for onclick)
+        window.closeTableModal = function() {
+            const modal = document.getElementById('table-modal');
+            modal.style.display = 'none';
+        };
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(e) {
+            const modal = document.getElementById('table-modal');
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('table-modal');
+                if (modal.style.display === 'block') {
+                    modal.style.display = 'none';
+                }
+            }
+        });
+        
+        // Handle window resize for responsive chart
+        window.addEventListener('resize', function() {
+            const analysisResultDiv = document.getElementById('analysis-result');
+            if (analysisResultDiv && analysisResultDiv.children.length > 0) {
+                const isMobile = window.innerWidth < 768;
+                Plotly.relayout('analysis-result', {
+                    width: window.innerWidth,
+                    height: isMobile ? window.innerHeight * 0.6 : window.innerHeight * 0.8,
+                    'font.size': isMobile ? 10 : 12,
+                    'legend.font.size': isMobile ? 10 : 12,
+                    'xaxis.autorange': true,
+                    'yaxis.autorange': true
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

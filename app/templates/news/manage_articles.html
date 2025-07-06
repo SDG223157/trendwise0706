@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Articles</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-4">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Manage Articles</h1>
+            <div class="flex items-center space-x-4">
+                <!-- Clear All Content Button -->
+                <button onclick="clearAllContent()"
+                        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors">
+                    Clear All Content
+                </button>
+                <!-- Search Form -->
+                <form method="get" class="flex items-center">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search }}"
+                           placeholder="Search by title..." 
+                           class="border rounded-l px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button type="submit" 
+                            class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600 transition-colors">
+                        Search
+                    </button>
+                </form>
+                
+                <!-- Clear Search -->
+                {% if search %}
+                <a href="{{ url_for('news.manage_articles') }}" 
+                   class="text-gray-600 hover:text-gray-800">
+                    Clear Search
+                </a>
+                {% endif %}
+                
+                <!-- Home Link -->
+                <a href="{{ url_for('main.index') }}" 
+                   class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    Home
+                </a>
+            </div>
+        </div>
+
+        {% if search %}
+        <div class="mb-4 text-gray-600">
+            Showing results for: "{{ search }}"
+        </div>
+        {% endif %}
+
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Published</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sentiment</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for article in articles.items %}
+                    <tr id="article-{{ article.id }}">
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">{{ article.title }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-500">{{ article.published_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <input type="number" 
+                                   class="sentiment-input border rounded px-2 py-1 w-20" 
+                                   value="{{ article.ai_sentiment_rating or 0 }}"
+                                   min="-100" 
+                                   max="100"
+                                   data-article-id="{{ article.id }}">
+                        </td>
+                        <td class="px-6 py-4">
+                            <button onclick="editArticle({{ article.id }})"
+                                    class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                            <a href="{{ url_for('news.view_article', article_id=article.id) }}"
+                               class="text-blue-600 hover:text-blue-900 mr-2">View</a>
+                            <button onclick="clearContent({{ article.id }})"
+                                    class="text-red-600 hover:text-red-900 mr-2">Clear</button>
+                            <button onclick="deleteArticle({{ article.id }})"
+                                    class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-4 flex justify-center">
+            {% if articles.has_prev %}
+            <a href="{{ url_for('news.manage_articles', page=articles.prev_num, search=search) }}"
+               class="px-3 py-1 border rounded hover:bg-gray-100 mr-2">Previous</a>
+            {% endif %}
+            
+            <span class="px-3 py-1">Page {{ articles.page }} of {{ articles.pages }}</span>
+            
+            {% if articles.has_next %}
+            <a href="{{ url_for('news.manage_articles', page=articles.next_num, search=search) }}"
+               class="px-3 py-1 border rounded hover:bg-gray-100 ml-2">Next</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+        <div class="bg-white rounded-lg mx-auto mt-20 p-6 max-w-2xl">
+            <h2 class="text-xl font-bold mb-4">Edit Article</h2>
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="articleId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Title</label>
+                    <input type="text" id="editTitle" class="mt-1 block w-full border rounded-md shadow-sm p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Content</label>
+                    <textarea id="editContent" rows="4" class="mt-1 block w-full border rounded-md shadow-sm p-2"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">AI Summary</label>
+                    <textarea id="editSummary" rows="4" class="mt-1 block w-full border rounded-md shadow-sm p-2"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">AI Insights</label>
+                    <textarea id="editInsights" rows="4" class="mt-1 block w-full border rounded-md shadow-sm p-2"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal()"
+                            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                    <button type="submit"
+                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Handle sentiment rating changes
+        document.querySelectorAll('.sentiment-input').forEach(input => {
+            input.addEventListener('change', async (e) => {
+                const articleId = e.target.dataset.articleId;
+                const newValue = e.target.value;
+                
+                try {
+                    const response = await fetch(`/news/articles/update/${articleId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            ai_sentiment_rating: newValue
+                        })
+                    });
+                    
+                    if (!response.ok) throw new Error('Update failed');
+                    
+                } catch (error) {
+                    console.error('Error updating sentiment:', error);
+                    alert('Failed to update sentiment rating');
+                }
+            });
+        });
+
+        // Edit modal functions
+        function editArticle(articleId) {
+            // Fetch article data and show modal
+            fetch(`/news/articles/update/${articleId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('articleId').value = articleId;
+                    document.getElementById('editTitle').value = data.title;
+                    document.getElementById('editContent').value = data.content;
+                    document.getElementById('editSummary').value = data.ai_summary;
+                    document.getElementById('editInsights').value = data.ai_insights;
+                    document.getElementById('editModal').classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error('Error fetching article:', error);
+                    alert('Failed to load article data');
+                });
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const articleId = document.getElementById('articleId').value;
+            
+            try {
+                const response = await fetch(`/news/articles/update/${articleId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: document.getElementById('editTitle').value,
+                        content: document.getElementById('editContent').value,
+                        ai_summary: document.getElementById('editSummary').value,
+                        ai_insights: document.getElementById('editInsights').value
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Update failed');
+                
+                closeModal();
+                location.reload(); // Refresh to show updates
+                
+            } catch (error) {
+                console.error('Error updating article:', error);
+                alert('Failed to update article');
+            }
+        });
+
+        // Function to clear article content
+        function clearContent(articleId) {
+            if (confirm('Are you sure you want to clear this article\'s content? The AI fields will be preserved.')) {
+                fetch(`/news/articles/clear-content/${articleId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        location.reload(); // Refresh to show changes
+                    } else {
+                        alert('Failed to clear article content');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error clearing content:', error);
+                    alert('Failed to clear article content');
+                });
+            }
+        }
+
+        // Add the clearAllContent function to your script section
+        function clearAllContent() {
+            if (confirm('Are you sure you want to clear content from all articles? This cannot be undone. AI fields will be preserved.')) {
+                const searchParams = new URLSearchParams(window.location.search);
+                const search = searchParams.get('search') || '';
+                
+                fetch(`/news/articles/clear-all-content?search=${search}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Failed to clear content: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error clearing all content:', error);
+                    alert('Failed to clear content');
+                });
+            }
+        }
+
+        // Function to delete article
+        function deleteArticle(articleId) {
+            if (confirm('Are you sure you want to delete this article? This action cannot be undone.')) {
+                fetch(`/news/articles/delete/${articleId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Remove the article row from the table
+                        document.getElementById(`article-${articleId}`).remove();
+                    } else {
+                        alert('Failed to delete article');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting article:', error);
+                    alert('Failed to delete article');
+                });
+            }
+        }
+    </script>
+</body>
+</html> 

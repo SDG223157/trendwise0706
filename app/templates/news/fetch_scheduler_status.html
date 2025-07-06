@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Fetch Scheduler - TrendWise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-running {
+            background-color: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-stopped {
+            background-color: #ef4444;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">🤖 Automated News Fetch Scheduler</h1>
+                    <p class="text-gray-600 mt-2">Automatically fetches news at market opening/closing times (6 times daily)</p>
+                </div>
+                <div class="flex space-x-2">
+                    <a href="{{ url_for('news.fetch') }}" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                        📰 Manual News Fetch
+                    </a>
+                    <a href="{{ url_for('news.scheduler_status') }}" class="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600">
+                        🧠 AI Processing Scheduler
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">📊 Scheduler Status</h2>
+                <div class="flex items-center space-x-2">
+                    <button id="refresh-btn" onclick="loadStatus()" 
+                            class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors">
+                        🔄 Refresh
+                    </button>
+                    <span id="auto-refresh-indicator" class="text-xs text-gray-500">
+                        Auto-refresh: 30s
+                    </span>
+                </div>
+            </div>
+            
+            <div id="statusContainer" class="space-y-4">
+                <div class="flex justify-center">
+                    <div class="spinner"></div>
+                </div>
+                <p class="text-center text-gray-600">Loading scheduler status...</p>
+            </div>
+        </div>
+
+        <!-- Fetch Status Bar -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">📈 Current Fetch Status</h2>
+                <div class="flex items-center space-x-2">
+                    <span id="fetch-status-indicator" class="text-xs text-gray-500">
+                        Last updated: Never
+                    </span>
+                </div>
+            </div>
+            
+            <div id="fetch-status-container" class="space-y-4">
+                <!-- Fetch Progress Bar -->
+                <div class="bg-gray-200 rounded-full h-4 relative overflow-hidden">
+                    <div id="fetch-progress-bar" class="bg-blue-500 h-4 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                    <div id="fetch-progress-text" class="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
+                        Ready to fetch news
+                    </div>
+                </div>
+                
+                <!-- Fetch Statistics Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                    <div class="bg-blue-50 p-3 rounded-lg text-center">
+                        <div class="text-lg font-bold text-blue-600" id="symbols-processed">0</div>
+                        <div class="text-xs text-blue-800">Symbols Processed</div>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg text-center">
+                        <div class="text-lg font-bold text-green-600" id="articles-fetched">0</div>
+                        <div class="text-xs text-green-800">Articles Fetched</div>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded-lg text-center">
+                        <div class="text-lg font-bold text-red-600" id="symbols-failed">0</div>
+                        <div class="text-xs text-red-800">Failed Symbols</div>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-lg text-center">
+                        <div class="text-lg font-bold text-purple-600" id="fetch-duration">0s</div>
+                        <div class="text-xs text-purple-800">Duration</div>
+                    </div>
+                </div>
+                
+                <!-- Current Operation Status -->
+                <div id="current-operation" class="bg-gray-50 p-4 rounded-lg">
+                    <div class="flex items-center space-x-2">
+                        <div id="operation-status-icon" class="w-3 h-3 bg-gray-400 rounded-full"></div>
+                        <span id="operation-status-text" class="text-sm text-gray-600">No active fetch operation</span>
+                    </div>
+                    <div id="operation-details" class="text-xs text-gray-500 mt-1">
+                        <!-- Operation details will be shown here -->
+                    </div>
+                </div>
+                
+                <!-- Recent Activity Log -->
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-900 mb-2">📋 Recent Activity</h3>
+                    <div id="activity-log" class="space-y-1 max-h-32 overflow-y-auto">
+                        <div class="text-xs text-gray-500">No recent activity</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">🎛️ Scheduler Controls</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button id="startButton" class="bg-green-500 text-white px-6 py-3 rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    ▶️ Start Scheduler
+                </button>
+                
+                <button id="stopButton" class="bg-red-500 text-white px-6 py-3 rounded-md hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    ⏹️ Stop Scheduler
+                </button>
+                
+                <button id="runNowButton" class="bg-blue-500 text-white px-6 py-3 rounded-md hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    🚀 Run Now
+                </button>
+            </div>
+            
+            <div id="controlMessage" class="mt-4 p-3 rounded-md hidden">
+                <!-- Status messages will appear here -->
+            </div>
+        </div>
+
+        <!-- Configuration Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">⚙️ Configuration</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-900">Schedule</h3>
+                    <p class="text-lg font-bold text-blue-600" id="fetchInterval">Market-based</p>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-900">Total Symbols</h3>
+                    <p class="text-2xl font-bold text-green-600" id="symbolsCount">-</p>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-900">Articles per Symbol</h3>
+                    <p class="text-2xl font-bold text-purple-600" id="articlesPerSymbol">-</p>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-900">Chunk Size</h3>
+                    <p class="text-2xl font-bold text-orange-600" id="chunkSize">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- How It Works Card -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">ℹ️ How It Works</h2>
+            
+            <div class="space-y-4">
+                <div class="flex items-start space-x-3">
+                    <div class="bg-blue-100 text-blue-600 rounded-full p-2 text-sm font-bold">1</div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Market-Based Scheduling</h3>
+                        <p class="text-gray-600">Automatically runs 6 times daily at major market opening/closing times: Asian, European, and US markets for optimal news coverage.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-3">
+                    <div class="bg-green-100 text-green-600 rounded-full p-2 text-sm font-bold">2</div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Symbol Processing</h3>
+                        <p class="text-gray-600">Processes all symbols in chunks of 5, with delays between chunks to avoid overwhelming APIs.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-3">
+                    <div class="bg-purple-100 text-purple-600 rounded-full p-2 text-sm font-bold">3</div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Error Handling</h3>
+                        <p class="text-gray-600">Includes retry logic for failed symbols and comprehensive error logging.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-3">
+                    <div class="bg-orange-100 text-orange-600 rounded-full p-2 text-sm font-bold">4</div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Integration</h3>
+                        <p class="text-gray-600">Works seamlessly with the existing AI processing scheduler for complete automation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let statusInterval;
+        let fetchStatusInterval;
+        let refreshCountdown = 30;
+        let countdownInterval = null;
+        let activityLog = [];
+        let currentFetchStatus = {
+            isActive: false,
+            startTime: null,
+            symbolsProcessed: 0,
+            articlesFetched: 0,
+            symbolsFailed: 0,
+            totalSymbols: 0,
+            currentOperation: 'idle'
+        };
+        
+        // Update countdown display
+        function updateCountdown() {
+            const indicator = document.getElementById('auto-refresh-indicator');
+            if (indicator) {
+                indicator.textContent = `Auto-refresh: ${refreshCountdown}s`;
+            }
+            
+            refreshCountdown--;
+            if (refreshCountdown < 0) {
+                refreshCountdown = 30;
+                loadStatus();
+                loadFetchStatus();
+            }
+        }
+        
+        // Start countdown timer
+        function startCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            refreshCountdown = 30;
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+        
+        // Add activity to log
+        function addActivity(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const activity = {
+                timestamp,
+                message,
+                type
+            };
+            
+            activityLog.unshift(activity);
+            if (activityLog.length > 10) {
+                activityLog = activityLog.slice(0, 10);
+            }
+            
+            updateActivityLog();
+        }
+        
+        // Update activity log display
+        function updateActivityLog() {
+            const logContainer = document.getElementById('activity-log');
+            
+            // Add last completed operation info if available and no recent activity
+            const lastOp = currentFetchStatus.lastCompletedOperation;
+            if (activityLog.length === 0 && lastOp && lastOp.status !== 'never_run') {
+                let lastOpHtml = '';
+                if (lastOp.status === 'success') {
+                    const completedAt = lastOp.completed_at ? new Date(lastOp.completed_at).toLocaleString() : 'Unknown time';
+                    lastOpHtml = `<div class="text-xs text-green-600">Last successful fetch: ${lastOp.symbols_processed} symbols, ${lastOp.articles_fetched} articles (${completedAt})</div>`;
+                } else if (lastOp.status === 'error') {
+                    const completedAt = lastOp.completed_at ? new Date(lastOp.completed_at).toLocaleString() : 'Unknown time';
+                    lastOpHtml = `<div class="text-xs text-red-600">Last fetch failed: ${lastOp.error_message || 'Unknown error'} (${completedAt})</div>`;
+                }
+                
+                if (lastOpHtml) {
+                    logContainer.innerHTML = lastOpHtml;
+                    return;
+                }
+            }
+            
+            if (activityLog.length === 0) {
+                logContainer.innerHTML = '<div class="text-xs text-gray-500">No recent activity</div>';
+                return;
+            }
+            
+            const logHtml = activityLog.map(activity => {
+                const colorClass = activity.type === 'error' ? 'text-red-600' : 
+                                 activity.type === 'success' ? 'text-green-600' : 'text-gray-600';
+                return `<div class="text-xs ${colorClass}">[${activity.timestamp}] ${activity.message}</div>`;
+            }).join('');
+            
+            logContainer.innerHTML = logHtml;
+        }
+        
+        // Update fetch status display
+        function updateFetchStatusDisplay() {
+            const progressBar = document.getElementById('fetch-progress-bar');
+            const progressText = document.getElementById('fetch-progress-text');
+            const symbolsProcessed = document.getElementById('symbols-processed');
+            const articlesFetched = document.getElementById('articles-fetched');
+            const symbolsFailed = document.getElementById('symbols-failed');
+            const fetchDuration = document.getElementById('fetch-duration');
+            const operationStatusIcon = document.getElementById('operation-status-icon');
+            const operationStatusText = document.getElementById('operation-status-text');
+            const operationDetails = document.getElementById('operation-details');
+            const fetchStatusIndicator = document.getElementById('fetch-status-indicator');
+            
+            // Update statistics - use last completed operation if no active operation
+            if (currentFetchStatus.isActive) {
+                symbolsProcessed.textContent = currentFetchStatus.symbolsProcessed;
+                articlesFetched.textContent = currentFetchStatus.articlesFetched;
+                symbolsFailed.textContent = currentFetchStatus.symbolsFailed;
+            } else {
+                // Use last completed operation data if available
+                const lastOp = currentFetchStatus.lastCompletedOperation;
+                if (lastOp && lastOp.status === 'success') {
+                    symbolsProcessed.textContent = lastOp.symbols_processed;
+                    articlesFetched.textContent = lastOp.articles_fetched;
+                    symbolsFailed.textContent = lastOp.symbols_failed;
+                } else {
+                    // Fallback to current status or zero
+                    symbolsProcessed.textContent = currentFetchStatus.symbolsProcessed;
+                    articlesFetched.textContent = currentFetchStatus.articlesFetched;
+                    symbolsFailed.textContent = currentFetchStatus.symbolsFailed;
+                }
+            }
+            
+            // Update duration
+            if (currentFetchStatus.isActive && currentFetchStatus.startTime) {
+                const duration = Math.floor((Date.now() - currentFetchStatus.startTime) / 1000);
+                fetchDuration.textContent = `${duration}s`;
+            } else {
+                // Use last completed operation duration if available
+                const lastOp = currentFetchStatus.lastCompletedOperation;
+                if (lastOp && lastOp.duration_seconds) {
+                    fetchDuration.textContent = `${Math.round(lastOp.duration_seconds)}s`;
+                } else {
+                    fetchDuration.textContent = '0s';
+                }
+            }
+            
+            // Update progress bar
+            let progress = currentFetchStatus.percentage || 0;
+            progressBar.style.width = `${progress}%`;
+            
+            // Update status based on current state
+            if (currentFetchStatus.isActive) {
+                progressText.textContent = `Processing symbols... ${currentFetchStatus.symbolsProcessed}/${currentFetchStatus.totalSymbols}`;
+                operationStatusIcon.className = 'w-3 h-3 bg-blue-500 rounded-full animate-pulse';
+                operationStatusText.textContent = 'Fetch operation in progress';
+                
+                // Show more detailed operation info
+                let operationText = currentFetchStatus.currentOperation;
+                if (currentFetchStatus.currentSymbol) {
+                    operationText += ` - ${currentFetchStatus.currentSymbol}`;
+                }
+                if (currentFetchStatus.duration) {
+                    operationText += ` (${Math.round(currentFetchStatus.duration)}s)`;
+                }
+                operationDetails.textContent = operationText;
+                
+                progressBar.className = 'bg-blue-500 h-4 rounded-full transition-all duration-300 ease-out';
+            } else {
+                // Check if we have last completed operation data
+                const lastOp = currentFetchStatus.lastCompletedOperation;
+                
+                if (lastOp && lastOp.status === 'success' && lastOp.symbols_processed > 0) {
+                    // Show last completed operation results
+                    progressText.textContent = `Last fetch: ${lastOp.symbols_processed} symbols, ${lastOp.articles_fetched} articles`;
+                    operationStatusIcon.className = 'w-3 h-3 bg-green-500 rounded-full';
+                    operationStatusText.textContent = 'Last fetch completed';
+                    
+                    let completionText = `Processed ${lastOp.symbols_processed} symbols with ${lastOp.symbols_failed} failures`;
+                    if (lastOp.duration_seconds) {
+                        completionText += ` in ${Math.round(lastOp.duration_seconds)}s`;
+                    }
+                    if (lastOp.completed_at) {
+                        const completedAt = new Date(lastOp.completed_at);
+                        completionText += ` at ${completedAt.toLocaleString()}`;
+                    }
+                    operationDetails.textContent = completionText;
+                    
+                    progressBar.className = 'bg-green-500 h-4 rounded-full transition-all duration-300 ease-out';
+                    progress = 100; // Show full progress for completed operation
+                } else if (lastOp && lastOp.status === 'error') {
+                    // Show last error
+                    progressText.textContent = 'Last fetch failed';
+                    operationStatusIcon.className = 'w-3 h-3 bg-red-500 rounded-full';
+                    operationStatusText.textContent = 'Last fetch failed';
+                    
+                    let errorText = 'Error occurred during fetch operation';
+                    if (lastOp.error_message) {
+                        errorText = lastOp.error_message;
+                    }
+                    if (lastOp.completed_at) {
+                        const completedAt = new Date(lastOp.completed_at);
+                        errorText += ` at ${completedAt.toLocaleString()}`;
+                    }
+                    operationDetails.textContent = errorText;
+                    
+                    progressBar.className = 'bg-red-500 h-4 rounded-full transition-all duration-300 ease-out';
+                    progress = 0;
+                } else if (currentFetchStatus.symbolsProcessed > 0) {
+                    // Fallback to current status if available
+                    progressText.textContent = `Last fetch: ${currentFetchStatus.symbolsProcessed} symbols, ${currentFetchStatus.articlesFetched} articles`;
+                    operationStatusIcon.className = 'w-3 h-3 bg-green-500 rounded-full';
+                    operationStatusText.textContent = 'Last fetch completed';
+                    
+                    let completionText = `Processed ${currentFetchStatus.symbolsProcessed} symbols with ${currentFetchStatus.symbolsFailed} failures`;
+                    if (currentFetchStatus.duration) {
+                        completionText += ` in ${Math.round(currentFetchStatus.duration)}s`;
+                    }
+                    operationDetails.textContent = completionText;
+                    
+                    progressBar.className = 'bg-green-500 h-4 rounded-full transition-all duration-300 ease-out';
+                    progress = 100;
+                } else {
+                    // No data available
+                    progressText.textContent = 'Ready to fetch news';
+                    operationStatusIcon.className = 'w-3 h-3 bg-gray-400 rounded-full';
+                    operationStatusText.textContent = 'No fetch history available';
+                    operationDetails.textContent = 'No previous fetch operations recorded';
+                    progressBar.className = 'bg-blue-500 h-4 rounded-full transition-all duration-300 ease-out';
+                    progress = 0;
+                }
+            }
+            
+            // Update last updated indicator
+            fetchStatusIndicator.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            
+            // Update activity log to show last completed operation if needed
+            updateActivityLog();
+        }
+        
+        // Load fetch status with real progress tracking
+        async function loadFetchStatus() {
+            try {
+                const response = await fetch('/news/api/fetch-scheduler/progress');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const progress = data.progress;
+                    
+                    // Update current fetch status
+                    currentFetchStatus.isActive = progress.is_active;
+                    currentFetchStatus.totalSymbols = progress.total_symbols;
+                    currentFetchStatus.symbolsProcessed = progress.symbols_processed;
+                    currentFetchStatus.articlesFetched = progress.articles_fetched;
+                    currentFetchStatus.symbolsFailed = progress.symbols_failed;
+                    currentFetchStatus.currentOperation = progress.current_operation;
+                    currentFetchStatus.percentage = progress.percentage;
+                    currentFetchStatus.duration = progress.duration_seconds;
+                    currentFetchStatus.currentSymbol = progress.current_symbol;
+                    
+                    // Store last completed operation for historical display
+                    currentFetchStatus.lastCompletedOperation = progress.last_completed_operation;
+                    
+                    // Update display
+                    updateFetchStatusDisplay();
+                } else {
+                    console.error('Error loading fetch status:', data.error);
+                }
+                
+            } catch (error) {
+                console.error('Error loading fetch status:', error);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            const runNowButton = document.getElementById('runNowButton');
+            const controlMessage = document.getElementById('controlMessage');
+            
+            // Load initial status
+            loadStatus();
+            loadFetchStatus();
+            
+            // Start countdown timer
+            startCountdown();
+            
+            // Set up auto-refresh every 30 seconds for status, but check progress more frequently when active
+            statusInterval = setInterval(() => {
+                loadStatus();
+                loadFetchStatus();
+            }, 30000);
+            
+            // More frequent progress updates when job is active
+            let progressInterval = setInterval(() => {
+                if (currentFetchStatus.isActive) {
+                    loadFetchStatus();
+                }
+            }, 3000); // Check every 3 seconds when active
+            
+            // Button event listeners
+            startButton.addEventListener('click', () => controlScheduler('start'));
+            stopButton.addEventListener('click', () => controlScheduler('stop'));
+            runNowButton.addEventListener('click', () => runNow());
+        });
+        
+        async function loadStatus() {
+            try {
+                const response = await fetch('/news/api/fetch-scheduler/status');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    updateStatusDisplay(data.scheduler_status);
+                } else {
+                    showError('Failed to load scheduler status');
+                    addActivity('Failed to load scheduler status', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading status:', error);
+                showError('Error loading scheduler status');
+                addActivity('Error loading scheduler status', 'error');
+            }
+        }
+        
+        function updateStatusDisplay(status) {
+            const container = document.getElementById('statusContainer');
+            const isRunning = status.running;
+            
+            // Format next run time
+            let nextRunText = 'Not scheduled';
+            if (status.next_run) {
+                const nextRun = new Date(status.next_run);
+                nextRunText = nextRun.toLocaleString();
+            }
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-3">Current Status</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <span class="status-indicator ${isRunning ? 'status-running' : 'status-stopped'}"></span>
+                                <span class="font-medium ${isRunning ? 'text-green-600' : 'text-red-600'}">
+                                    ${isRunning ? 'Running' : 'Stopped'}
+                                </span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <strong>Jobs Scheduled:</strong> ${status.jobs_count}
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <strong>Next Run:</strong> ${nextRunText}
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <strong>Last Updated:</strong> ${new Date().toLocaleString()}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-3">Configuration</h3>
+                        <div class="space-y-2 text-sm text-gray-600">
+                            <div><strong>Schedule:</strong> ${status.fetch_schedule || 'Market-based (6 times daily)'}</div>
+                            <div><strong>Symbols:</strong> ${status.symbols_count}</div>
+                            <div><strong>Articles per Symbol:</strong> ${status.articles_per_symbol}</div>
+                            <div><strong>Chunk Size:</strong> ${status.chunk_size}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Market Schedule Display -->
+                ${status.schedule_times ? `
+                <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-blue-900 mb-3">📅 Daily Market Schedule</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        ${status.schedule_times.map(time => `
+                            <div class="bg-white p-3 rounded-lg border border-blue-100">
+                                <div class="text-sm font-medium text-gray-800">${time}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${status.next_run_details ? `
+                        <div class="mt-3 p-3 bg-blue-100 rounded-lg">
+                            <div class="text-sm font-medium text-blue-800">⏰ Next Run: ${status.next_run_details}</div>
+                        </div>
+                    ` : ''}
+                </div>
+                ` : ''}
+            `;
+            
+            // Update configuration display
+            document.getElementById('fetchInterval').textContent = status.fetch_schedule || 'Market-based (6 times daily)';
+            document.getElementById('symbolsCount').textContent = status.symbols_count;
+            document.getElementById('articlesPerSymbol').textContent = status.articles_per_symbol;
+            document.getElementById('chunkSize').textContent = status.chunk_size;
+            
+            // Update button states
+            document.getElementById('startButton').disabled = isRunning;
+            document.getElementById('stopButton').disabled = !isRunning;
+            
+            // Update fetch status total symbols count
+            currentFetchStatus.totalSymbols = status.symbols_count;
+        }
+        
+        async function controlScheduler(action) {
+            const button = document.getElementById(`${action}Button`);
+            const originalText = button.textContent;
+            
+            try {
+                button.disabled = true;
+                button.textContent = action === 'start' ? 'Starting...' : 'Stopping...';
+                
+                const response = await fetch(`/news/api/fetch-scheduler/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showMessage(data.message, 'success');
+                    addActivity(`Scheduler ${action}ed successfully`, 'success');
+                    
+                    // Special handling for scheduler start with initial run
+                    if (action === 'start' && data.initial_run) {
+                        // Start fetch status tracking for the initial run
+                        currentFetchStatus.isActive = true;
+                        currentFetchStatus.startTime = Date.now();
+                        currentFetchStatus.symbolsProcessed = 0;
+                        currentFetchStatus.articlesFetched = 0;
+                        currentFetchStatus.symbolsFailed = 0;
+                        currentFetchStatus.currentOperation = 'Starting initial fetch operation';
+                        updateFetchStatusDisplay();
+                        
+                        // Get total symbols from scheduler status
+                        const totalSymbols = data.scheduler_status?.symbols_count || 346;
+                        currentFetchStatus.totalSymbols = totalSymbols;
+                        
+                                            // Start more frequent progress checking during initial run
+                    currentFetchStatus.isActive = true;
+                    setTimeout(() => loadFetchStatus(), 1000); // Check after 1 second
+                        
+                        addActivity('Initial fetch job started automatically', 'success');
+                        showMessage('Scheduler started! Initial fetch job is running now, then will run every 6 hours.', 'success');
+                    }
+                    
+                    loadStatus(); // Refresh status
+                } else {
+                    showMessage(data.message || 'Operation failed', 'error');
+                    addActivity(`Failed to ${action} scheduler: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error(`Error ${action}ing scheduler:`, error);
+                showMessage(`Error ${action}ing scheduler`, 'error');
+                addActivity(`Error ${action}ing scheduler`, 'error');
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+        
+        async function runNow() {
+            const button = document.getElementById('runNowButton');
+            const originalText = button.textContent;
+            
+            try {
+                button.disabled = true;
+                button.textContent = 'Starting...';
+                
+                // Start fetch status tracking
+                currentFetchStatus.isActive = true;
+                currentFetchStatus.startTime = Date.now();
+                currentFetchStatus.symbolsProcessed = 0;
+                currentFetchStatus.articlesFetched = 0;
+                currentFetchStatus.symbolsFailed = 0;
+                currentFetchStatus.currentOperation = 'Starting fetch operation';
+                updateFetchStatusDisplay();
+                
+                const response = await fetch('/news/api/fetch-scheduler/run-now', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showMessage('News fetch job started! Watch the progress below.', 'success');
+                    addActivity('Manual news fetch job started', 'success');
+                    
+                    // Update total symbols from response
+                    currentFetchStatus.totalSymbols = data.total_symbols;
+                    
+                    // Start immediate progress tracking
+                    currentFetchStatus.isActive = true;
+                    setTimeout(() => loadFetchStatus(), 1000); // Check progress after 1 second
+                } else {
+                    showMessage(data.message || 'Failed to start job', 'error');
+                    addActivity(`Failed to start fetch job: ${data.message}`, 'error');
+                    currentFetchStatus.isActive = false;
+                    updateFetchStatusDisplay();
+                }
+            } catch (error) {
+                console.error('Error running job now:', error);
+                showMessage('Error starting job', 'error');
+                addActivity('Error starting fetch job', 'error');
+                currentFetchStatus.isActive = false;
+                updateFetchStatusDisplay();
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+        
+        function showProgressTracking(totalSymbols, estimatedDurationStr) {
+            // Create or show progress tracking UI
+            let progressContainer = document.getElementById('progress-tracking-container');
+            if (!progressContainer) {
+                progressContainer = document.createElement('div');
+                progressContainer.id = 'progress-tracking-container';
+                progressContainer.className = 'mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4';
+                
+                // Insert after the fetch status card
+                const fetchStatusCard = document.querySelector('.bg-white.rounded-lg.shadow-md');
+                if (fetchStatusCard && fetchStatusCard.nextSibling) {
+                    fetchStatusCard.parentNode.insertBefore(progressContainer, fetchStatusCard.nextSibling);
+                } else {
+                    document.querySelector('.container').appendChild(progressContainer);
+                }
+            }
+            
+            progressContainer.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-blue-900">🚀 Fetch Progress</h3>
+                    <button id="hide-progress" class="text-blue-600 hover:text-blue-800 text-sm">Hide</button>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Progress Bar -->
+                    <div>
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span id="progress-status">Starting fetch operation...</span>
+                            <span id="progress-percentage">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div id="main-progress-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Statistics Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="bg-white rounded-lg p-3 border">
+                            <div class="text-2xl font-bold text-blue-600" id="progress-symbols-processed">0</div>
+                            <div class="text-xs text-gray-500">Symbols Processed</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 border">
+                            <div class="text-2xl font-bold text-green-600" id="progress-articles-fetched">0</div>
+                            <div class="text-xs text-gray-500">Articles Fetched</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 border">
+                            <div class="text-2xl font-bold text-red-600" id="progress-symbols-failed">0</div>
+                            <div class="text-xs text-gray-500">Symbols Failed</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 border">
+                            <div class="text-2xl font-bold text-purple-600" id="progress-duration">0s</div>
+                            <div class="text-xs text-gray-500">Duration</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Current Operation -->
+                    <div class="bg-white rounded-lg p-3 border">
+                        <div class="flex items-center space-x-2">
+                            <div id="progress-operation-icon" class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                            <span class="text-sm font-medium text-gray-700" id="progress-current-operation">Initializing...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Live Log -->
+                    <div class="bg-white rounded-lg p-3 border">
+                        <div class="text-sm font-medium text-gray-700 mb-2">Live Progress Log</div>
+                        <div id="progress-live-log" class="text-xs text-gray-600 max-h-32 overflow-y-auto space-y-1">
+                            <div class="text-blue-600">[${new Date().toLocaleTimeString()}] Fetch operation started</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add hide functionality
+            document.getElementById('hide-progress').addEventListener('click', () => {
+                progressContainer.style.display = 'none';
+                // Prevent auto-hide by resetting opacity
+                progressContainer.style.opacity = '1';
+            });
+            
+            progressContainer.style.display = 'block';
+        }
+        
+        function startProgressTracking(totalSymbols, estimatedDurationStr) {
+            const estimatedDuration = parseInt(estimatedDurationStr) * 1000; // Convert to milliseconds
+            const updateInterval = 2000; // Update every 2 seconds
+            const totalUpdates = Math.max(10, Math.floor(estimatedDuration / updateInterval));
+            let currentUpdate = 0;
+            
+            const progressInterval = setInterval(() => {
+                if (!currentFetchStatus.isActive) {
+                    clearInterval(progressInterval);
+                    return;
+                }
+                
+                currentUpdate++;
+                const progress = Math.min((currentUpdate / totalUpdates) * 100, 95); // Cap at 95% until completion
+                
+                // Simulate realistic progress
+                const symbolsProcessed = Math.floor((progress / 100) * totalSymbols);
+                const articlesPerSymbol = 2; // Average articles per symbol
+                const articlesFetched = symbolsProcessed * articlesPerSymbol;
+                const symbolsFailed = Math.floor(symbolsProcessed * 0.05); // 5% failure rate
+                
+                // Update progress display
+                updateProgressDisplay(progress, symbolsProcessed, articlesFetched, symbolsFailed, totalSymbols);
+                
+                // Add log entries
+                if (currentUpdate % 3 === 0) { // Every 6 seconds
+                    addProgressLog(`Processing symbols... ${symbolsProcessed}/${totalSymbols} completed`);
+                }
+                
+                // Check if we should stop (either completed or timeout)
+                if (currentUpdate >= totalUpdates) {
+                    // Final update - assume completion
+                    setTimeout(() => {
+                        completeProgressTracking(totalSymbols);
+                    }, 2000);
+                    clearInterval(progressInterval);
+                }
+            }, updateInterval);
+            
+            // Store interval ID for cleanup
+            currentFetchStatus.progressInterval = progressInterval;
+        }
+        
+        function updateProgressDisplay(progress, symbolsProcessed, articlesFetched, symbolsFailed, totalSymbols) {
+            // Update progress bar
+            const progressBar = document.getElementById('main-progress-bar');
+            const progressPercentage = document.getElementById('progress-percentage');
+            const progressStatus = document.getElementById('progress-status');
+            
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+            }
+            if (progressPercentage) {
+                progressPercentage.textContent = `${Math.round(progress)}%`;
+            }
+            if (progressStatus) {
+                progressStatus.textContent = `Processing symbols... ${symbolsProcessed}/${totalSymbols}`;
+            }
+            
+            // Update statistics
+            const elementsToUpdate = {
+                'progress-symbols-processed': symbolsProcessed,
+                'progress-articles-fetched': articlesFetched,
+                'progress-symbols-failed': symbolsFailed,
+                'progress-duration': `${Math.floor((Date.now() - currentFetchStatus.startTime) / 1000)}s`
+            };
+            
+            Object.entries(elementsToUpdate).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
+            
+            // Update current operation
+            const operationElement = document.getElementById('progress-current-operation');
+            if (operationElement) {
+                const operations = [
+                    'Fetching news articles...',
+                    'Processing symbol data...',
+                    'Analyzing content...',
+                    'Storing articles...',
+                    'Updating database...'
+                ];
+                const currentOp = operations[Math.floor(Math.random() * operations.length)];
+                operationElement.textContent = currentOp;
+            }
+            
+            // Update main fetch status as well
+            currentFetchStatus.symbolsProcessed = symbolsProcessed;
+            currentFetchStatus.articlesFetched = articlesFetched;
+            currentFetchStatus.symbolsFailed = symbolsFailed;
+            updateFetchStatusDisplay();
+        }
+        
+        function addProgressLog(message) {
+            const logContainer = document.getElementById('progress-live-log');
+            if (logContainer) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = 'text-blue-600';
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                
+                logContainer.insertBefore(logEntry, logContainer.firstChild);
+                
+                // Keep only last 10 entries
+                while (logContainer.children.length > 10) {
+                    logContainer.removeChild(logContainer.lastChild);
+                }
+            }
+        }
+        
+        function completeProgressTracking(totalSymbols) {
+            // Final completion update
+            updateProgressDisplay(100, totalSymbols, totalSymbols * 2, Math.floor(totalSymbols * 0.05), totalSymbols);
+            
+            // Update status
+            currentFetchStatus.isActive = false;
+            updateFetchStatusDisplay();
+            
+            // Update progress bar to green
+            const progressBar = document.getElementById('main-progress-bar');
+            if (progressBar) {
+                progressBar.className = 'bg-green-500 h-3 rounded-full transition-all duration-500 ease-out';
+            }
+            
+            // Update operation status
+            const operationElement = document.getElementById('progress-current-operation');
+            const operationIcon = document.getElementById('progress-operation-icon');
+            if (operationElement) {
+                operationElement.textContent = 'Fetch operation completed successfully!';
+            }
+            if (operationIcon) {
+                operationIcon.className = 'w-3 h-3 bg-green-500 rounded-full';
+            }
+            
+            // Add completion log
+            addProgressLog('✅ News fetch operation completed successfully!');
+            addActivity('Manual news fetch job completed successfully', 'success');
+            
+            // Update hide button to show "Close" instead of "Hide"
+            const hideButton = document.getElementById('hide-progress');
+            if (hideButton) {
+                hideButton.textContent = 'Close';
+                hideButton.className = 'text-green-600 hover:text-green-800 text-sm font-medium';
+            }
+            
+            // Auto-hide after 10 seconds (optional)
+            setTimeout(() => {
+                const progressContainer = document.getElementById('progress-tracking-container');
+                if (progressContainer && progressContainer.style.display !== 'none') {
+                    // Add a fade-out effect
+                    progressContainer.style.opacity = '0.5';
+                    progressContainer.style.transition = 'opacity 1s ease-out';
+                    
+                    // Show a notification that it will auto-hide
+                    addProgressLog('ℹ️ Progress panel will auto-close in 5 seconds (click Close to keep open)');
+                    
+                    setTimeout(() => {
+                        if (progressContainer.style.opacity === '0.5') {
+                            progressContainer.style.display = 'none';
+                        }
+                    }, 5000);
+                }
+            }, 10000);
+            
+            // Clean up
+            if (currentFetchStatus.progressInterval) {
+                clearInterval(currentFetchStatus.progressInterval);
+            }
+        }
+        
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('controlMessage');
+            messageDiv.className = `mt-4 p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            messageDiv.textContent = message;
+            messageDiv.classList.remove('hidden');
+            
+            // Hide message after 5 seconds
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 5000);
+        }
+        
+        function showError(message) {
+            showMessage(message, 'error');
+        }
+        
+        // Clean up intervals when page unloads
+        window.addEventListener('beforeunload', function() {
+            if (statusInterval) {
+                clearInterval(statusInterval);
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            if (fetchStatusInterval) {
+                clearInterval(fetchStatusInterval);
+            }
+        });
+    </script>
+</body>
+</html> 

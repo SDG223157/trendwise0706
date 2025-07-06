@@ -1,0 +1,480 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Analysis Dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+<style>
+    .dashboard-container {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+    .dashboard-header {
+        padding: 0 20px;
+        margin-bottom: 20px;
+    }
+    .dashboard-controls {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 0 20px 20px 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .dashboard-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: flex-end;
+    }
+    .form-group {
+        flex: 1;
+        min-width: 200px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+    .form-control {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+    .btn-analyze {
+        padding: 8px 16px;
+        background: linear-gradient(45deg, #22d3ee, #818cf8);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-analyze:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .custom-period-container {
+        display: none;
+    }
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        flex-direction: column;
+    }
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #22d3ee;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    #plotly-dashboard {
+        width: 100vw;
+        height: calc(100vh - 200px);
+        min-height: 600px;
+        padding: 0;
+        margin: 0;
+        border-radius: 0;
+        overflow: hidden;
+    }
+    /* Hide the title text that appears at the top of the Plotly chart */
+    .gtitle {
+        display: none !important;
+    }
+    .custom-period-help {
+        margin-top: 8px;
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    /* Override container styles from the base template */
+    main {
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+    
+    /* Make sure the chart container takes full width */
+    .js-plotly-plot, .plot-container {
+        width: 100% !important;
+    }
+    
+    /* Ticker input autocomplete styling */
+    .ticker-input-container {
+        position: relative;
+        width: 100%;
+    }
+    
+    .suggestions {
+        position: absolute;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        z-index: 1000;
+        display: none;
+    }
+    
+    .suggestion-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .suggestion-item:hover {
+        background-color: #f0f7ff;
+    }
+    
+    .suggestion-item .symbol {
+        font-weight: bold;
+        color: #3b82f6;
+    }
+    
+    .suggestion-item .name {
+        color: #6b7280;
+        margin-left: 10px;
+        flex-grow: 1;
+        text-align: right;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Stock Analysis Dashboard</h1>
+    </div>
+    
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    
+    <div class="dashboard-controls">
+        <div class="dashboard-form">
+            <div class="form-group">
+                <label for="ticker-input">Enter Ticker Symbol:</label>
+                <div class="ticker-input-container">
+                    <input type="text" id="ticker-input" class="form-control" value="{{ ticker }}" placeholder="e.g., AAPL, MSFT" autocomplete="off">
+                    <div class="suggestions"></div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="period-input">Select Time Period:</label>
+                <select id="period-input" class="form-control">
+                    <option value="1mo" {% if period == '1mo' %}selected{% endif %}>1 Month</option>
+                    <option value="3mo" {% if period == '3mo' %}selected{% endif %}>3 Months</option>
+                    <option value="6mo" {% if period == '6mo' %}selected{% endif %}>6 Months</option>
+                    <option value="1y" {% if period == '1y' %}selected{% endif %}>1 Year</option>
+                    <option value="2y" {% if period == '2y' %}selected{% endif %}>2 Years</option>
+                    <option value="5y" {% if period == '5y' %}selected{% endif %}>5 Years</option>
+                    <option value="max" {% if period == 'max' %}selected{% endif %}>Max</option>
+                    <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom Period</option>
+                </select>
+            </div>
+            
+            <div class="form-group custom-period-container" id="custom-period-container">
+                <label for="custom-period-input">Custom Period:</label>
+                <input type="text" id="custom-period-input" class="form-control" placeholder="e.g., 45d, 10wk, 15mo, 3y">
+                <div class="custom-period-help">
+                    Examples: 60d (days), 8wk (weeks), 15mo (months), 3y (years)
+                </div>
+            </div>
+            
+            <div class="form-group" style="flex: 0 0 auto;">
+                <button id="analyze-button" class="btn-analyze">Analyze</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px;">Analyzing data, please wait...</p>
+    </div>
+    
+    <div id="plotly-dashboard"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ticker Autocomplete
+        const tickerInput = document.getElementById('ticker-input');
+        const suggestionsDiv = document.querySelector('.suggestions');
+        let debounceTimeout;
+        
+        function formatCompanyName(name) {
+            return name.replace(/\\'/g, "'");
+        }
+        
+        // Clear input on double click
+        tickerInput.addEventListener('dblclick', function() {
+            if (this.value) {
+                this.value = '';
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+        
+        tickerInput.addEventListener('input', function() {
+            clearTimeout(debounceTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 1) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+            
+            debounceTimeout = setTimeout(() => {
+                fetch(`/search_ticker?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        suggestionsDiv.innerHTML = '';
+                        
+                        if (data.length > 0) {
+                            // Filter out results where symbol equals name
+                            const filteredData = data.filter(item => 
+                                item.symbol.toUpperCase() !== item.name.toUpperCase()
+                            );
+                            
+                            if (filteredData.length > 0) {
+                                filteredData.forEach(item => {
+                                    const div = document.createElement('div');
+                                    div.className = 'suggestion-item';
+                                    const formattedName = formatCompanyName(item.name);
+                                    
+                                    // Create symbol span
+                                    const symbolSpan = document.createElement('span');
+                                    symbolSpan.className = 'symbol';
+                                    symbolSpan.textContent = item.symbol;
+                                    
+                                    // Create name container with inline metadata
+                                    const nameContainer = document.createElement('div');
+                                    nameContainer.className = 'name';
+                                    
+                                    const companyNameSpan = document.createElement('span');
+                                    companyNameSpan.className = 'company-name';
+                                    companyNameSpan.textContent = formattedName;
+                                    nameContainer.appendChild(companyNameSpan);
+                                    
+                                    // Add asset type and exchange info inline after name
+                                    if (item.type || item.exchange) {
+                                        const metaSpan = document.createElement('span');
+                                        metaSpan.className = 'meta';
+                                        let metaText = [];
+                                        if (item.type) metaText.push(item.type);
+                                        if (item.exchange && item.exchange !== item.type) metaText.push(item.exchange);
+                                        metaSpan.textContent = metaText.join(' • ');
+                                        nameContainer.appendChild(metaSpan);
+                                    }
+                                    
+                                    div.appendChild(symbolSpan);
+                                    div.appendChild(nameContainer);
+                                    
+                                    div.addEventListener('click', function() {
+                                        // Set input value to both symbol and name
+                                        tickerInput.value = item.symbol;
+                                        suggestionsDiv.style.display = 'none';
+                                    });
+                                    
+                                    suggestionsDiv.appendChild(div);
+                                });
+                                suggestionsDiv.style.display = 'block';
+                            } else {
+                                suggestionsDiv.style.display = 'none';
+                            }
+                        } else {
+                            suggestionsDiv.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        suggestionsDiv.style.display = 'none';
+                    });
+            }, 300);
+        });
+        
+        // Close suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!tickerInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+
+        // Prevent suggestions from closing when clicking inside the input
+        tickerInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (this.value.trim().length > 0) {
+                suggestionsDiv.style.display = 'block';
+            }
+        });
+        
+        // Custom CSS to apply after Plotly is initialized
+        function applyCustomStyles() {
+            // Hide the main title from the Plotly chart as we already have a page title
+            const titleElements = document.querySelectorAll('.gtitle');
+            titleElements.forEach(el => el.style.display = 'none');
+            
+            // Make sure the plot container is full width
+            document.querySelectorAll('.js-plotly-plot, .plot-container').forEach(el => {
+                el.style.width = '100%';
+            });
+        }
+        
+        // Show/hide custom period input
+        const periodInput = document.getElementById('period-input');
+        const customPeriodContainer = document.getElementById('custom-period-container');
+        
+        function updateCustomPeriodVisibility() {
+            if (periodInput.value === 'custom') {
+                customPeriodContainer.style.display = 'block';
+            } else {
+                customPeriodContainer.style.display = 'none';
+            }
+        }
+        
+        periodInput.addEventListener('change', updateCustomPeriodVisibility);
+        
+        // Initialize custom period visibility
+        updateCustomPeriodVisibility();
+        
+        // Handle analyze button click
+        const analyzeButton = document.getElementById('analyze-button');
+        const customPeriodInput = document.getElementById('custom-period-input');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const plotlyDashboard = document.getElementById('plotly-dashboard');
+        
+        analyzeButton.addEventListener('click', function() {
+            const ticker = tickerInput.value.trim().split(/\s+/)[0].toUpperCase(); // Get just the symbol
+            if (!ticker) {
+                alert('Please enter a ticker symbol');
+                return;
+            }
+            
+            let period = periodInput.value;
+            
+            if (period === 'custom') {
+                const customPeriod = customPeriodInput.value.trim();
+                if (customPeriod) {
+                    period = customPeriod;
+                } else {
+                    alert('Please enter a custom period');
+                    return;
+                }
+            }
+            
+            // Show loading overlay
+            loadingOverlay.style.display = 'flex';
+            
+            // Call API to get updated data
+            fetch('/stock/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ticker: ticker,
+                    period: period
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                
+                // Parse the graph JSON
+                const graphData = JSON.parse(data.graph);
+                
+                // Update layout to ensure full width
+                if (graphData.layout) {
+                    graphData.layout.autosize = true;
+                    graphData.layout.width = window.innerWidth;
+                }
+                
+                // Render the plot
+                Plotly.newPlot('plotly-dashboard', graphData.data, graphData.layout, {
+                    responsive: true,
+                    useResizeHandler: true,
+                    autosize: true
+                });
+                
+                // Apply custom styling after plot is created
+                setTimeout(applyCustomStyles, 100);
+                
+                // Update URL to make it bookmarkable
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('ticker', ticker);
+                newUrl.searchParams.set('period', period);
+                window.history.pushState({}, '', newUrl);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while analyzing the data: ' + error.message);
+            })
+            .finally(() => {
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
+            });
+        });
+        
+        // Make chart responsive to window resize
+        window.addEventListener('resize', function() {
+            Plotly.relayout('plotly-dashboard', {
+                width: window.innerWidth
+            });
+        });
+        
+        // Initialize the chart with the provided data
+        {% if graph_json %}
+        try {
+            console.log("Initializing plotly chart...");
+            const graphData = {{ graph_json|safe }};
+            
+            // Update layout to ensure full width
+            if (graphData.layout) {
+                graphData.layout.autosize = true;
+                graphData.layout.width = window.innerWidth;
+            }
+            
+            Plotly.newPlot('plotly-dashboard', graphData.data, graphData.layout, {
+                responsive: true,
+                useResizeHandler: true,
+                autosize: true
+            });
+            
+            // Apply custom styling after plot is created
+            setTimeout(applyCustomStyles, 100);
+        } catch (error) {
+            console.error("Error rendering initial plot:", error);
+        }
+        {% endif %}
+    });
+</script>
+{% endblock %}

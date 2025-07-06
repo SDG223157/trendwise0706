@@ -1,0 +1,24 @@
+{
+  "name": "app1099",
+  "version": "1.0.0",
+  "description": "News Analysis Application",
+  "scripts": {
+    "css:compile": "node compile-sass.js",
+    "css:watch": "node compile-sass.js --watch"
+  },
+  "dependencies": {
+    "sass": "^1.83.4"
+  },
+  "main": "compile-sass.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SDG223157/App1099_DB_v9.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SDG223157/App1099_DB_v9/issues"
+  },
+  "homepage": "https://github.com/SDG223157/App1099_DB_v9#readme"
+}

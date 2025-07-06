@@ -1,0 +1,400 @@
+<!-- Progressive Analysis Template for Long-Period Stock Analysis -->
+
+<div id="progressive-analysis-container" class="analysis-container">
+    <!-- Loading States -->
+    <div id="loading-states" class="loading-states">
+        <div id="initial-loading" class="loading-phase active">
+            <div class="spinner"></div>
+            <span>Initializing analysis...</span>
+        </div>
+        
+        <div id="data-loading" class="loading-phase">
+            <div class="progress-bar">
+                <div id="data-progress" class="progress-fill"></div>
+            </div>
+            <span id="data-status">Loading historical data...</span>
+        </div>
+        
+        <div id="chart-loading" class="loading-phase">
+            <div class="spinner"></div>
+            <span>Rendering chart...</span>
+        </div>
+    </div>
+    
+    <!-- Progressive Chart Container -->
+    <div id="chart-container" class="chart-container" style="display: none;">
+        <!-- Basic Chart (loads first) -->
+        <div id="basic-chart" class="chart-phase">
+            <h3>Basic Price Chart</h3>
+            <div id="basic-chart-plot"></div>
+        </div>
+        
+        <!-- Enhanced Chart (loads second) -->
+        <div id="enhanced-chart" class="chart-phase" style="display: none;">
+            <h3>Technical Analysis</h3>
+            <div id="enhanced-chart-plot"></div>
+        </div>
+        
+        <!-- Full Analysis (loads last) -->
+        <div id="full-analysis" class="chart-phase" style="display: none;">
+            <h3>Complete Analysis Dashboard</h3>
+            <div id="full-analysis-plot"></div>
+        </div>
+    </div>
+    
+    <!-- Analysis Summary (loads immediately if cached) -->
+    <div id="analysis-summary" class="summary-container" style="display: none;">
+        <div class="summary-card">
+            <h4>Analysis Summary</h4>
+            <div id="summary-content"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.analysis-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.loading-states {
+    text-align: center;
+    padding: 40px;
+}
+
+.loading-phase {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.loading-phase.active {
+    display: flex;
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.progress-bar {
+    width: 300px;
+    height: 6px;
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #3498db;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.chart-container {
+    margin-top: 20px;
+}
+
+.chart-phase {
+    margin-bottom: 30px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    background: white;
+}
+
+.chart-phase h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.summary-container {
+    margin-top: 20px;
+}
+
+.summary-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.summary-card h4 {
+    margin: 0 0 15px 0;
+    color: #495057;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .analysis-container {
+        padding: 10px;
+    }
+    
+    .chart-phase {
+        padding: 15px;
+    }
+    
+    .progress-bar {
+        width: 250px;
+    }
+}
+</style>
+
+<script>
+class ProgressiveAnalysisRenderer {
+    constructor(ticker, lookbackDays, endDate) {
+        this.ticker = ticker;
+        this.lookbackDays = lookbackDays;
+        this.endDate = endDate;
+        this.currentPhase = 'initial';
+        this.analysisData = null;
+    }
+    
+    async startAnalysis() {
+        try {
+            // Phase 1: Check for cached summary
+            await this.checkCachedSummary();
+            
+            // Phase 2: Load basic data and render simple chart
+            await this.loadBasicChart();
+            
+            // Phase 3: Load enhanced technical analysis
+            await this.loadEnhancedChart();
+            
+            // Phase 4: Load complete analysis
+            await this.loadFullAnalysis();
+            
+        } catch (error) {
+            console.error('Progressive analysis error:', error);
+            this.showError(error.message);
+        }
+    }
+    
+    async checkCachedSummary() {
+        this.setLoadingPhase('initial');
+        
+        try {
+            const response = await fetch('/api/analysis-summary', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    ticker: this.ticker,
+                    lookback_days: this.lookbackDays,
+                    end_date: this.endDate
+                })
+            });
+            
+            if (response.ok) {
+                const summary = await response.json();
+                if (summary.cached) {
+                    this.showSummary(summary);
+                }
+            }
+        } catch (error) {
+            console.log('No cached summary available');
+        }
+    }
+    
+    async loadBasicChart() {
+        this.setLoadingPhase('data');
+        this.updateProgress(20, 'Loading price data...');
+        
+        try {
+            const response = await fetch('/api/basic-chart', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    ticker: this.ticker,
+                    lookback_days: this.lookbackDays,
+                    end_date: this.endDate
+                })
+            });
+            
+            if (response.ok) {
+                const chartData = await response.json();
+                this.renderBasicChart(chartData);
+                this.showChart();
+                this.updateProgress(40, 'Basic chart ready');
+            }
+        } catch (error) {
+            throw new Error('Failed to load basic chart: ' + error.message);
+        }
+    }
+    
+    async loadEnhancedChart() {
+        this.updateProgress(60, 'Adding technical indicators...');
+        
+        try {
+            const response = await fetch('/api/enhanced-chart', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    ticker: this.ticker,
+                    lookback_days: this.lookbackDays,
+                    end_date: this.endDate
+                })
+            });
+            
+            if (response.ok) {
+                const chartData = await response.json();
+                this.renderEnhancedChart(chartData);
+                this.showEnhancedChart();
+                this.updateProgress(80, 'Technical analysis ready');
+            }
+        } catch (error) {
+            console.log('Enhanced chart failed, continuing with basic chart');
+        }
+    }
+    
+    async loadFullAnalysis() {
+        this.setLoadingPhase('chart');
+        
+        try {
+            const response = await fetch('/api/full-analysis', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    ticker: this.ticker,
+                    lookback_days: this.lookbackDays,
+                    end_date: this.endDate
+                })
+            });
+            
+            if (response.ok) {
+                const analysisData = await response.json();
+                this.renderFullAnalysis(analysisData);
+                this.showFullAnalysis();
+                this.hideLoading();
+            }
+        } catch (error) {
+            console.log('Full analysis failed, keeping enhanced chart');
+            this.hideLoading();
+        }
+    }
+    
+    setLoadingPhase(phase) {
+        // Hide all loading phases
+        document.querySelectorAll('.loading-phase').forEach(el => {
+            el.classList.remove('active');
+        });
+        
+        // Show current phase
+        const currentPhaseEl = document.getElementById(phase + '-loading');
+        if (currentPhaseEl) {
+            currentPhaseEl.classList.add('active');
+        }
+        
+        this.currentPhase = phase;
+    }
+    
+    updateProgress(percentage, status) {
+        const progressBar = document.getElementById('data-progress');
+        const statusText = document.getElementById('data-status');
+        
+        if (progressBar) {
+            progressBar.style.width = percentage + '%';
+        }
+        
+        if (statusText) {
+            statusText.textContent = status;
+        }
+    }
+    
+    showSummary(summary) {
+        const summaryContainer = document.getElementById('analysis-summary');
+        const summaryContent = document.getElementById('summary-content');
+        
+        if (summaryContent) {
+            summaryContent.innerHTML = `
+                <div class="summary-item">
+                    <strong>Score:</strong> ${summary.score || 'N/A'}
+                </div>
+                <div class="summary-item">
+                    <strong>Trend:</strong> ${summary.trend || 'N/A'}
+                </div>
+                <div class="summary-item">
+                    <strong>Period:</strong> ${summary.period || 'N/A'}
+                </div>
+            `;
+        }
+        
+        if (summaryContainer) {
+            summaryContainer.style.display = 'block';
+        }
+    }
+    
+    showChart() {
+        document.getElementById('chart-container').style.display = 'block';
+        document.getElementById('basic-chart').style.display = 'block';
+    }
+    
+    showEnhancedChart() {
+        document.getElementById('enhanced-chart').style.display = 'block';
+    }
+    
+    showFullAnalysis() {
+        document.getElementById('full-analysis').style.display = 'block';
+    }
+    
+    hideLoading() {
+        document.getElementById('loading-states').style.display = 'none';
+    }
+    
+    renderBasicChart(chartData) {
+        const config = {
+            responsive: true,
+            displayModeBar: false
+        };
+        
+        Plotly.newPlot('basic-chart-plot', chartData.data, chartData.layout, config);
+    }
+    
+    renderEnhancedChart(chartData) {
+        const config = {
+            responsive: true,
+            displayModeBar: true
+        };
+        
+        Plotly.newPlot('enhanced-chart-plot', chartData.data, chartData.layout, config);
+    }
+    
+    renderFullAnalysis(analysisData) {
+        const config = {
+            responsive: true,
+            displayModeBar: true,
+            scrollZoom: true
+        };
+        
+        Plotly.newPlot('full-analysis-plot', analysisData.data, analysisData.layout, config);
+    }
+    
+    showError(message) {
+        const container = document.getElementById('progressive-analysis-container');
+        container.innerHTML = `
+            <div class="error-container">
+                <h3>Analysis Failed</h3>
+                <p>${message}</p>
+                <button onclick="location.reload()">Try Again</button>
+            </div>
+        `;
+    }
+}
+
+// Usage example:
+// const renderer = new ProgressiveAnalysisRenderer('AAPL', 3650, '2025-06-30');
+// renderer.startAnalysis();
+</script> 

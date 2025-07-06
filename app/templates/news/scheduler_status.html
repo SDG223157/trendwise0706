@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated AI Scheduler - TrendWise</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .status-running {
+            background-color: #10b981;
+            color: white;
+        }
+        .status-stopped {
+            background-color: #ef4444;
+            color: white;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-4">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">🤖 Automated AI & News Scheduler</h1>
+            <a href="{{ url_for('news.fetch') }}" 
+               class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                Back to News Dashboard
+            </a>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Scheduler Status</h2>
+                <div class="flex items-center space-x-2">
+                    <button id="refresh-btn" onclick="loadStatus()" 
+                            class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors">
+                        🔄 Refresh
+                    </button>
+                    <span id="auto-refresh-indicator" class="text-xs text-gray-500">
+                        Auto-refresh: 30s
+                    </span>
+                </div>
+            </div>
+            
+            <div id="status-container">
+                <div class="flex items-center justify-center py-8">
+                    <div class="spinner"></div>
+                    <span class="ml-2 text-gray-600">Loading scheduler status...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Scheduler Controls</h2>
+            
+            <div class="space-y-4">
+                <div class="flex space-x-4">
+                    <button id="start-btn" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Start Both Schedulers
+                    </button>
+                    <button id="stop-btn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Stop Both Schedulers
+                    </button>
+                    <button id="run-now-btn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Process Articles Now
+                    </button>
+                </div>
+                
+                <div id="control-status" class="hidden">
+                    <!-- Status messages will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">How It Works</h2>
+            
+            <div class="space-y-4 text-gray-700">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-900 mb-2">🔄 Combined Scheduler Control</h3>
+                    <p>When you click "Start Both Schedulers", it starts:</p>
+                    <ul class="list-disc ml-6 mt-2">
+                        <li><strong>AI Processing</strong>: Runs immediately, then every 5 minutes</li>
+                        <li><strong>News Fetching</strong>: Runs immediately, then every 6 hours</li>
+                    </ul>
+                    <p class="mt-2 text-sm">Perfect for non-trading days when there's less news activity!</p>
+                </div>
+                
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-green-900 mb-2">🧠 AI Generation</h3>
+                    <p>For each unprocessed article, the system automatically generates:</p>
+                    <ul class="list-disc ml-6 mt-2">
+                        <li>AI Summary with key concepts and points</li>
+                        <li>AI Insights with market implications</li>
+                        <li>AI Sentiment Rating (-100 to +100)</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-orange-900 mb-2">📰 News Fetching</h3>
+                    <p>The news fetch scheduler automatically:</p>
+                    <ul class="list-disc ml-6 mt-2">
+                        <li>Fetches latest articles for all tracked symbols</li>
+                        <li>Processes up to <strong>100 symbols per run</strong></li>
+                        <li>Updates every 6 hours for fresh content</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-yellow-900 mb-2">⚡ Smart Processing</h3>
+                    <p>The system processes up to <strong>10 articles per AI run</strong> and includes rate limiting to respect API quotas.</p>
+                </div>
+                
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-purple-900 mb-2">🎯 No Manual Intervention</h3>
+                    <p>Once started, both schedulers run automatically in the background. Stop both on non-trading days to save resources!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStatus = null;
+        let refreshCountdown = 30;
+        let countdownInterval = null;
+        
+        // Update countdown display
+        function updateCountdown() {
+            const indicator = document.getElementById('auto-refresh-indicator');
+            if (indicator) {
+                indicator.textContent = `Auto-refresh: ${refreshCountdown}s`;
+            }
+            
+            refreshCountdown--;
+            if (refreshCountdown < 0) {
+                refreshCountdown = 30;
+                loadStatus();
+            }
+        }
+        
+        // Start countdown timer
+        function startCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            refreshCountdown = 30;
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+        
+        // Load scheduler status
+        async function loadStatus() {
+            try {
+                // Visual feedback for manual refresh
+                const refreshBtn = document.getElementById('refresh-btn');
+                if (refreshBtn) {
+                    refreshBtn.innerHTML = '⏳ Loading...';
+                    refreshBtn.disabled = true;
+                }
+                
+                const response = await fetch('/news/api/scheduler/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentStatus = data.status;
+                    displayStatus(data.status);
+                    updateButtons(data.status);
+                } else {
+                    displayError('Failed to load scheduler status: ' + data.error);
+                }
+                
+                // Reset refresh button
+                if (refreshBtn) {
+                    refreshBtn.innerHTML = '🔄 Refresh';
+                    refreshBtn.disabled = false;
+                }
+                
+                // Restart countdown
+                startCountdown();
+                
+            } catch (error) {
+                displayError('Error loading status: ' + error.message);
+                
+                // Reset refresh button on error
+                const refreshBtn = document.getElementById('refresh-btn');
+                if (refreshBtn) {
+                    refreshBtn.innerHTML = '🔄 Refresh';
+                    refreshBtn.disabled = false;
+                }
+            }
+        }
+        
+        // Display scheduler status
+        function displayStatus(status) {
+            const container = document.getElementById('status-container');
+            
+            const nextRunText = status.next_run ? 
+                new Date(status.next_run).toLocaleString() : 
+                'Not scheduled';
+                
+            const statusBadge = status.running ? 
+                '<span class="status-badge status-running">🟢 Running</span>' :
+                '<span class="status-badge status-stopped">🔴 Stopped</span>';
+            
+            // Enhanced unprocessed articles display
+            const unprocessedCount = status.unprocessed_articles_count || 0;
+            const unprocessedDisplay = unprocessedCount > 0 ? 
+                `<span class="text-2xl font-bold text-orange-600">${unprocessedCount}</span>` :
+                `<span class="text-2xl font-bold text-green-600">0</span>`;
+            
+            const unprocessedStatus = unprocessedCount > 0 ? 
+                `<div class="text-xs text-orange-600 mt-1">⏳ Pending processing</div>` :
+                `<div class="text-xs text-green-600 mt-1">✅ All up to date</div>`;
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="text-sm text-gray-600">Status</div>
+                        <div class="text-lg font-semibold">${statusBadge}</div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="text-sm text-gray-600">Next Run</div>
+                        <div class="text-lg font-semibold">${nextRunText}</div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg border-2 ${unprocessedCount > 0 ? 'border-orange-300 bg-orange-50' : 'border-green-300 bg-green-50'}">
+                        <div class="text-sm text-gray-600">Articles Pending AI Processing</div>
+                        <div class="flex items-center justify-between">
+                            <div>${unprocessedDisplay}</div>
+                            ${unprocessedCount > 0 ? 
+                                '<a href="/news/search?processing_filter=unprocessed" target="_blank" class="text-xs bg-orange-500 text-white px-2 py-1 rounded hover:bg-orange-600 transition-colors">View Articles</a>' :
+                                '<span class="text-xs text-green-600">🎉</span>'
+                            }
+                        </div>
+                        ${unprocessedStatus}
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="text-sm text-gray-600">API Key</div>
+                        <div class="text-lg font-semibold">${status.api_key_configured ? '✅ Configured' : '❌ Missing'}</div>
+                    </div>
+                </div>
+                
+                <!-- Enhanced Processing Queue Information -->
+                ${unprocessedCount > 0 ? `
+                <div class="mt-6 bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                        <span class="text-orange-600 font-semibold">📋 Processing Queue Status</span>
+                    </div>
+                    <div class="text-sm text-orange-800">
+                        <p><strong>${unprocessedCount}</strong> articles are waiting for AI processing.</p>
+                        <p>The scheduler will process up to <strong>${status.max_articles_per_run}</strong> articles per run.</p>
+                        ${status.running ? 
+                            `<p>⏰ Next automatic processing: <strong>${nextRunText}</strong></p>` :
+                            `<p>⚠️ Scheduler is stopped - articles will not be processed automatically.</p>`
+                        }
+                        <div class="mt-2">
+                            <a href="/news/search?processing_filter=unprocessed" target="_blank" 
+                               class="inline-flex items-center text-orange-600 hover:text-orange-800 font-medium">
+                                📄 View unprocessed articles →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                ` : `
+                <div class="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                        <span class="text-green-600 font-semibold">✅ All Articles Processed</span>
+                    </div>
+                    <div class="text-sm text-green-800">
+                        <p>Great! All articles have been processed with AI summaries and insights.</p>
+                        <p>The scheduler will continue monitoring for new articles every 5 minutes.</p>
+                    </div>
+                </div>
+                `}
+                
+                <div class="mt-4 text-sm text-gray-600">
+                    <p><strong>Jobs Count:</strong> ${status.jobs_count}</p>
+                    <p><strong>Max Articles per Run:</strong> ${status.max_articles_per_run}</p>
+                    <p><strong>Last Updated:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+            `;
+        }
+        
+        // Update button states
+        function updateButtons(status) {
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const runNowBtn = document.getElementById('run-now-btn');
+            
+            if (status.running) {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                runNowBtn.disabled = false;
+            } else {
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                runNowBtn.disabled = true;
+            }
+        }
+        
+        // Display error message
+        function displayError(message) {
+            const container = document.getElementById('status-container');
+            container.innerHTML = `
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <strong>Error:</strong> ${message}
+                </div>
+            `;
+        }
+        
+        // Show control status message
+        function showControlStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('control-status');
+            const bgColor = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
+                           type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
+                           'bg-blue-100 border-blue-400 text-blue-700';
+            
+            statusDiv.innerHTML = `
+                <div class="${bgColor} px-4 py-3 rounded border">
+                    ${message}
+                </div>
+            `;
+            statusDiv.classList.remove('hidden');
+            
+            // Auto-hide after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 5000);
+            }
+        }
+        
+        // Scheduler control functions
+        async function startScheduler() {
+            try {
+                showControlStatus('Starting scheduler...', 'info');
+                const response = await fetch('/news/api/scheduler/start', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Special handling for scheduler start with initial run
+                    if (data.initial_run) {
+                        showControlStatus('✅ AI scheduler started! Initial processing job is running now, then scheduled every 5 minutes.', 'success');
+                        
+                        // Add visual indication that processing is happening
+                        setTimeout(() => {
+                            showControlStatus('🤖 Initial AI processing is running in background. Check logs for progress...', 'info');
+                        }, 2000);
+                        
+                        // Reload status multiple times to show progress
+                        setTimeout(loadStatus, 1000);
+                        setTimeout(loadStatus, 5000);
+                        setTimeout(loadStatus, 10000);
+                    } else {
+                        showControlStatus('✅ Scheduler started successfully!', 'success');
+                        setTimeout(loadStatus, 1000); // Reload status after 1 second
+                    }
+                } else {
+                    showControlStatus('❌ Failed to start scheduler: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showControlStatus('❌ Error starting scheduler: ' + error.message, 'error');
+            }
+        }
+        
+        async function stopScheduler() {
+            try {
+                showControlStatus('Stopping scheduler...', 'info');
+                const response = await fetch('/news/api/scheduler/stop', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showControlStatus('✅ Scheduler stopped successfully!', 'success');
+                    setTimeout(loadStatus, 1000); // Reload status after 1 second
+                } else {
+                    showControlStatus('❌ Failed to stop scheduler: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showControlStatus('❌ Error stopping scheduler: ' + error.message, 'error');
+            }
+        }
+        
+        async function runNow() {
+            try {
+                showControlStatus('🤖 Starting immediate processing job...', 'info');
+                const response = await fetch('/news/api/scheduler/run-now', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showControlStatus('✅ Processing job started! Check logs for progress.', 'success');
+                    setTimeout(loadStatus, 2000); // Reload status after 2 seconds
+                } else {
+                    showControlStatus('❌ Failed to start processing: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showControlStatus('❌ Error starting processing: ' + error.message, 'error');
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('start-btn').addEventListener('click', startScheduler);
+        document.getElementById('stop-btn').addEventListener('click', stopScheduler);
+        document.getElementById('run-now-btn').addEventListener('click', runNow);
+        
+        // Initial load with countdown
+        loadStatus();
+    </script>
+</body>
+</html> 

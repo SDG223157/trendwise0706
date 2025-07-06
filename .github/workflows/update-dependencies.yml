@@ -1,0 +1,91 @@
+name: Update Dependencies
+
+on:
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-yfinance:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install packaging requests
+        
+    - name: Check for yfinance updates
+      id: check
+      run: |
+        # Check current version in requirements.txt
+        current=$(grep "yfinance" requirements.txt | head -1)
+        echo "current_constraint=$current" >> $GITHUB_OUTPUT
+        
+        # Get latest compatible version
+        python -c "
+        import requests
+        from packaging import version
+        
+        response = requests.get('https://pypi.org/pypi/yfinance/json')
+        data = response.json()
+        latest = data['info']['version']
+        
+        # Check if within our constraints (>=0.2.63,<0.3.0)
+        if version.parse(latest) >= version.parse('0.2.63') and version.parse(latest) < version.parse('0.3.0'):
+            print(f'latest_version={latest}')
+            print(f'update_available=true')
+        else:
+            print(f'latest_version={latest}')
+            print(f'update_available=false')
+        " >> $GITHUB_OUTPUT
+        
+    - name: Update requirements.txt if needed
+      if: steps.check.outputs.update_available == 'true'
+      run: |
+        # Update the upper bound to allow the new version
+        latest=${{ steps.check.outputs.latest_version }}
+        major_minor=$(echo $latest | cut -d. -f1-2)
+        next_minor=$(echo $major_minor | awk -F. '{print $1"."($2+1)".0"}')
+        
+        # Update requirements.txt
+        sed -i "s/yfinance>=0.2.63,<0.3.0/yfinance>=0.2.63,<$next_minor/" requirements.txt
+        
+    - name: Create Pull Request if update available
+      if: steps.check.outputs.update_available == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update yfinance dependency constraints'
+        title: 'Automated yfinance update available'
+        body: |
+          🤖 Automated yfinance dependency update
+          
+          - Latest version: ${{ steps.check.outputs.latest_version }}
+          - Updated constraints in requirements.txt
+          
+          **What happens next:**
+          1. Review this PR
+          2. Merge to main branch  
+          3. Coolify will auto-deploy with updated yfinance
+          
+          Please review the [yfinance changelog](https://github.com/ranaroussi/yfinance/releases) before merging.
+        branch: automated/update-yfinance
+        
+    - name: Trigger Coolify deployment
+      if: steps.check.outputs.update_available == 'true' && github.ref == 'refs/heads/main'
+      run: |
+        # Optional: Trigger immediate Coolify deployment
+        if [ -n "${{ secrets.COOLIFY_WEBHOOK_URL }}" ]; then
+          curl -X POST "${{ secrets.COOLIFY_WEBHOOK_URL }}"
+          echo "✅ Coolify deployment triggered"
+        fi 

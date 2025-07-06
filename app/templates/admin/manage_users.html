@@ -1,0 +1,552 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - TrendWise Finance{% endblock %}
+
+{% block content %}
+<style>
+    .container {
+        width: 95%;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .stat-card.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .filters {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .filter-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        align-items: end;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-group label {
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .bulk-actions {
+        background-color: #e9ecef;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+    }
+    
+    .bulk-actions.active {
+        display: block;
+    }
+    
+    .results-table {
+        margin-top: 30px;
+        overflow-x: auto;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        padding: 5px;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    th {
+        background-color: #f5f7fa;
+        font-weight: 600;
+        color: #444;
+        position: sticky;
+        top: 0;
+    }
+    
+    tr:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .user-status {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-inactive {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .user-role {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .role-admin {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .role-user {
+        background-color: #e2e3e5;
+        color: #495057;
+    }
+    
+    .role-google {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .email-warning {
+        color: #dc3545;
+        font-weight: 500;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 30px;
+        gap: 20px;
+    }
+    
+    .page-link {
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        color: #007bff;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .page-link:hover {
+        background-color: #f0f0f0;
+        border-color: #aaa;
+    }
+    
+    .form-control {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        width: 100%;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-warning {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .btn-sm {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+    
+    .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+    }
+    
+    .checkbox-column {
+        width: 40px;
+        text-align: center;
+    }
+    
+    .testform-highlight {
+        background-color: #fff3cd !important;
+        border-left: 4px solid #ffc107;
+    }
+</style>
+
+<div class="container">
+    <h2>User Management</h2>
+    
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_users }}</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ active_users }}</div>
+            <div class="stat-label">Active Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ admin_users }}</div>
+            <div class="stat-label">Admin Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ google_users }}</div>
+            <div class="stat-label">Google Users</div>
+        </div>
+        {% if testform_users > 0 %}
+        <div class="stat-card warning">
+            <div class="stat-number">{{ testform_users }}</div>
+            <div class="stat-label">testform.xyz Users</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters">
+        <form class="filter-form" method="get" id="filterForm">
+            <div class="filter-group">
+                <label for="search">Search Users:</label>
+                <input type="text" name="search" id="search" value="{{ search }}" 
+                       placeholder="Username, email, or name..." class="form-control">
+            </div>
+            
+            <div class="filter-group">
+                <label for="email_filter">Email Domain:</label>
+                <input type="text" name="email_filter" id="email_filter" value="{{ email_filter }}" 
+                       placeholder="e.g., testform.xyz" class="form-control">
+            </div>
+            
+            <div class="filter-group">
+                <label for="status_filter">Status:</label>
+                <select name="status_filter" id="status_filter" class="form-control">
+                    <option value="">All Statuses</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="role_filter">Role:</label>
+                <select name="role_filter" id="role_filter" class="form-control">
+                    <option value="">All Roles</option>
+                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="user" {% if role_filter == 'user' %}selected{% endif %}>Regular User</option>
+                    <option value="google" {% if role_filter == 'google' %}selected{% endif %}>Google User</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="date_from">From Date:</label>
+                <input type="date" name="date_from" id="date_from" value="{{ date_from }}" class="form-control">
+            </div>
+            
+            <div class="filter-group">
+                <label for="date_to">To Date:</label>
+                <input type="date" name="date_to" id="date_to" value="{{ date_to }}" class="form-control">
+            </div>
+            
+            <div class="filter-group">
+                <label>&nbsp;</label>
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <a href="{{ url_for('main.admin_manage_users') }}" class="btn btn-secondary">Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Quick Actions -->
+    {% if testform_users > 0 %}
+    <div class="filters" style="background-color: #fff3cd; border: 1px solid #ffeaa7;">
+        <h4 style="color: #856404; margin-bottom: 15px;">⚠️ Security Alert: testform.xyz Users Found</h4>
+        <p style="color: #856404; margin-bottom: 15px;">
+            There are {{ testform_users }} users with testform.xyz email addresses. These may be test accounts that should be removed.
+        </p>
+        <form method="post" action="{{ url_for('main.admin_bulk_user_action') }}" 
+              onsubmit="return confirm('Are you sure you want to delete ALL testform.xyz users? This action cannot be undone.')">
+            <input type="hidden" name="action" value="delete_testform">
+            <button type="submit" class="btn btn-danger">Delete All testform.xyz Users</button>
+        </form>
+    </div>
+    {% endif %}
+    
+    <!-- Bulk Actions -->
+    <div class="bulk-actions" id="bulkActions">
+        <form method="post" action="{{ url_for('main.admin_bulk_user_action') }}" id="bulkForm">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span><strong id="selectedCount">0</strong> users selected</span>
+                <select name="action" required>
+                    <option value="">Choose Action...</option>
+                    <option value="activate">Activate</option>
+                    <option value="deactivate">Deactivate</option>
+                    <option value="delete">Delete</option>
+                </select>
+                <button type="submit" class="btn btn-warning" onclick="return confirmBulkAction()">Execute</button>
+                <button type="button" class="btn btn-secondary" onclick="clearSelection()">Clear Selection</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Users Table -->
+    <div class="results-table">
+        <table>
+            <thead>
+                <tr>
+                    <th class="checkbox-column">
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                    </th>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Role</th>
+                    <th>Created</th>
+                    <th>Last Login</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users.items %}
+                <tr {% if 'testform.xyz' in user.email %}class="testform-highlight"{% endif %}>
+                    <td class="checkbox-column">
+                        {% if user.id != current_user.id %}
+                        <input type="checkbox" name="user_checkbox" value="{{ user.id }}" onchange="updateSelection()">
+                        {% endif %}
+                    </td>
+                    <td>{{ user.id }}</td>
+                    <td>
+                        <strong>{{ user.username }}</strong>
+                        {% if user.id == current_user.id %}
+                        <span style="font-size: 0.8rem; color: #007bff;">(You)</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if 'testform.xyz' in user.email %}
+                        <span class="email-warning">{{ user.email }}</span>
+                        {% else %}
+                        {{ user.email }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.first_name or user.last_name %}
+                        {{ user.first_name or '' }} {{ user.last_name or '' }}
+                        {% else %}
+                        <em>Not provided</em>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="user-status status-{{ 'active' if user.is_active else 'inactive' }}">
+                            {{ 'Active' if user.is_active else 'Inactive' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user.is_admin %}
+                        <span class="user-role role-admin">Admin</span>
+                        {% elif user.is_google_user %}
+                        <span class="user-role role-google">Google</span>
+                        {% else %}
+                        <span class="user-role role-user">User</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'Unknown' }}</td>
+                    <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</td>
+                    <td>
+                        {% if user.id != current_user.id %}
+                        <div class="action-buttons">
+                            <form method="post" action="{{ url_for('main.admin_toggle_user_status', user_id=user.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-sm {{ 'btn-warning' if user.is_active else 'btn-success' }}"
+                                        onclick="return confirm('Are you sure you want to {{ 'deactivate' if user.is_active else 'activate' }} this user?')">
+                                    {{ 'Deactivate' if user.is_active else 'Activate' }}
+                                </button>
+                            </form>
+                            <form method="post" action="{{ url_for('main.admin_delete_user', user_id=user.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Are you sure you want to permanently delete user {{ user.username }}? This action cannot be undone.')">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <em>No actions</em>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if users.items %}
+    <div class="pagination">
+        {% if users.has_prev %}
+            <a href="{{ url_for('main.admin_manage_users', page=users.prev_num, search=search, email_filter=email_filter, status_filter=status_filter, role_filter=role_filter, date_from=date_from, date_to=date_to) }}" class="page-link">&laquo; Previous</a>
+        {% endif %}
+        
+        <span>Page {{ users.page }} of {{ users.pages }} ({{ users.total }} users)</span>
+        
+        {% if users.has_next %}
+            <a href="{{ url_for('main.admin_manage_users', page=users.next_num, search=search, email_filter=email_filter, status_filter=status_filter, role_filter=role_filter, date_from=date_from, date_to=date_to) }}" class="page-link">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% else %}
+    <p style="text-align: center; margin-top: 50px; color: #666;">No users found matching your criteria.</p>
+    {% endif %}
+</div>
+
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('input[name="user_checkbox"]');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateSelection();
+}
+
+function updateSelection() {
+    const checkboxes = document.querySelectorAll('input[name="user_checkbox"]:checked');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    selectedCount.textContent = checkboxes.length;
+    
+    if (checkboxes.length > 0) {
+        bulkActions.classList.add('active');
+    } else {
+        bulkActions.classList.remove('active');
+    }
+    
+    // Update the bulk form with selected user IDs
+    const existingInputs = document.querySelectorAll('input[name="user_ids[]"]');
+    existingInputs.forEach(input => input.remove());
+    
+    checkboxes.forEach(checkbox => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'user_ids[]';
+        input.value = checkbox.value;
+        document.getElementById('bulkForm').appendChild(input);
+    });
+}
+
+function clearSelection() {
+    const checkboxes = document.querySelectorAll('input[name="user_checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.getElementById('selectAll').checked = false;
+    updateSelection();
+}
+
+function confirmBulkAction() {
+    const action = document.querySelector('select[name="action"]').value;
+    const count = document.querySelectorAll('input[name="user_checkbox"]:checked').length;
+    
+    if (!action) {
+        alert('Please select an action.');
+        return false;
+    }
+    
+    let message = `Are you sure you want to ${action} ${count} selected user(s)?`;
+    if (action === 'delete') {
+        message += ' This action cannot be undone.';
+    }
+    
+    return confirm(message);
+}
+
+// Auto-submit form when filters change (optional)
+document.getElementById('search').addEventListener('input', function() {
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => {
+        document.getElementById('filterForm').submit();
+    }, 500);
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}News Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">📰 News Article Management</h4>
+                        <a href="{{ url_for('admin.index') }}" class="btn btn-secondary btn-sm">
+                            ← Back to Admin Dashboard
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                        <div class="alert alert-danger">
+                            <strong>Error:</strong> {{ error }}
+                        </div>
+                    {% endif %}
+
+                    {% if stats %}
+                    <!-- Statistics Section -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Articles</h5>
+                                    <h2>{{ "{:,}".format(stats.total_articles) }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Last 24 Hours</h5>
+                                    <h2>{{ "{:,}".format(stats.articles_24h) }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Investing.com (24h)</h5>
+                                    <h2>{{ "{:,}".format(stats.investing_24h) }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">TradingView (24h)</h5>
+                                    <h2>{{ "{:,}".format(stats.tradingview_24h) }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Source Statistics -->
+                    {% if stats.source_stats %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5>📊 Articles by Source (Last 24 Hours)</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Source</th>
+                                            <th>Count</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for source_stat in stats.source_stats %}
+                                        <tr>
+                                            <td>{{ source_stat.source or 'Unknown' }}</td>
+                                            <td>{{ "{:,}".format(source_stat.count) }}</td>
+                                            <td>{{ "%.1f"|format((source_stat.count / stats.articles_24h) * 100) }}%</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- Delete Investing.com Articles Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0">🗑️ Delete Investing.com Articles</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-warning">
+                                        <strong>⚠️ Warning:</strong> This action will permanently delete articles from Investing.com source within the specified time period. This cannot be undone.
+                                        <br><br>
+                                        <strong>🔗 Automatic Cleanup:</strong> Associated records in <code>article_symbols</code> and <code>article_metrics</code> tables will be automatically deleted via database cascade (no manual cleanup needed).
+                                    </div>
+
+                                    <form id="deleteForm" class="row g-3">
+                                        <div class="col-md-4">
+                                            <label for="hours" class="form-label">Time Period (Hours)</label>
+                                            <select class="form-select" id="hours" name="hours">
+                                                <option value="1">Last 1 hour</option>
+                                                <option value="6">Last 6 hours</option>
+                                                <option value="12">Last 12 hours</option>
+                                                <option value="24" selected>Last 24 hours</option>
+                                                <option value="48">Last 48 hours</option>
+                                                <option value="72">Last 72 hours</option>
+                                                <option value="168">Last 7 days</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">&nbsp;</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                                                <label class="form-check-label" for="confirmDelete">
+                                                    I understand this action cannot be undone
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">&nbsp;</label>
+                                            <br>
+                                            <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                                                🗑️ Delete Investing.com Articles
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <!-- Results Section -->
+                                    <div id="deleteResults" class="mt-4" style="display: none;">
+                                        <div id="deleteAlert"></div>
+                                        <div id="deletedArticlesList"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.getElementById('confirmDelete');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const deleteForm = document.getElementById('deleteForm');
+    const resultsDiv = document.getElementById('deleteResults');
+    const alertDiv = document.getElementById('deleteAlert');
+    const listDiv = document.getElementById('deletedArticlesList');
+
+    // Enable/disable delete button based on confirmation checkbox
+    confirmCheckbox.addEventListener('change', function() {
+        deleteBtn.disabled = !this.checked;
+    });
+
+    // Handle form submission
+    deleteForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const hours = document.getElementById('hours').value;
+        const isConfirmed = confirmCheckbox.checked;
+        
+        if (!isConfirmed) {
+            alert('Please confirm that you understand this action cannot be undone.');
+            return;
+        }
+
+        // Show loading state
+        deleteBtn.innerHTML = '⏳ Deleting...';
+        deleteBtn.disabled = true;
+        resultsDiv.style.display = 'none';
+
+        // Make API call
+        fetch('/admin/api/delete-investing-articles', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                hours: parseInt(hours),
+                confirm: true
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            resultsDiv.style.display = 'block';
+            
+            if (data.status === 'success') {
+                alertDiv.innerHTML = '<div class="alert alert-success"><strong>✅ Success:</strong> ' + data.message + '</div>';
+                
+                // Show cascade information if available
+                if (data.cascade_info && data.symbols_deleted > 0) {
+                    alertDiv.innerHTML += '<div class="alert alert-info mt-2"><strong>🔗 Auto-Cascade:</strong> ' + data.cascade_info + '</div>';
+                }
+                
+                // Refresh the page after a delay to update statistics
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+                
+            } else {
+                alertDiv.innerHTML = '<div class="alert alert-danger"><strong>❌ Error:</strong> ' + data.message + '</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsDiv.style.display = 'block';
+            alertDiv.innerHTML = '<div class="alert alert-danger"><strong>❌ Error:</strong> Failed to delete articles. Please try again.</div>';
+        })
+        .finally(() => {
+            // Reset button
+            deleteBtn.innerHTML = '🗑️ Delete Investing.com Articles';
+            deleteBtn.disabled = !confirmCheckbox.checked;
+        });
+    });
+});
+</script>
+{% endblock %} 

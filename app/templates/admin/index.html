@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+
+{% block title %}Admin Dashboard - TrendWise Finance{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Admin Dashboard</h2>
+    
+    <div class="card-container">
+        <div class="card">
+            <h3>User Management</h3>
+            <ul>
+                <li><a href="{{ url_for('main.admin_manage_users') }}">🔧 Manage Users</a></li>
+                <li><a href="/admin/user-activities">📊 User Activities</a></li>
+                <li><a href="/admin/user-activities/">User Activities (with trailing slash)</a></li>
+                <li><a href="/admin/test">🧪 Admin Test Route</a></li>
+                <li><a href="/admin/user-activities-debug">🐛 User Activities (Debug)</a></li>
+                <li><a href="/admin-user-activities">📈 User Activities (Main Blueprint)</a></li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h3>News Management</h3>
+            <ul>
+                <li><a href="{{ url_for('admin.news_management') }}">📰 News Database Management</a></li>
+                <li><a href="{{ url_for("news.fetch") }}">📊 Fetch News</a></li>
+                <li><a href="{{ url_for("news.manage_articles") }}">📄 Manage Articles</a></li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h3>Database Management</h3>
+            <ul>
+                <li><a href="{{ url_for('main.tables') }}">🗄️ Database Tables</a></li>
+                <li><a href="{{ url_for('main.admin_manage_users') }}">👥 User Database</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        min-width: 250px;
+        flex: 1;
+    }
+    
+    .card h3 {
+        margin-top: 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        color: #333;
+    }
+    
+    .card ul {
+        padding-left: 20px;
+    }
+    
+    .card li {
+        margin-bottom: 8px;
+    }
+    
+    .card a {
+        text-decoration: none;
+        color: #007bff;
+        transition: color 0.2s;
+    }
+    
+    .card a:hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}

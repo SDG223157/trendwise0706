@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}News Analysis Dashboard{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/news.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Error Alert -->
+    {% if error %}
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+        <span class="block sm:inline">{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Dashboard Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">News Analysis Dashboard</h1>
+        <p class="text-gray-600">Track and analyze market news and sentiment</p>
+    </div>
+
+    <!-- Sentiment Summary Card -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Sentiment Overview</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ sentiment_summary.total_articles }}</div>
+                <div class="text-gray-600">Total Articles</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold {% if sentiment_summary.average_sentiment > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ "%.2f"|format(sentiment_summary.average_sentiment) }}
+                </div>
+                <div class="text-gray-600">Average Sentiment</div>
+            </div>
+            <div class="text-center">
+                <div class="flex justify-center space-x-4">
+                    <div>
+                        <span class="text-green-600 font-bold">{{ sentiment_summary.sentiment_distribution.positive }}</span>
+                        <span class="text-gray-600">Positive</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600 font-bold">{{ sentiment_summary.sentiment_distribution.neutral }}</span>
+                        <span class="text-gray-600">Neutral</span>
+                    </div>
+                    <div>
+                        <span class="text-red-600 font-bold">{{ sentiment_summary.sentiment_distribution.negative }}</span>
+                        <span class="text-gray-600">Negative</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trending Topics -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Trending Topics</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {% for topic in trending_topics %}
+            <div class="bg-gray-50 rounded p-4">
+                <div class="font-semibold">{{ topic.topic }}</div>
+                <div class="text-sm text-gray-600">{{ topic.count }} mentions</div>
+                <div class="text-xs text-gray-500">Trend: {{ topic.trend }}%</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Articles -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4">Recent Articles</h2>
+        <div class="space-y-6">
+            {% for article in articles %}
+            <div class="border-b border-gray-200 pb-4 last:border-b-0">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-medium">
+                        <a href="{{ article.url }}" target="_blank" class="text-blue-600 hover:text-blue-800">
+                            {{ article.title }}
+                        </a>
+                    </h3>
+                    <span class="text-sm text-gray-500">{{ article.published_at }}</span>
+                </div>
+                <p class="text-gray-600 mb-2">{{ article.summary.brief }}</p>
+                <div class="flex flex-wrap gap-2">
+                    {% for symbol in article.symbols %}
+                    <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">{{ symbol }}</span>
+                    {% endfor %}
+                    <span class="bg-{{ article.sentiment.overall_sentiment|lower }}-100 text-{{ article.sentiment.overall_sentiment|lower }}-700 px-2 py-1 rounded text-sm">
+                        {{ article.sentiment.overall_sentiment|title }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if total_articles > 10 %}
+        <div class="mt-6 flex justify-center">
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <!-- Add pagination controls here -->
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/news.js') }}"></script>
+{% endblock %}

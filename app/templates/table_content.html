@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Content - {{ table_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background-color: white;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            position: sticky;
+            top: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        th:hover {
+            background-color: #e9ecef;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+        .sort-icon::after {
+            content: '⇅';
+            margin-left: 5px;
+            color: #999;
+        }
+        .sort-asc::after {
+            content: '↑';
+            color: #333;
+        }
+        .sort-desc::after {
+            content: '↓';
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .close-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .close-btn:hover {
+            background-color: #5a6268;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            min-width: 40px;
+        }
+        .pagination button:hover:not(:disabled) {
+            background-color: #e9ecef;
+        }
+        .pagination button:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+            color: #999;
+        }
+        .pagination button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .per-page-select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .pagination-info {
+            color: #666;
+        }
+        .export-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .export-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .export-btn:hover {
+            background-color: #218838;
+        }
+        @media (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .pagination button {
+                padding: 6px 10px;
+            }
+            .export-buttons {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ table_name }} - Content Preview</h1>
+            <button class="close-btn" onclick="window.close()">Close</button>
+        </div>
+
+        {% if error %}
+            <div style="color: red; padding: 10px; background-color: #fee; border-radius: 4px;">
+                {{ error }}
+            </div>
+        {% else %}
+            <div class="controls">
+                <div>
+                    Rows per page: 
+                    <select class="per-page-select" onchange="changePerPage(this.value)">
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <div class="export-buttons">
+                    Export as:
+                    <button class="export-btn" onclick="exportTable('csv')" title="Export as CSV">
+                        CSV
+                    </button>
+                    <button class="export-btn" onclick="exportTable('excel')" title="Export as Excel">
+                        Excel
+                    </button>
+                </div>
+                <div class="pagination-info">
+                    Showing {{ (current_page - 1) * per_page + 1 }} to 
+                    {{ [current_page * per_page, total_rows] | min }} of {{ total_rows }} entries
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            {% for column in columns %}
+                            <th onclick="sortTable('{{ column }}')" 
+                                class="{% if column == sort_column %}sort-{{ sort_direction }}{% else %}sort-icon{% endif %}"
+                                title="Click to sort by {{ column }}">
+                                {{ column }}
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr>
+                            {% for column in columns %}
+                            <td>{{ row[column] }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                <button onclick="changePage(1)" {% if current_page == 1 %}disabled{% endif %} title="First page">First</button>
+                <button onclick="changePage({{ current_page - 1 }})" {% if current_page == 1 %}disabled{% endif %} title="Previous page">Previous</button>
+                
+                {% for p in range([current_page - 2, 1] | max, [current_page + 3, total_pages + 1] | min) %}
+                <button onclick="changePage({{ p }})" {% if p == current_page %}class="active"{% endif %}>{{ p }}</button>
+                {% endfor %}
+                
+                <button onclick="changePage({{ current_page + 1 }})" {% if current_page == total_pages %}disabled{% endif %} title="Next page">Next</button>
+                <button onclick="changePage({{ total_pages }})" {% if current_page == total_pages %}disabled{% endif %} title="Last page">Last</button>
+            </div>
+        {% endif %}
+
+        <script>
+            function sortTable(column) {
+                const currentSort = '{{ sort_column }}';
+                const currentDirection = '{{ sort_direction }}';
+                let newDirection = 'asc';
+                
+                if (column === currentSort) {
+                    newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+                }
+                
+                window.location.href = updateQueryString({
+                    sort: column,
+                    direction: newDirection,
+                    page: 1
+                });
+            }
+
+            function changePage(page) {
+                window.location.href = updateQueryString({
+                    page: page
+                });
+            }
+
+            function changePerPage(perPage) {
+                window.location.href = updateQueryString({
+                    per_page: perPage,
+                    page: 1
+                });
+            }
+
+            function updateQueryString(params) {
+                const url = new URL(window.location.href);
+                Object.keys(params).forEach(key => {
+                    url.searchParams.set(key, params[key]);
+                });
+                return url.toString();
+            }
+
+            function exportTable(format) {
+                const url = `/export/{{ table_name }}/${format}`;
+                window.location.href = url;
+            }
+        </script>
+    </div>
+</body>
+</html>

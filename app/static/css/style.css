@@ -1,0 +1,806 @@
+/* -------------------------------------- */
+/* 1. Reset & Base Styles */
+/* -------------------------------------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+}
+
+/* -------------------------------------- */
+/* 2. Header & Navigation */
+/* -------------------------------------- */
+header {
+    /* Merged from multiple definitions */
+    background-color: #1a237e;  /* Final override */
+    width: 100%;
+    padding: 10px 0;           /* Overridden from 1.5rem 0 */
+    color: white;
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.header-container {
+    /* Combined from repeated definitions */
+    position: relative;
+    max-width: 1200px;        /* Kept from first definition */
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: #1a237e; /* Final override */
+    color: white;
+    padding: 1rem;
+}
+
+.top-nav {
+    /*
+       These properties combine from multiple .top-nav rules.
+       The final rule sets justify-content: flex-end, etc.
+       Since none later removed position/absolute, it remains.
+    */
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    display: flex;
+    justify-content: flex-end;  /* Final override */
+    align-items: center;
+    width: 100%;
+    gap: 20px;                  /* From the earliest definition */
+    padding: 1rem;             /* From second definition */
+    margin-bottom: 0.5rem;     /* From third/fourth definition */
+    margin-top: 0.5rem;        /* From fourth definition */
+}
+
+.nav-link {
+    /* Final merged styles */
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 0.5rem 0.25rem;    /* Last override */
+    margin-left: 0.25rem;       /* Last override */
+    margin-top: 3.0rem;           /* Last override */
+    transition: opacity 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #ddd;
+    opacity: 0.8;
+}
+
+.user-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.dropdown-arrow {
+    font-size: 10px;
+    transition: transform 0.3s ease;
+}
+
+.dropdown-content {
+    /*
+       Final version consistently uses display: none by default
+       and displays on hover (see below).
+    */
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fff;
+    min-width: 160px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    z-index: 1;
+    border-radius: 4px;
+}
+
+.user-dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.user-dropdown:hover .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-item {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+/* Highlight admin-specific link */
+.admin-link {
+    color: #ff6b6b;
+}
+
+.dropdown-item[href*="tables"] {
+    color: #ff6b6b;
+    border-left: 3px solid #ff6b6b;
+}
+
+/* -------------------------------------- */
+/* 3. Headings */
+/* -------------------------------------- */
+/* Combining repeated h1 definitions into one final version */
+h1 {
+    color: white;
+    text-align: center;
+    font-size: 24px;
+    font-weight: normal;
+    margin: 0;
+    padding: 1rem 0;
+}
+
+/* -------------------------------------- */
+/* 4. Main Content & Forms */
+/* -------------------------------------- */
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 1rem;
+    width: 100%;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 600px;
+    padding: 2rem;
+    background: transparent;
+    border-radius: 4px;
+    box-shadow: none;
+    margin-bottom: 2rem;
+}
+
+.form-container h2 {
+    margin-bottom: 1.5rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #333;
+}
+
+/* Ticker Input Container */
+.ticker-input-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Text Inputs */
+input[type="text"],
+input[type="number"],
+input[type="date"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background-color: #fff;
+    transition: border-color 0.2s ease-in-out;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus {
+    outline: none;
+    border-color: #666;
+    box-shadow: 0 0 0 2px rgba(51, 51, 51, 0.1);
+}
+
+input[type="text"]::placeholder {
+    color: #999;
+}
+
+/* Suggestions Dropdown */
+.suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #dfe1e5;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 2px;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+}
+
+.suggestion-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background-color 0.2s ease;
+}
+
+.suggestion-item:hover {
+    background-color: #f8f9fa;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.suggestion-item .symbol {
+    font-weight: 600;
+    color: #1a73e8;
+    font-size: 14px;
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.suggestion-item .name {
+    color: #333;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.suggestion-item .company-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.suggestion-item .meta {
+    font-size: 11px;
+    color: #666;
+    font-weight: 400;
+    display: inline-block;
+    background-color: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+
+
+
+
+/* Company Info Display */
+.company-info {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 2px;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    display: none;
+}
+
+.company-info .symbol {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.company-info .name {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Analyze Button */
+.analyze-button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #1a237e;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background-color 0.2s ease;
+}
+
+.analyze-button:hover {
+    background-color: #444;
+}
+
+/* Loading Indicator */
+.loading {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    z-index: 1001;
+}
+
+/* -------------------------------------- */
+/* 5. Auth Links */
+/* -------------------------------------- */
+.auth-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem;
+    position: relative;
+}
+
+.auth-links {
+    position: relative;  /* Changed from absolute */
+    margin-top: 2rem;   /* Add space between form and link */
+    margin-left: 0;     /* Align to the left */
+    display: flex;
+    gap: 1rem;
+}
+
+.auth-links a {
+    color: #1a237e;     /* Match the header color */
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+/* -------------------------------------- */
+/* 6. Footer */
+/* -------------------------------------- */
+footer {
+    background-color:#1a237e;
+    color: white;
+    text-align: right;
+    padding: 1rem;
+    margin-top: auto;
+}
+
+footer p {
+    margin: 0;
+    padding-right: 1rem;
+}
+
+/* -------------------------------------- */
+/* 7. Flash Messages */
+/* -------------------------------------- */
+.flash-messages {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 1rem;
+}
+
+.flash-message {
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.flash-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.flash-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* -------------------------------------- */
+/* 8. Responsive Adjustments */
+/* -------------------------------------- */
+@media (max-width: 768px) {
+    .form-container {
+        padding: 1rem;
+    }
+
+    .auth-links {
+        position: static;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .auth-links a {
+        display: inline-block;
+        margin: 0.5rem;
+    }
+
+    .suggestions {
+        max-height: 250px;
+    }
+   
+}
+
+
+/* -------------------------------------- */
+/* 9. Error States */
+/* -------------------------------------- */
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+input.error {
+    border-color: #dc3545;
+}
+
+input.error:focus {
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+}
+
+/* -------------------------------------- */
+/* 10. Profile Page Styles */
+/* -------------------------------------- */
+.profile-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.profile-container h2 {
+    margin-bottom: 1.5rem;
+    color: #333;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.profile-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.profile-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.profile-form input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background-color: #fff;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.profile-form input:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.profile-form input:focus {
+    outline: none;
+    border-color: #666;
+    box-shadow: 0 0 0 2px rgba(51, 51, 51, 0.1);
+}
+
+.form-section {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.form-section h3 {
+    margin-bottom: 1rem;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.profile-button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color:#1a237e;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.profile-button:hover {
+    background-color: #444;
+}
+
+.danger-zone {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #ff6b6b;
+}
+
+.danger-zone h3 {
+    color: #dc3545;
+    margin-bottom: 1rem;
+}
+
+.delete-button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.delete-button:hover {
+    background-color: #c82333;
+}
+
+.auth-divider {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 1px;
+    background-color: #ddd;
+}
+
+.auth-divider::before {
+    left: 0;
+}
+
+.auth-divider::after {
+    right: 0;
+}
+
+.auth-divider span {
+    background-color: #fff;
+    padding: 0 10px;
+    color: #666;
+}
+
+.google-auth-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.google-auth-button:hover {
+    background-color: #f5f5f5;
+}
+
+.google-auth-button img {
+    width: 20px;
+    height: 20px;
+}
+
+.flash-message {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.login-container {
+    max-width: 400px;  /* Container to control overall form width */
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Make all form elements consistent width */
+.form-group {
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
+/* Style for input fields */
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;  /* Ensure padding doesn't affect width */
+}
+
+/* Remember me container */
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+/* Login button styling */
+.login-button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #1a237e;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+/* Divider styling */
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #ddd;
+}
+
+.divider span {
+    padding: 0 1rem;
+    color: #666;
+}
+
+/* Google button styling */
+.google-button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.delete-all-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.delete-all-btn:hover {
+    background-color: #c82333;
+}
+
+.create-all-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.create-all-btn:hover {
+    background-color: #218838;
+}
+
+
+.progress-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.progress-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    min-width: 300px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #28a745;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-status {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+.progress-details {
+    margin-top: 10px;
+    max-height: 100px;
+    overflow-y: auto;
+    font-size: 12px;
+    font-family: monospace;
+}

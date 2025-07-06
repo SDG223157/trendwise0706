@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form id="analysis-form" method="post" action="{{ url_for('main.analyze') }}" target="_blank">
+        <div class="form-group">
+            <label for="ticker">Stock Ticker:</label>
+            <input type="text" id="ticker" name="ticker" placeholder="e.g., AAPL" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="end_date">End Date (Optional):</label>
+            <input type="date" id="end_date" name="end_date" placeholder="mm/dd/yyyy">
+        </div>
+        
+        <div class="form-group">
+            <label for="lookback_days">Lookback Days:</label>
+            <input type="number" id="lookback_days" name="lookback_days" 
+                   value="365" min="30" max="10000">
+        </div>
+        
+        <div class="form-group">
+            <label for="crossover_days">Crossover Days:</label>
+            <input type="number" id="crossover_days" name="crossover_days" 
+                   value="365" min="30" max="1000">
+        </div>
+        
+        <button type="submit" class="analyze-button">Analyze</button>
+    </form>
+</div>
+{% endblock %}

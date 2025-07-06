@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TrendWise Finance{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+    <style>
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #22d3ee, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            letter-spacing: -0.025em;
+        }
+
+        .title-space {
+            margin: 0 1rem;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <nav class="top-nav">
+                {% if current_user.is_authenticated %}
+                    <div class="user-dropdown">
+                        <button class="dropdown-button">
+                            Analytics Tools
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="dropdown-content">
+                            {% if not request.endpoint == 'news.search' %}
+                                <a href="{{ url_for('news.search') }}" class="dropdown-item text-sm">News</a>
+                            {% endif %}
+                            {% if not request.endpoint == 'news.analysis' %}
+                                <a href="{{ url_for('news.analysis') }}" class="dropdown-item text-sm">Sentiment</a>
+                            {% endif %}
+                            {% if not request.endpoint == 'main.index' %}
+                                <a href="{{ url_for('main.index') }}" class="dropdown-item text-sm">Trend</a>
+                            {% endif %}
+                            {% if not request.endpoint == 'stock.dashboard' %}
+                                <a href="{{ url_for('stock.dashboard') }}" class="dropdown-item text-sm">Stock Analysis</a>
+                            {% endif %}
+                            {% if current_user.is_admin %}
+                                <a href="{{ url_for('news.fetch') }}" class="dropdown-item text-sm">Fetch</a>
+                                <a href="{{ url_for('news.manage_articles') }}" class="dropdown-item text-sm">Manage Articles</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if current_user.is_admin %}
+                    <div class="user-dropdown">
+                        <button class="dropdown-button">
+                            Admin Dashboard
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="dropdown-content">
+                            {% if route_exists('admin.index') %}
+                                <a href="{{ url_for('admin.index') }}" class="dropdown-item">Admin Dashboard</a>
+                            {% else %}
+                                <a href="/admin" class="dropdown-item">Admin Dashboard</a>
+                            {% endif %}
+                            <a href="/admin/users" class="dropdown-item">User Management</a>
+                            
+                            {% if route_exists('main.tables') %}
+                                <a href="{{ url_for('main.tables') }}" class="dropdown-item">Database</a>
+                            {% endif %}
+                            
+                            {% if route_exists('news.irregular_ai_content') %}
+                                <a href="{{ url_for('news.irregular_ai_content') }}" class="dropdown-item">Irregular AI Content</a>
+                            {% endif %}
+                            
+                            {% if route_exists('news.clear_all_content') %}
+                                <form action="{{ url_for('news.clear_all_content') }}" method="post" style="margin:0;padding:0;" onsubmit="return confirm('Are you sure you want to clear all news content? This cannot be undone.');">
+                                    <button type="submit" class="dropdown-item" style="text-align:left;width:100%;background:none;border:none;cursor:pointer;">Clear All News</button>
+                                </form>
+                            {% endif %}
+                            
+                            <a href="/admin-user-activities" class="dropdown-item">User Activities </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="user-dropdown">
+                        <button class="dropdown-button">
+                            {{ current_user.username }}
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="{{ url_for('user.profile') }}" class="dropdown-item">Profile</a>
+                            {% if current_user.is_administrator %}
+                                <a href="{{ url_for('main.tables') }}" class="dropdown-item">Database</a>
+                            {% endif %}
+                            <a href="{{ url_for('auth.logout') }}" class="dropdown-item">Logout</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
+                    <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="nav-link">Register</a>
+                {% endif %}
+            </nav>
+            <h1>TrendWise<span class="title-space"></span>Finance</h1>
+        </div>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>© {{ now.year }} TrendWise Finance</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.opacity = '0';
+                    setTimeout(function() {
+                        message.remove();
+                    }, 300);
+                }, 3000);
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

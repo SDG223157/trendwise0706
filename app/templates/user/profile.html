@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - {{ current_user.username }}{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <h2>User Profile</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <form method="POST" class="profile-form">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" value="{{ current_user.username }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="{{ current_user.email }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Member Since</label>
+            <input type="text" value="{{ current_user.created_at.strftime('%Y-%m-%d') }}" disabled>
+        </div>
+        
+        <button type="submit" class="profile-button">Save Changes</button>
+    </form>
+</div>
+{% endblock %}

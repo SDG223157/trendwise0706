@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Article</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Markdown content styling */
+        .markdown-content {
+            @apply space-y-4;
+        }
+        .markdown-content ul {
+            list-style: disc !important;
+            padding-left: 2rem !important;
+            margin-bottom: 1rem !important;
+        }
+        .markdown-content ul ul {
+            list-style: circle !important;
+            padding-left: 2rem !important;
+        }
+        .markdown-content li {
+            display: list-item !important;
+            list-style-position: outside !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .markdown-content li::marker {
+            color: #4a5568;
+            font-size: 1.1em;
+        }
+        .markdown-content h3 {
+            @apply text-lg font-semibold mt-4 mb-2;
+        }
+        .markdown-content h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .markdown-content h4 {
+            @apply font-medium text-gray-700 mt-4 mb-2 text-base;
+        }
+        .markdown-content p {
+            margin-bottom: 1rem;
+        }
+        .markdown-content strong {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-4">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Article Details</h1>
+            <a href="{{ url_for('news.manage_articles') }}" 
+               class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                Back to List
+            </a>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 space-y-6">
+            <div>
+                <h2 class="text-xl font-semibold mb-2">{{ article.title }}</h2>
+                <p class="text-sm text-gray-500">Published: {{ article.published_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+
+            <div>
+                <h3 class="font-semibold mb-2">Content</h3>
+                <div class="bg-gray-50 p-4 rounded">
+                    {{ article.content|safe }}
+                </div>
+            </div>
+
+            <div>
+                <h3 class="font-semibold mb-2">AI Summary</h3>
+                <div class="bg-gray-50 p-4 rounded markdown-content">
+                    {{ article.ai_summary|markdown|safe if article.ai_summary else 'No summary available' }}
+                </div>
+            </div>
+
+            <div>
+                <h3 class="font-semibold mb-2">AI Insights</h3>
+                <div class="bg-gray-50 p-4 rounded markdown-content">
+                    {{ article.ai_insights|markdown|safe if article.ai_insights else 'No insights available' }}
+                </div>
+            </div>
+
+            <div>
+                <h3 class="font-semibold mb-2">Sentiment Rating</h3>
+                <div class="bg-gray-50 p-4 rounded">
+                    {{ article.ai_sentiment_rating if article.ai_sentiment_rating is not none else 'Not rated' }}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

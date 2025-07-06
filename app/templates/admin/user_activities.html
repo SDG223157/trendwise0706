@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}User Activities - TrendWise Finance{% endblock %}
+
+{% block content %}
+<style>
+    .container {
+        width: 95%;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .filters {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        align-items: flex-end;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 180px;
+    }
+    
+    .filter-group label {
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .results-table {
+        margin-top: 30px;
+        overflow-x: auto;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        padding: 5px;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        padding: 14px 18px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    th {
+        background-color: #f5f7fa;
+        font-weight: 600;
+        color: #444;
+        position: sticky;
+        top: 0;
+    }
+    
+    tr:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 30px;
+        gap: 20px;
+    }
+    
+    .page-link {
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        color: #007bff;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .page-link:hover {
+        background-color: #f0f0f0;
+        border-color: #aaa;
+    }
+    
+    .form-control {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 4px;
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+    }
+    
+    .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+</style>
+
+<div class="container">
+    <h2>User Activities</h2>
+    
+    <div class="filters">
+        <form class="filter-form" method="get">
+            <div class="filter-group">
+                <label for="user_id">User:</label>
+                <select name="user_id" id="user_id" class="form-control">
+                    <option value="">All Users</option>
+                    {% for user in users %}
+                        <option value="{{ user.id }}" {% if user_id == user.id %}selected{% endif %}>
+                            {{ user.username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="activity_type">Activity Type:</label>
+                <select name="activity_type" id="activity_type" class="form-control">
+                    <option value="">All Activities</option>
+                    {% for type in activity_types %}
+                        <option value="{{ type }}" {% if activity_type == type %}selected{% endif %}>
+                            {{ type }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="date_from">From Date:</label>
+                <input type="date" name="date_from" id="date_from" value="{{ date_from }}" class="form-control">
+            </div>
+            
+            <div class="filter-group">
+                <label for="date_to">To Date:</label>
+                <input type="date" name="date_to" id="date_to" value="{{ date_to }}" class="form-control">
+            </div>
+            
+            <div class="filter-group">
+                <label>&nbsp;</label>
+                <div class="button-group">
+                    <button type="submit" class="btn">Filter</button>
+                    <a href="{{ url_for('main.admin_user_activities') }}" class="btn btn-secondary">Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="results-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Activity Type</th>
+                    <th>IP Address</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activity in activities.items %}
+                <tr>
+                    <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ activity.user.username }}</td>
+                    <td>{{ activity.activity_type }}</td>
+                    <td>{{ activity.ip_address }}</td>
+                    <td>{{ activity.details }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if activities.items %}
+    <div class="pagination">
+        {% if activities.has_prev %}
+            <a href="{{ url_for('main.admin_user_activities', page=activities.prev_num, user_id=user_id, activity_type=activity_type, date_from=date_from, date_to=date_to) }}" class="page-link">&laquo; Previous</a>
+        {% endif %}
+        
+        <span>Page {{ activities.page }} of {{ activities.pages }}</span>
+        
+        {% if activities.has_next %}
+            <a href="{{ url_for('main.admin_user_activities', page=activities.next_num, user_id=user_id, activity_type=activity_type, date_from=date_from, date_to=date_to) }}" class="page-link">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% else %}
+    <p>No activities found matching your criteria.</p>
+    {% endif %}
+</div>
+{% endblock %}
