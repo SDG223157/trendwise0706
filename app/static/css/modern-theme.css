@@ -825,12 +825,13 @@ input[type="submit"]:active {
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--tw-glass-bg-strong);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--tw-glass-border);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 16px;
-  box-shadow: var(--tw-shadow-xl);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
+              0 4px 16px rgba(0, 0, 0, 0.08);
   z-index: 1000;
   max-height: 300px;
   overflow-y: auto;
@@ -841,8 +842,9 @@ input[type="submit"]:active {
   padding: var(--tw-space-4);
   cursor: pointer;
   transition: all var(--tw-transition-fast);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  color: #1f2937;
+  background: transparent;
 }
 
 .autocomplete-item:last-child {
@@ -851,24 +853,25 @@ input[type="submit"]:active {
 
 .autocomplete-item:hover,
 .autocomplete-item.selected {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(59, 130, 246, 0.08);
   backdrop-filter: blur(20px);
 }
 
 .autocomplete-item .symbol {
   font-weight: 700;
-  color: #fbbf24;
+  color: #2563eb;
   font-size: var(--tw-text-lg);
 }
 
 .autocomplete-item .name {
-  color: rgba(255, 255, 255, 0.9);
+  color: #4b5563;
   font-size: var(--tw-text-sm);
   margin-top: var(--tw-space-1);
+  font-weight: 500;
 }
 
 .autocomplete-item .exchange {
-  color: rgba(255, 255, 255, 0.6);
+  color: #6b7280;
   font-size: var(--tw-text-xs);
   font-weight: 500;
 }
@@ -1108,6 +1111,18 @@ input[type="submit"]:active {
 [data-theme="dark"] .autocomplete-item.selected {
   background: rgba(148, 163, 184, 0.3);
   color: var(--tw-gray-100);
+}
+
+[data-theme="dark"] .autocomplete-item .symbol {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .autocomplete-item .name {
+  color: rgba(241, 245, 249, 0.9);
+}
+
+[data-theme="dark"] .autocomplete-item .exchange {
+  color: rgba(148, 163, 184, 0.8);
 }
 
 /* ========================================
