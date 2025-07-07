@@ -346,19 +346,34 @@
         border-bottom: none !important;
     }
 
-    /* Enhanced ticker symbol and company name styling in suggestions */
+    /* Enhanced ticker symbol and company name styling in suggestions - Default (Light Mode) */
     .suggestion-item .symbol {
-        color: #fbbf24 !important;
+        color: #2563eb !important;
         font-weight: 700 !important;
     }
 
     .suggestion-item .name {
-        color: rgba(255, 255, 255, 0.9) !important;
+        color: #374151 !important;
+        font-weight: 600 !important;
     }
 
     .suggestion-item .exchange {
-        color: rgba(255, 255, 255, 0.6) !important;
+        color: #1f2937 !important;
         font-size: 0.8rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* Dark mode suggestion styling */
+    [data-theme="dark"] .suggestion-item .symbol {
+        color: #fbbf24 !important;
+    }
+
+    [data-theme="dark"] .suggestion-item .name {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    [data-theme="dark"] .suggestion-item .exchange {
+        color: rgba(255, 255, 255, 0.95) !important;
     }
 
     /* Dark theme specific adjustments */
