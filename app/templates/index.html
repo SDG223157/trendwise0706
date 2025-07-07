@@ -357,17 +357,26 @@
         font-weight: 600 !important;
     }
 
-    /* Exchange info styling in light mode - simple text */
+    /* Force exchange info to be visible - aggressive debugging styles */
     .suggestions .suggestion-item .exchange,
     .suggestions .suggestion-item .meta,
     .suggestion-item .exchange,
     .suggestion-item .meta,
     .suggestions .exchange,
-    .suggestions .meta {
-        color: #374151 !important;
-        font-size: 0.75rem !important;
-        font-weight: 500 !important;
-        opacity: 0.8 !important;
+    .suggestions .meta,
+    span.meta,
+    .meta {
+        color: #ff0000 !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+        background: yellow !important;
+        display: block !important;
+        visibility: visible !important;
+        height: auto !important;
+        width: auto !important;
+        text-indent: 0 !important;
+        overflow: visible !important;
     }
 
     /* Dark mode suggestion styling */
