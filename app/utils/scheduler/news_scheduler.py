@@ -788,20 +788,20 @@ class NewsAIScheduler:
 
 **Key Concepts/Keywords**
 
-• [Extract 3-5 key financial/market concepts, company names, or important terms]
-• [Each item should be a specific concept, not generic placeholders]
+- [Extract 3-5 key financial/market concepts, company names, or important terms]
+- [Each item should be a specific concept, not generic placeholders]
 
 **Key Points**
 
-• [Extract 3-5 main factual points from the article]
-• [Focus on concrete facts, numbers, events, or developments]
+- [Extract 3-5 main factual points from the article]
+- [Focus on concrete facts, numbers, events, or developments]
 
 **Context**
 
-• [Provide 2-4 background context items that help understand the significance]
-• [Include market conditions, historical context, or related developments]
+- [Provide 2-4 background context items that help understand the significance]
+- [Include market conditions, historical context, or related developments]
 
-IMPORTANT: Replace ALL bracketed placeholders with actual content from the article. Do not use generic terms like "Keyword 1" or "Point 1". CRITICAL: Always include blank lines before and after bullet point lists for proper markdown rendering. Use bullet points (•) instead of dashes (-) for all lists.
+IMPORTANT: Replace ALL bracketed placeholders with actual content from the article. Do not use generic terms like "Keyword 1" or "Point 1". CRITICAL: Always include blank lines before and after bullet point lists for proper markdown rendering.
 
 Title: {title}
 Content: {content}"""
@@ -819,19 +819,19 @@ Content: {content}"""
 
 **Key Insights**
 
-• [Extract 3-5 key financial insights, market trends, or strategic implications]
-• [Focus on actionable insights for investors and traders]
+- [Extract 3-5 key financial insights, market trends, or strategic implications]
+- [Focus on actionable insights for investors and traders]
 
 **Market Implications**
 
-• [Identify 2-4 specific market implications or potential impacts]
-• [Consider effects on sectors, competitors, or broader markets]
+- [Identify 2-4 specific market implications or potential impacts]
+- [Consider effects on sectors, competitors, or broader markets]
 
 **Conclusion**
 
-• [Provide a clear, concise conclusion summarizing the overall significance]
+- [Provide a clear, concise conclusion summarizing the overall significance]
 
-IMPORTANT: Replace ALL bracketed placeholders with actual insights from the article. Do not use generic terms like "Insight 1" or "Implication 1". CRITICAL: Always include blank lines before and after bullet point lists for proper markdown rendering. Use bullet points (•) instead of dashes (-) for all lists.
+IMPORTANT: Replace ALL bracketed placeholders with actual insights from the article. Do not use generic terms like "Insight 1" or "Implication 1". CRITICAL: Always include blank lines before and after bullet point lists for proper markdown rendering.
 
 Title: {title}
 Content: {content}"""

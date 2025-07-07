@@ -21,6 +21,13 @@ login_manager.login_view = 'auth.login'
 login_manager.login_message_category = 'error'
 
 def markdown_to_html(text):
+    import re
+    
+    # Pre-process text to convert dashes to bullet points for better display
+    if text:
+        # Convert lines starting with "- " to "• " for visual enhancement
+        text = re.sub(r'^- ', '• ', text, flags=re.MULTILINE)
+    
     return markdown.markdown(text or '', extensions=[
         'fenced_code', 
         'tables', 
