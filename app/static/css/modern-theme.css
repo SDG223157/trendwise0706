@@ -884,7 +884,8 @@ input[type="submit"]:active {
   font-weight: 600;
 }
 
-.autocomplete-item .exchange {
+.autocomplete-item .exchange,
+.autocomplete-item .meta {
   color: #1f2937;
   font-size: var(--tw-text-xs);
   font-weight: 600;
@@ -1135,7 +1136,8 @@ input[type="submit"]:active {
   color: rgba(241, 245, 249, 0.9);
 }
 
-[data-theme="dark"] .autocomplete-item .exchange {
+[data-theme="dark"] .autocomplete-item .exchange,
+[data-theme="dark"] .autocomplete-item .meta {
   color: rgba(148, 163, 184, 0.8);
 }
 
