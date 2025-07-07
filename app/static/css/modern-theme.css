@@ -1028,13 +1028,39 @@ input[type="submit"]:active {
 @media (max-width: 768px) {
   .header-container {
     flex-direction: column;
-    gap: var(--tw-space-4);
+    gap: var(--tw-space-3);
     text-align: center;
+    padding: var(--tw-space-3) var(--tw-space-4);
   }
   
   .top-nav {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--tw-space-2);
   }
+  
+  .user-dropdown {
+    margin: 0 var(--tw-space-1);
+  }
+  
+  .dropdown-button {
+    padding: var(--tw-space-2) var(--tw-space-3);
+    font-size: 0.8rem;
+    min-width: auto;
+  }
+  
+  /* Make title smaller on mobile */
+  h1 {
+    font-size: 1.5rem !important;
+    margin: var(--tw-space-2) 0;
+  }
+  
+  /* Theme toggle smaller on mobile */
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+  }
+}
   
   .form-container {
     padding: var(--tw-space-6);
@@ -1053,6 +1079,40 @@ input[type="submit"]:active {
 }
 
 @media (max-width: 480px) {
+  /* Extra mobile header adjustments for very small screens */
+  .header-container {
+    padding: var(--tw-space-2);
+  }
+  
+  .top-nav {
+    gap: var(--tw-space-1);
+  }
+  
+  .dropdown-button {
+    padding: 6px 8px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+  
+  /* Stack navigation vertically on very small screens */
+  .top-nav {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--tw-space-2);
+  }
+  
+  /* Title even smaller */
+  h1 {
+    font-size: 1.25rem !important;
+    margin: var(--tw-space-1) 0;
+  }
+  
+  /* Theme toggle even smaller */
+  .theme-toggle {
+    width: 32px;
+    height: 32px;
+  }
+  
   .form-container {
     width: 98%;
     padding: var(--tw-space-4);
@@ -1063,10 +1123,6 @@ input[type="submit"]:active {
     width: 98%;
     padding: var(--tw-space-4);
     border-radius: 16px;
-  }
-  
-  h1 {
-    font-size: var(--tw-text-2xl);
   }
 }
 
