@@ -86,31 +86,32 @@
     .form-control {
         height: 48px;
         padding: 12px 16px;
-        border: 2px solid rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.5);
         border-radius: 12px;
         width: 100%;
         font-size: 16px; /* Prevent auto-zoom on iOS */
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        color: white;
+        color: #1f2937;
         font-weight: 500;
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .form-group input:focus,
     .form-control:focus {
-        border-color: rgba(255, 255, 255, 0.6);
-        background: rgba(255, 255, 255, 0.15);
-        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+        border-color: #3b82f6;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
         transform: translateY(-1px);
         outline: none;
     }
 
     .form-group input::placeholder,
     .form-control::placeholder {
-        color: rgba(255, 255, 255, 0.7);
+        color: rgba(31, 41, 59, 0.6);
         font-weight: 400;
     }
 
@@ -120,17 +121,18 @@
         margin-bottom: 8px;
         font-weight: 600;
         font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.9);
-        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.2);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         padding: 4px 8px;
         border-radius: 6px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
         width: fit-content;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .form-group {
@@ -143,30 +145,31 @@
     select.form-control {
         height: 48px;
         padding: 12px 16px;
-        border: 2px solid rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.5);
         border-radius: 12px;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        color: white;
+        color: #1f2937;
         font-weight: 500;
         font-size: 16px;
         appearance: none;
         -webkit-appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f2937' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
         background-repeat: no-repeat;
         background-position: right 12px center;
         background-size: 16px;
         padding-right: 40px;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .form-group select:focus,
     select.form-control:focus {
-        border-color: rgba(255, 255, 255, 0.6);
-        background: rgba(255, 255, 255, 0.15);
-        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+        border-color: #3b82f6;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
         transform: translateY(-1px);
         outline: none;
     }
@@ -179,25 +182,77 @@
         padding: 8px;
     }
 
+    /* Dark mode specific overrides for form inputs */
+    [data-theme="dark"] .form-group input,
+    [data-theme="dark"] .form-control {
+        background: rgba(30, 41, 59, 0.9);
+        border-color: rgba(148, 163, 184, 0.7);
+        color: #f1f5f9;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .form-group input:focus,
+    [data-theme="dark"] .form-control:focus {
+        background: rgba(30, 41, 59, 0.95);
+        border-color: rgba(148, 163, 184, 1);
+        box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.2), 0 2px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="dark"] .form-group input::placeholder,
+    [data-theme="dark"] .form-control::placeholder {
+        color: rgba(241, 245, 249, 0.6);
+    }
+
+    [data-theme="dark"] .form-group select,
+    [data-theme="dark"] select.form-control {
+        background: rgba(30, 41, 59, 0.9);
+        border-color: rgba(148, 163, 184, 0.7);
+        color: #f1f5f9;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f5f9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .form-group select:focus,
+    [data-theme="dark"] select.form-control:focus {
+        background: rgba(30, 41, 59, 0.95);
+        border-color: rgba(148, 163, 184, 1);
+        box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.2), 0 2px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="dark"] .suggestions {
+        background: rgba(30, 41, 59, 0.95) !important;
+        border-color: rgba(148, 163, 184, 0.7) !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    [data-theme="dark"] .suggestion-item {
+        color: #f1f5f9 !important;
+        border-bottom-color: rgba(148, 163, 184, 0.3) !important;
+    }
+
+    [data-theme="dark"] .suggestion-item:hover {
+        background: rgba(148, 163, 184, 0.3) !important;
+    }
+
     /* Enhanced autocomplete suggestions with glassmorphism */
     .suggestions {
-        background: rgba(255, 255, 255, 0.12) !important;
+        background: rgba(255, 255, 255, 0.95) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border: 2px solid #3b82f6 !important;
         border-radius: 12px !important;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
         margin-top: 4px !important;
     }
 
     .suggestion-item {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
+        border-bottom: 1px solid rgba(31, 41, 59, 0.1) !important;
+        color: #1f2937 !important;
         transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
     }
 
     .suggestion-item:hover {
-        background: rgba(255, 255, 255, 0.15) !important;
+        background: rgba(59, 130, 246, 0.1) !important;
         backdrop-filter: blur(20px) !important;
         transform: translateX(4px) !important;
     }
