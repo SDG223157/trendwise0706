@@ -121,30 +121,34 @@
     .button-container {
         width: 100%;
         margin-top: 10px;
-        display: grid;
-        gap: 10px;
-        grid-template-columns: 1fr;
-        align-items: stretch;
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
         {% if not current_user.is_authenticated %}
         max-width: 600px;  /* Match form fields width */
         {% endif %}
     }
 
     .button-container.has-news {
-        grid-template-columns: 1fr 1fr;
+        justify-content: center;
     }
 
-    /* Common button styles */
+    /* Common button styles - Made smaller and more compact */
     .analyze-button,
     .news-button {
-        width: 100%;
+        width: auto;  /* Changed from 100% to auto for compact size */
+        min-width: 120px;  /* Minimum width for readability */
+        max-width: 180px;  /* Maximum width to prevent oversizing */
         height: 44px;  /* Fixed height for both buttons */
-        padding: 0 12px;  /* Horizontal padding only */
+        padding: 0 20px;  /* Increased horizontal padding for better balance */
         border: none;
-        border-radius: 4px;
+        border-radius: 8px;  /* Slightly more rounded for modern look */
         cursor: pointer;
         transition: all 0.3s;
         font-size: 16px;
+        font-weight: 600;  /* Slightly bolder for better visibility */
         display: flex;  /* Use flex */
         align-items: center;
         justify-content: center;
@@ -155,6 +159,7 @@
         appearance: none;  /* Remove default button styling */
         -webkit-appearance: none;  /* For Safari */
         text-align: center;  /* Ensure text is centered */
+        white-space: nowrap;  /* Prevent text wrapping */
     }
 
     /* Ensure the span inside buttons takes full width */
@@ -185,6 +190,33 @@
 
     .analyze-button:hover {
         background: linear-gradient(45deg, #0ea5e9, #6366f1);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Responsive adjustments for smaller screens */
+    @media (max-width: 768px) {
+        .button-container {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .analyze-button,
+        .news-button {
+            min-width: 140px;
+            max-width: 200px;
+            width: auto;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .analyze-button,
+        .news-button {
+            min-width: 120px;
+            max-width: 160px;
+            font-size: 15px;
+            padding: 0 16px;
+        }
     }
     
     /* Full width chart styles */
