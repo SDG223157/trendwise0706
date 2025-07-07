@@ -159,11 +159,20 @@ header {
   transform: translateY(0);
 }
 
-/* Keep hover for visual feedback on button only */
-.user-dropdown:hover .dropdown-button {
-  background: var(--tw-glass-bg-strong);
-  transform: translateY(-1px);
-  box-shadow: var(--tw-shadow-lg);
+/* Keep hover for visual feedback on button only - desktop only */
+@media (hover: hover) and (pointer: fine) {
+  .user-dropdown:hover .dropdown-button {
+    background: var(--tw-glass-bg-strong);
+    transform: translateY(-1px);
+    box-shadow: var(--tw-shadow-lg);
+  }
+}
+
+/* Prevent button hover interference on touch devices */
+.touch-device .user-dropdown:hover .dropdown-button {
+  background: var(--tw-glass-bg);
+  transform: none;
+  box-shadow: none;
 }
 
 .dropdown-item {
@@ -183,6 +192,24 @@ header {
 .dropdown-item:hover {
   background: rgba(255, 255, 255, 0.15);
   padding-left: var(--tw-space-5);
+}
+
+/* Prevent hover interference on touch devices */
+.touch-device .dropdown-item:hover {
+  background: transparent;
+  padding-left: var(--tw-space-3);
+}
+
+/* Ensure proper pointer events for desktop */
+@media (hover: hover) and (pointer: fine) {
+  .dropdown-item {
+    cursor: pointer;
+  }
+  
+  .dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    padding-left: var(--tw-space-5);
+  }
 }
 
 /* Enhanced Title Styling */
