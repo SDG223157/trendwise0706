@@ -194,6 +194,226 @@ h1 {
 }
 
 /* ========================================
+   GLOBAL FORM ENHANCEMENTS
+   ======================================== */
+
+/* Global form styling for consistency across all templates */
+.auth-container,
+.auth-form,
+.search-container,
+.news-form,
+.profile-form,
+.admin-form {
+  background: var(--tw-glass-bg);
+  backdrop-filter: var(--tw-glass-backdrop);
+  -webkit-backdrop-filter: var(--tw-glass-backdrop);
+  border: 1px solid var(--tw-glass-border);
+  border-radius: 20px;
+  padding: var(--tw-space-8);
+  margin: var(--tw-space-6) auto;
+  box-shadow: var(--tw-shadow-premium);
+  max-width: 500px;
+  width: 95%;
+}
+
+/* Global input styling for all forms */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="search"],
+select,
+textarea,
+.form-input,
+.search-input {
+  width: 100%;
+  height: 48px;
+  padding: 12px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: white;
+  font-weight: 500;
+  font-size: 16px;
+  transition: all var(--tw-transition-normal);
+  box-sizing: border-box;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus,
+.form-input:focus,
+.search-input:focus {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder,
+.form-input::placeholder,
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+/* Global label styling */
+label,
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  width: fit-content;
+}
+
+/* Checkbox and radio styling */
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  height: auto;
+  margin-right: 8px;
+  transform: scale(1.2);
+  accent-color: var(--tw-primary-500);
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  margin: var(--tw-space-4) 0;
+}
+
+.form-check label {
+  margin-bottom: 0;
+  margin-left: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  width: auto;
+}
+
+/* Textarea specific styling */
+textarea {
+  height: auto;
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Select dropdown styling */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+select option {
+  background: #1f2937;
+  color: white;
+  padding: 8px;
+}
+
+/* Button styling for forms */
+.auth-form button,
+.search-form button,
+.news-form button,
+.profile-form button,
+.admin-form button,
+button[type="submit"],
+input[type="submit"] {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  padding: var(--tw-space-4) var(--tw-space-6);
+  color: white;
+  font-weight: 600;
+  font-size: var(--tw-text-base);
+  cursor: pointer;
+  transition: all var(--tw-transition-normal);
+  box-shadow: var(--tw-shadow-md);
+  width: 100%;
+  margin-top: var(--tw-space-4);
+}
+
+.auth-form button:hover,
+.search-form button:hover,
+.news-form button:hover,
+.profile-form button:hover,
+.admin-form button:hover,
+button[type="submit"]:hover,
+input[type="submit"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--tw-shadow-lg);
+}
+
+/* Dark mode adjustments for global forms */
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="datetime-local"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .search-input {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(71, 85, 105, 0.3);
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .search-input:focus {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(71, 85, 105, 0.6);
+  box-shadow: 0 0 0 4px rgba(71, 85, 105, 0.2);
+}
+
+[data-theme="dark"] label,
+[data-theme="dark"] .form-label {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(71, 85, 105, 0.3);
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .auth-container,
+[data-theme="dark"] .auth-form,
+[data-theme="dark"] .search-container,
+[data-theme="dark"] .news-form,
+[data-theme="dark"] .profile-form,
+[data-theme="dark"] .admin-form {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(71, 85, 105, 0.3);
+}
+
+/* ========================================
    FORM ENHANCEMENTS
    ======================================== */
 

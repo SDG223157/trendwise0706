@@ -15,32 +15,109 @@
         margin-bottom: 20px;
     }
     .dashboard-controls {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 24px;
         margin: 0 20px 20px 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
     .dashboard-form {
         display: flex;
         flex-wrap: wrap;
-        gap: 15px;
+        gap: 20px;
         align-items: flex-end;
     }
     .form-group {
         flex: 1;
         min-width: 200px;
+        position: relative;
     }
     .form-group label {
         display: block;
         margin-bottom: 8px;
-        font-weight: 500;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        width: fit-content;
     }
     .form-control {
         width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
+        height: 48px;
+        padding: 12px 16px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: white;
+        font-weight: 500;
+        font-size: 16px;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+        border-color: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
+        outline: none;
+    }
+
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 400;
+    }
+
+    /* Select styling for dashboard */
+    select.form-control {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 16px;
+        padding-right: 40px;
+        cursor: pointer;
+    }
+
+    select.form-control option {
+        background: #1f2937;
+        color: white;
+        padding: 8px;
+    }
+
+    /* Dark theme specific adjustments for dashboard */
+    [data-theme="dark"] .dashboard-controls {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: rgba(71, 85, 105, 0.3);
+    }
+
+    [data-theme="dark"] .form-control {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: rgba(71, 85, 105, 0.3);
+        color: #f1f5f9;
+    }
+
+    [data-theme="dark"] .form-control:focus {
+        background: rgba(15, 23, 42, 0.8);
+        border-color: rgba(71, 85, 105, 0.6);
+        box-shadow: 0 0 0 4px rgba(71, 85, 105, 0.2);
+    }
+
+    [data-theme="dark"] .form-group label {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: rgba(71, 85, 105, 0.3);
+        color: #cbd5e1;
     }
     .btn-analyze {
         padding: 8px 16px;
