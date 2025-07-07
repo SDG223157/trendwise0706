@@ -106,29 +106,7 @@ header {
     transform: rotate(180deg);
 }
 
-/* Dropdown content styles moved to modern-theme.css to avoid conflicts */
-
-.dropdown-item {
-    color: #333;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-    transition: background-color 0.2s ease;
-}
-
-.dropdown-item:hover {
-    background-color: #f5f5f5;
-}
-
-/* Highlight admin-specific link */
-.admin-link {
-    color: #ff6b6b;
-}
-
-.dropdown-item[href*="tables"] {
-    color: #ff6b6b;
-    border-left: 3px solid #ff6b6b;
-}
+/* All dropdown styles moved to modern-theme.css to avoid conflicts */
 
 /* -------------------------------------- */
 /* 3. Headings */
