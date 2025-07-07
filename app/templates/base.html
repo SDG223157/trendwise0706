@@ -193,8 +193,21 @@
             }
         });
         
-        // Close dropdowns when clicking outside
+        // Close dropdowns when clicking outside or on dropdown items
         document.addEventListener('click', function(e) {
+            // Check if click is on a dropdown item (link)
+            const dropdownItem = e.target.closest('.dropdown-item');
+            if (dropdownItem) {
+                // Allow navigation to proceed, close dropdown after a short delay
+                setTimeout(() => {
+                    document.querySelectorAll('.user-dropdown').forEach(dropdown => {
+                        dropdown.classList.remove('open');
+                    });
+                }, 100);
+                return;
+            }
+            
+            // Check if click is outside any dropdown
             if (!e.target.closest('.user-dropdown')) {
                 document.querySelectorAll('.user-dropdown').forEach(dropdown => {
                     dropdown.classList.remove('open');
