@@ -237,19 +237,33 @@ header {
   }
 }
 
-/* Enhanced Title Styling */
+/* Enhanced Title Styling - Bigger and Bolder */
 h1 {
-  font-size: var(--tw-text-4xl);
-  font-weight: 800;
+  font-size: 3rem;
+  font-weight: 900;
   background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   text-align: center;
   margin: 0;
-  letter-spacing: -0.025em;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.15));
+  line-height: 1.1;
+}
+
+/* Responsive title sizing */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.875rem;
+  }
 }
 
 /* ========================================
@@ -864,16 +878,16 @@ input[type="submit"]:active {
 }
 
 .autocomplete-item .name {
-  color: #4b5563;
+  color: #374151;
   font-size: var(--tw-text-sm);
   margin-top: var(--tw-space-1);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .autocomplete-item .exchange {
-  color: #6b7280;
+  color: #1f2937;
   font-size: var(--tw-text-xs);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* ========================================
