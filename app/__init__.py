@@ -188,15 +188,15 @@ def create_app(config_class=Config):
         for rule in app.url_map.iter_rules():
             logger.debug(f"{rule.endpoint}: {rule.rule}")
 
-        # Error handlers
+        # Error handlers with proper navigation
         @app.errorhandler(404)
         def not_found_error(error):
-            return 'Page not found', 404
+            return render_template('errors/404.html'), 404
 
         @app.errorhandler(500)
         def internal_error(error):
             db.session.rollback()
-            return 'Internal server error', 500
+            return render_template('errors/500.html'), 500
 
         # Add Markdown filter to Jinja2 environment
         app.jinja_env.filters['markdown'] = markdown_to_html

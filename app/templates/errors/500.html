@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - TrendWise Finance{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-content">
+        <div class="error-icon">
+            <span style="font-size: 4rem;">⚠️</span>
+        </div>
+        
+        <h1 class="error-title">Server Error</h1>
+        
+        <p class="error-message">
+            We're experiencing some technical difficulties. Our team has been notified and is working to resolve the issue.
+        </p>
+        
+        <div class="error-actions">
+            <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                <span>🏠</span>
+                <span>Go to Home</span>
+            </a>
+            
+            <button onclick="location.reload()" class="btn btn-secondary">
+                <span>🔄</span>
+                <span>Try Again</span>
+            </button>
+        </div>
+        
+        <div class="error-suggestions">
+            <h3>What you can do:</h3>
+            <ul>
+                <li><a href="{{ url_for('main.index') }}">Return to the main analysis page</a></li>
+                <li>Try refreshing the page in a few moments</li>
+                <li><a href="{{ url_for('news.search') }}">Check market news instead</a></li>
+                <li>Contact support if the problem persists</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-container {
+    background: var(--tw-glass-bg);
+    backdrop-filter: var(--tw-glass-backdrop);
+    -webkit-backdrop-filter: var(--tw-glass-backdrop);
+    border: 1px solid var(--tw-glass-border);
+    border-radius: 24px;
+    padding: var(--tw-space-12);
+    margin: var(--tw-space-8) auto;
+    box-shadow: var(--tw-shadow-premium);
+    max-width: 600px;
+    width: 95%;
+    text-align: center;
+    animation: fadeIn 0.8s ease;
+}
+
+.error-content {
+    color: white;
+}
+
+.error-icon {
+    margin-bottom: var(--tw-space-6);
+    animation: pulse 2s infinite;
+}
+
+.error-title {
+    font-size: var(--tw-text-4xl);
+    font-weight: 800;
+    background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: var(--tw-space-4);
+}
+
+.error-message {
+    font-size: var(--tw-text-lg);
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+    margin-bottom: var(--tw-space-8);
+}
+
+.error-actions {
+    display: flex;
+    gap: var(--tw-space-4);
+    justify-content: center;
+    margin-bottom: var(--tw-space-8);
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    gap: var(--tw-space-2);
+    padding: var(--tw-space-3) var(--tw-space-6);
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all var(--tw-transition-normal);
+    border: none;
+    cursor: pointer;
+    font-size: var(--tw-text-base);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--tw-shadow-lg);
+}
+
+.error-suggestions {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: var(--tw-space-6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.error-suggestions h3 {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: var(--tw-space-4);
+    font-weight: 600;
+}
+
+.error-suggestions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.error-suggestions li {
+    margin-bottom: var(--tw-space-2);
+}
+
+.error-suggestions a {
+    color: #fbbf24;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all var(--tw-transition-fast);
+}
+
+.error-suggestions a:hover {
+    color: #f59e0b;
+    text-decoration: underline;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@media (max-width: 768px) {
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 100%;
+        max-width: 200px;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
