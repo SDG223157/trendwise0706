@@ -102,29 +102,11 @@ header {
     transition: transform 0.3s ease;
 }
 
-.dropdown-content {
-    /*
-       Final version consistently uses display: none by default
-       and displays on hover (see below).
-    */
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background-color: #fff;
-    min-width: 160px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    z-index: 1;
-    border-radius: 4px;
-}
-
-.user-dropdown:hover .dropdown-content {
-    display: block;
-}
-
-.user-dropdown:hover .dropdown-arrow {
+.user-dropdown.open .dropdown-arrow {
     transform: rotate(180deg);
 }
+
+/* Dropdown content styles moved to modern-theme.css to avoid conflicts */
 
 .dropdown-item {
     color: #333;
