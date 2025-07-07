@@ -357,7 +357,7 @@
         font-weight: 600 !important;
     }
 
-    /* Force exchange info to be visible - aggressive debugging styles */
+    /* Clean exchange info styling - visible but subtle */
     .suggestions .suggestion-item .exchange,
     .suggestions .suggestion-item .meta,
     .suggestion-item .exchange,
@@ -366,17 +366,16 @@
     .suggestions .meta,
     span.meta,
     .meta {
-        color: #ff0000 !important;
-        font-size: 12px !important;
-        font-weight: 700 !important;
-        opacity: 1 !important;
-        background: yellow !important;
-        display: block !important;
+        color: #1f2937 !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        opacity: 0.75 !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        padding: 1px 4px !important;
+        border-radius: 3px !important;
+        margin-left: 4px !important;
+        display: inline !important;
         visibility: visible !important;
-        height: auto !important;
-        width: auto !important;
-        text-indent: 0 !important;
-        overflow: visible !important;
     }
 
     /* Dark mode suggestion styling */
@@ -388,16 +387,19 @@
         color: rgba(255, 255, 255, 0.9) !important;
     }
 
-    /* Dark mode exchange info styling - simple text */
+    /* Dark mode exchange info styling - clean and visible */
     [data-theme="dark"] .suggestions .suggestion-item .exchange,
     [data-theme="dark"] .suggestions .suggestion-item .meta,
     [data-theme="dark"] .suggestion-item .exchange,
     [data-theme="dark"] .suggestion-item .meta,
     [data-theme="dark"] .suggestions .exchange,
-    [data-theme="dark"] .suggestions .meta {
-        color: rgba(255, 255, 255, 0.8) !important;
+    [data-theme="dark"] .suggestions .meta,
+    [data-theme="dark"] span.meta,
+    [data-theme="dark"] .meta {
+        color: rgba(255, 255, 255, 0.9) !important;
+        background: rgba(0, 0, 0, 0.3) !important;
         font-weight: 500 !important;
-        opacity: 0.9 !important;
+        opacity: 1 !important;
     }
 
     /* Dark theme specific adjustments */
