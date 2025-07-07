@@ -1082,35 +1082,51 @@ input[type="submit"]:active {
   /* Extra mobile header adjustments for very small screens */
   .header-container {
     padding: var(--tw-space-2);
+    flex-direction: column !important;
   }
   
+  /* Force vertical stacking of all header elements */
   .top-nav {
-    gap: var(--tw-space-1);
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: var(--tw-space-2) !important;
+    order: 2;
   }
   
-  .dropdown-button {
-    padding: 6px 8px;
-    font-size: 0.7rem;
-    font-weight: 500;
-  }
-  
-  /* Stack navigation vertically on very small screens */
-  .top-nav {
-    flex-direction: column;
-    align-items: center;
-    gap: var(--tw-space-2);
-  }
-  
-  /* Title even smaller */
+  /* Put title first and center it - much smaller on iPhone */
   h1 {
-    font-size: 1.25rem !important;
-    margin: var(--tw-space-1) 0;
+    font-size: 1rem !important;
+    margin: 4px 0 !important;
+    order: 1;
+    width: 100%;
+    text-align: center;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
   }
   
-  /* Theme toggle even smaller */
+  /* Make dropdown buttons smaller */
+  .dropdown-button {
+    padding: 4px 8px !important;
+    font-size: 0.65rem !important;
+    font-weight: 500 !important;
+    min-width: auto !important;
+    white-space: nowrap;
+  }
+  
+  /* Individual dropdown styling */
+  .user-dropdown {
+    margin: 2px !important;
+    width: auto !important;
+  }
+  
+  /* Theme toggle positioning */
   .theme-toggle {
-    width: 32px;
-    height: 32px;
+    width: 28px !important;
+    height: 28px !important;
+    position: absolute;
+    top: 8px;
+    right: 8px;
   }
   
   .form-container {
