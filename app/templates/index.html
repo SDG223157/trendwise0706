@@ -83,30 +83,37 @@
     
     /* Enhanced glassmorphism form inputs aligned with background */
     .form-group input,
-    .form-control {
-        height: 48px;
-        padding: 12px 16px;
-        border: 2px solid rgba(255, 255, 255, 0.5);
-        border-radius: 12px;
-        width: 100%;
-        font-size: 16px; /* Prevent auto-zoom on iOS */
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        color: #1f2937;
-        font-weight: 500;
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        box-sizing: border-box;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    .form-control,
+    input[type="text"],
+    input[type="date"],
+    input[type="number"] {
+        height: 48px !important;
+        padding: 12px 16px !important;
+        border: 2px solid rgba(255, 255, 255, 0.7) !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        font-size: 16px !important; /* Prevent auto-zoom on iOS */
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        color: #1f2937 !important;
+        font-weight: 500 !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+        box-sizing: border-box !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
     }
 
     .form-group input:focus,
-    .form-control:focus {
-        border-color: #3b82f6;
-        background: rgba(255, 255, 255, 0.95);
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
-        transform: translateY(-1px);
-        outline: none;
+    .form-control:focus,
+    input[type="text"]:focus,
+    input[type="date"]:focus,
+    input[type="number"]:focus {
+        border-color: #3b82f6 !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        color: #1f2937 !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-1px) !important;
+        outline: none !important;
     }
 
     .form-group input::placeholder,
@@ -142,36 +149,39 @@
 
     /* Select styling to match inputs */
     .form-group select,
-    select.form-control {
-        height: 48px;
-        padding: 12px 16px;
-        border: 2px solid rgba(255, 255, 255, 0.5);
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        color: #1f2937;
-        font-weight: 500;
-        font-size: 16px;
-        appearance: none;
-        -webkit-appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f2937' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 12px center;
-        background-size: 16px;
-        padding-right: 40px;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    select.form-control,
+    select {
+        height: 48px !important;
+        padding: 12px 16px !important;
+        border: 2px solid rgba(255, 255, 255, 0.7) !important;
+        border-radius: 12px !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        color: #1f2937 !important;
+        font-weight: 500 !important;
+        font-size: 16px !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f2937' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 12px center !important;
+        background-size: 16px !important;
+        padding-right: 40px !important;
+        cursor: pointer !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
     }
 
     .form-group select:focus,
-    select.form-control:focus {
-        border-color: #3b82f6;
-        background: rgba(255, 255, 255, 0.95);
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
-        transform: translateY(-1px);
-        outline: none;
+    select.form-control:focus,
+    select:focus {
+        border-color: #3b82f6 !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        color: #1f2937 !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-1px) !important;
+        outline: none !important;
     }
 
     /* Option styling for better visibility */
@@ -182,41 +192,54 @@
         padding: 8px;
     }
 
-    /* Dark mode specific overrides for form inputs */
+    /* Dark mode specific overrides for form inputs - Higher specificity */
     [data-theme="dark"] .form-group input,
-    [data-theme="dark"] .form-control {
-        background: rgba(30, 41, 59, 0.9);
-        border-color: rgba(148, 163, 184, 0.7);
-        color: #f1f5f9;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    [data-theme="dark"] .form-control,
+    [data-theme="dark"] input[type="text"],
+    [data-theme="dark"] input[type="date"],
+    [data-theme="dark"] input[type="number"] {
+        background: rgba(30, 41, 59, 0.95) !important;
+        border-color: rgba(148, 163, 184, 0.8) !important;
+        color: #f1f5f9 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
     }
 
     [data-theme="dark"] .form-group input:focus,
-    [data-theme="dark"] .form-control:focus {
-        background: rgba(30, 41, 59, 0.95);
-        border-color: rgba(148, 163, 184, 1);
-        box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.2), 0 2px 12px rgba(0, 0, 0, 0.4);
+    [data-theme="dark"] .form-control:focus,
+    [data-theme="dark"] input[type="text"]:focus,
+    [data-theme="dark"] input[type="date"]:focus,
+    [data-theme="dark"] input[type="number"]:focus {
+        background: rgba(30, 41, 59, 0.98) !important;
+        border-color: rgba(148, 163, 184, 1) !important;
+        color: #f1f5f9 !important;
+        box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.3), 0 2px 12px rgba(0, 0, 0, 0.5) !important;
     }
 
     [data-theme="dark"] .form-group input::placeholder,
-    [data-theme="dark"] .form-control::placeholder {
-        color: rgba(241, 245, 249, 0.6);
+    [data-theme="dark"] .form-control::placeholder,
+    [data-theme="dark"] input[type="text"]::placeholder,
+    [data-theme="dark"] input[type="date"]::placeholder,
+    [data-theme="dark"] input[type="number"]::placeholder {
+        color: rgba(241, 245, 249, 0.7) !important;
     }
 
     [data-theme="dark"] .form-group select,
-    [data-theme="dark"] select.form-control {
-        background: rgba(30, 41, 59, 0.9);
-        border-color: rgba(148, 163, 184, 0.7);
-        color: #f1f5f9;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f5f9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    [data-theme="dark"] select.form-control,
+    [data-theme="dark"] select {
+        background: rgba(30, 41, 59, 0.95) !important;
+        border-color: rgba(148, 163, 184, 0.8) !important;
+        color: #f1f5f9 !important;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f5f9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
     }
 
     [data-theme="dark"] .form-group select:focus,
-    [data-theme="dark"] select.form-control:focus {
-        background: rgba(30, 41, 59, 0.95);
-        border-color: rgba(148, 163, 184, 1);
-        box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.2), 0 2px 12px rgba(0, 0, 0, 0.4);
+    [data-theme="dark"] select.form-control:focus,
+    [data-theme="dark"] select:focus {
+        background: rgba(30, 41, 59, 0.98) !important;
+        border-color: rgba(148, 163, 184, 1) !important;
+        color: #f1f5f9 !important;
+        box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.3), 0 2px 12px rgba(0, 0, 0, 0.5) !important;
     }
 
     [data-theme="dark"] .suggestions {
