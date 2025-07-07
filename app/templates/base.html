@@ -170,51 +170,47 @@
             }, 150);
         });
         
-        // 🔽 Unified Dropdown Menu Click Handler
-        document.addEventListener('click', function(e) {
-            // Check if click is on a dropdown button
-            const dropdownButton = e.target.closest('.dropdown-button');
-            if (dropdownButton) {
+        // 🔽 Simple Dropdown Menu Handlers
+        // Handle dropdown button clicks
+        document.querySelectorAll('.dropdown-button').forEach(button => {
+            button.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                const dropdown = dropdownButton.closest('.user-dropdown');
+                const dropdown = this.closest('.user-dropdown');
+                const isOpen = dropdown.classList.contains('open');
                 
-                // Close all other dropdowns
-                document.querySelectorAll('.user-dropdown').forEach(otherDropdown => {
-                    if (otherDropdown !== dropdown) {
-                        otherDropdown.classList.remove('open');
-                    }
+                // Close all dropdowns first
+                document.querySelectorAll('.user-dropdown').forEach(d => {
+                    d.classList.remove('open');
                 });
                 
                 // Toggle current dropdown
-                dropdown.classList.toggle('open');
-                return;
-            }
-            
-            // Check if click is on a dropdown item (link)
-            const dropdownItem = e.target.closest('.dropdown-item');
-            if (dropdownItem) {
-                // Allow the link to navigate normally - don't prevent default
-                // Close the dropdown immediately since navigation will happen
-                const dropdown = dropdownItem.closest('.user-dropdown');
+                if (!isOpen) {
+                    dropdown.classList.add('open');
+                }
+            });
+        });
+        
+        // Handle dropdown item clicks - let them navigate normally
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                // Don't prevent default - allow normal navigation
+                // Just close the dropdown
+                const dropdown = this.closest('.user-dropdown');
                 if (dropdown) {
                     dropdown.classList.remove('open');
                 }
-                return;
-            }
-            
-            // Check if click is anywhere else inside dropdown content
-            const dropdownContent = e.target.closest('.dropdown-content');
-            if (dropdownContent) {
-                // Don't close if clicking inside dropdown content but not on an item
-                return;
-            }
-            
-            // Click is outside any dropdown - close all
-            document.querySelectorAll('.user-dropdown').forEach(dropdown => {
-                dropdown.classList.remove('open');
             });
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.user-dropdown')) {
+                document.querySelectorAll('.user-dropdown').forEach(dropdown => {
+                    dropdown.classList.remove('open');
+                });
+            }
         });
         
         // Handle keyboard navigation for accessibility
