@@ -193,21 +193,38 @@
             }
         });
         
-        // Close dropdowns when clicking outside or on dropdown items
+        // Use event delegation to handle all clicks
         document.addEventListener('click', function(e) {
             // Check if click is on a dropdown item (link)
             const dropdownItem = e.target.closest('.dropdown-item');
             if (dropdownItem) {
-                // Allow navigation to proceed, close dropdown after a short delay
-                setTimeout(() => {
-                    document.querySelectorAll('.user-dropdown').forEach(dropdown => {
+                // Don't prevent default - let the link navigate normally
+                // Close the dropdown after a very short delay to ensure navigation starts
+                const dropdown = dropdownItem.closest('.user-dropdown');
+                if (dropdown) {
+                    // Use requestAnimationFrame to ensure the click event completes first
+                    requestAnimationFrame(() => {
                         dropdown.classList.remove('open');
                     });
-                }, 100);
+                }
                 return;
             }
             
-            // Check if click is outside any dropdown
+            // Check if click is on dropdown button
+            const dropdownButton = e.target.closest('.dropdown-button');
+            if (dropdownButton) {
+                // This is handled by the button click handler above
+                return;
+            }
+            
+            // Check if click is anywhere else inside dropdown content
+            const dropdownContent = e.target.closest('.dropdown-content');
+            if (dropdownContent) {
+                // Don't close if clicking inside dropdown content but not on an item
+                return;
+            }
+            
+            // Click is outside any dropdown - close all
             if (!e.target.closest('.user-dropdown')) {
                 document.querySelectorAll('.user-dropdown').forEach(dropdown => {
                     dropdown.classList.remove('open');
