@@ -1,0 +1,351 @@
+/**
+ * 🎨 TRENDWISE DESIGN SYSTEM
+ * Modern, elegant design system for professional financial platform
+ * Implements glassmorphism, advanced typography, and sophisticated color palette
+ */
+
+/* ========================================
+   CSS CUSTOM PROPERTIES - DESIGN TOKENS
+   ======================================== */
+
+:root {
+  /* 🎨 PRIMARY COLOR PALETTE - Financial Blue Theme */
+  --tw-primary-50: #eff6ff;
+  --tw-primary-100: #dbeafe; 
+  --tw-primary-200: #bfdbfe;
+  --tw-primary-300: #93c5fd;
+  --tw-primary-400: #60a5fa;
+  --tw-primary-500: #3b82f6;
+  --tw-primary-600: #2563eb;
+  --tw-primary-700: #1d4ed8;
+  --tw-primary-800: #1e40af;
+  --tw-primary-900: #1e3a8a;
+  --tw-primary-950: #172554;
+
+  /* 🎯 ACCENT COLORS - Premium Financial */
+  --tw-accent-gold: #f59e0b;
+  --tw-accent-gold-light: #fbbf24;
+  --tw-accent-green: #10b981;
+  --tw-accent-green-light: #34d399;
+  --tw-accent-red: #ef4444;
+  --tw-accent-red-light: #f87171;
+  
+  /* 🌊 GRADIENT DEFINITIONS */
+  --tw-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --tw-gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --tw-gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --tw-gradient-premium: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  --tw-gradient-dark: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  
+  /* 🎭 GLASSMORPHISM PROPERTIES */
+  --tw-glass-bg: rgba(255, 255, 255, 0.1);
+  --tw-glass-bg-strong: rgba(255, 255, 255, 0.15);
+  --tw-glass-border: rgba(255, 255, 255, 0.2);
+  --tw-glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  --tw-glass-backdrop: blur(8px);
+  
+  /* 📏 SPACING SYSTEM - 8px base grid */
+  --tw-space-1: 0.25rem;  /* 4px */
+  --tw-space-2: 0.5rem;   /* 8px */
+  --tw-space-3: 0.75rem;  /* 12px */
+  --tw-space-4: 1rem;     /* 16px */
+  --tw-space-5: 1.25rem;  /* 20px */
+  --tw-space-6: 1.5rem;   /* 24px */
+  --tw-space-8: 2rem;     /* 32px */
+  --tw-space-10: 2.5rem;  /* 40px */
+  --tw-space-12: 3rem;    /* 48px */
+  --tw-space-16: 4rem;    /* 64px */
+  --tw-space-20: 5rem;    /* 80px */
+  
+  /* 📝 TYPOGRAPHY SCALE */
+  --tw-text-xs: 0.75rem;      /* 12px */
+  --tw-text-sm: 0.875rem;     /* 14px */
+  --tw-text-base: 1rem;       /* 16px */
+  --tw-text-lg: 1.125rem;     /* 18px */
+  --tw-text-xl: 1.25rem;      /* 20px */
+  --tw-text-2xl: 1.5rem;      /* 24px */
+  --tw-text-3xl: 1.875rem;    /* 30px */
+  --tw-text-4xl: 2.25rem;     /* 36px */
+  --tw-text-5xl: 3rem;        /* 48px */
+  --tw-text-6xl: 3.75rem;     /* 60px */
+  
+  /* 🏗️ LAYOUT DIMENSIONS */
+  --tw-container-sm: 640px;
+  --tw-container-md: 768px;
+  --tw-container-lg: 1024px;
+  --tw-container-xl: 1280px;
+  --tw-container-2xl: 1536px;
+  
+  /* 🎨 NEUTRAL COLORS */
+  --tw-gray-50: #f9fafb;
+  --tw-gray-100: #f3f4f6;
+  --tw-gray-200: #e5e7eb;
+  --tw-gray-300: #d1d5db;
+  --tw-gray-400: #9ca3af;
+  --tw-gray-500: #6b7280;
+  --tw-gray-600: #4b5563;
+  --tw-gray-700: #374151;
+  --tw-gray-800: #1f2937;
+  --tw-gray-900: #111827;
+  --tw-gray-950: #030712;
+  
+  /* ⚡ ANIMATION PROPERTIES */
+  --tw-transition-fast: 150ms ease;
+  --tw-transition-normal: 300ms ease;
+  --tw-transition-slow: 500ms ease;
+  --tw-cubic-bezier: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 🌟 SHADOWS */
+  --tw-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --tw-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --tw-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --tw-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --tw-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --tw-shadow-premium: 0 20px 40px rgba(0, 0, 0, 0.1), 0 10px 20px rgba(0, 0, 0, 0.08);
+  
+  /* 🎨 BRAND COLORS */
+  --tw-brand-primary: var(--tw-primary-600);
+  --tw-brand-secondary: var(--tw-primary-500);
+  --tw-brand-accent: var(--tw-accent-gold);
+  
+  /* 📊 FINANCIAL SPECIFIC COLORS */
+  --tw-profit-green: #10b981;
+  --tw-loss-red: #ef4444;
+  --tw-neutral-gray: #6b7280;
+  --tw-warning-amber: #f59e0b;
+  --tw-info-blue: #3b82f6;
+}
+
+/* ========================================
+   DARK MODE VARIABLES
+   ======================================== */
+
+[data-theme="dark"] {
+  --tw-glass-bg: rgba(17, 24, 39, 0.6);
+  --tw-glass-bg-strong: rgba(17, 24, 39, 0.8);
+  --tw-glass-border: rgba(75, 85, 99, 0.3);
+  --tw-glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  
+  /* Dark mode text colors */
+  --tw-text-primary: var(--tw-gray-100);
+  --tw-text-secondary: var(--tw-gray-300);
+  --tw-text-muted: var(--tw-gray-500);
+  
+  /* Dark mode background */
+  --tw-bg-primary: var(--tw-gray-900);
+  --tw-bg-secondary: var(--tw-gray-800);
+  --tw-bg-tertiary: var(--tw-gray-700);
+}
+
+/* Light mode (default) */
+:root {
+  --tw-text-primary: var(--tw-gray-900);
+  --tw-text-secondary: var(--tw-gray-700);
+  --tw-text-muted: var(--tw-gray-500);
+  
+  --tw-bg-primary: #ffffff;
+  --tw-bg-secondary: var(--tw-gray-50);
+  --tw-bg-tertiary: var(--tw-gray-100);
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+/* 🎨 GLASSMORPHISM UTILITIES */
+.glass {
+  background: var(--tw-glass-bg);
+  backdrop-filter: var(--tw-glass-backdrop);
+  -webkit-backdrop-filter: var(--tw-glass-backdrop);
+  border: 1px solid var(--tw-glass-border);
+  box-shadow: var(--tw-glass-shadow);
+}
+
+.glass-strong {
+  background: var(--tw-glass-bg-strong);
+  backdrop-filter: var(--tw-glass-backdrop);
+  -webkit-backdrop-filter: var(--tw-glass-backdrop);
+  border: 1px solid var(--tw-glass-border);
+  box-shadow: var(--tw-glass-shadow);
+}
+
+/* 🌟 GRADIENT UTILITIES */
+.gradient-primary { background: var(--tw-gradient-primary); }
+.gradient-secondary { background: var(--tw-gradient-secondary); }
+.gradient-success { background: var(--tw-gradient-success); }
+.gradient-premium { background: var(--tw-gradient-premium); }
+.gradient-dark { background: var(--tw-gradient-dark); }
+
+/* 📝 TYPOGRAPHY UTILITIES */
+.text-gradient-primary {
+  background: var(--tw-gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+}
+
+.text-gradient-premium {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+}
+
+/* ⚡ ANIMATION UTILITIES */
+.animate-fade-in {
+  animation: fadeIn 0.6s var(--tw-cubic-bezier);
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s var(--tw-cubic-bezier);
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s var(--tw-cubic-bezier);
+}
+
+.hover-lift {
+  transition: transform var(--tw-transition-normal), box-shadow var(--tw-transition-normal);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--tw-shadow-lg);
+}
+
+/* 🎯 FINANCIAL UI UTILITIES */
+.profit-positive {
+  color: var(--tw-profit-green);
+  font-weight: 600;
+}
+
+.profit-negative {
+  color: var(--tw-loss-red);
+  font-weight: 600;
+}
+
+.metric-neutral {
+  color: var(--tw-neutral-gray);
+}
+
+/* ========================================
+   KEYFRAME ANIMATIONS
+   ======================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+/* ========================================
+   RESPONSIVE BREAKPOINTS
+   ======================================== */
+
+/* Mobile first approach */
+@media (min-width: 640px) {
+  .container { max-width: var(--tw-container-sm); }
+}
+
+@media (min-width: 768px) {
+  .container { max-width: var(--tw-container-md); }
+}
+
+@media (min-width: 1024px) {
+  .container { max-width: var(--tw-container-lg); }
+}
+
+@media (min-width: 1280px) {
+  .container { max-width: var(--tw-container-xl); }
+}
+
+@media (min-width: 1536px) {
+  .container { max-width: var(--tw-container-2xl); }
+}
+
+/* ========================================
+   ACCESSIBILITY UTILITIES
+   ======================================== */
+
+/* Respect user's reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glass {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid var(--tw-primary-600);
+  }
+  
+  [data-theme="dark"] .glass {
+    background: rgba(17, 24, 39, 0.95);
+    border: 2px solid var(--tw-primary-400);
+  }
+}
+
+/* Focus states for keyboard navigation */
+.focus-ring:focus {
+  outline: 2px solid var(--tw-primary-500);
+  outline-offset: 2px;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

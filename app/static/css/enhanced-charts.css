@@ -1,0 +1,582 @@
+/**
+ * 📊 ENHANCED CHART STYLING
+ * Sophisticated chart presentation with professional visual hierarchy
+ * Designed for TrendWise financial platform
+ */
+
+/* ========================================
+   CHART CONTAINER ENHANCEMENTS
+   ======================================== */
+
+.chart-container,
+#basic-chart,
+#enhanced-chart,
+#full-analysis {
+  background: var(--tw-glass-bg);
+  backdrop-filter: var(--tw-glass-backdrop);
+  -webkit-backdrop-filter: var(--tw-glass-backdrop);
+  border: 1px solid var(--tw-glass-border);
+  border-radius: 24px;
+  padding: var(--tw-space-8);
+  margin: var(--tw-space-8) auto var(--tw-space-6);
+  box-shadow: var(--tw-shadow-premium);
+  max-width: 1400px;
+  width: 95%;
+  position: relative;
+  overflow: hidden;
+  animation: fadeIn 0.8s var(--tw-cubic-bezier);
+}
+
+.chart-container::before,
+#basic-chart::before,
+#enhanced-chart::before,
+#full-analysis::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #ffecd2);
+  border-radius: 24px 24px 0 0;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Chart Header Styling */
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tw-space-6);
+  padding-bottom: var(--tw-space-4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chart-title {
+  font-size: var(--tw-text-2xl);
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0;
+}
+
+.chart-subtitle {
+  font-size: var(--tw-text-sm);
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: var(--tw-space-1);
+  font-weight: 500;
+}
+
+.chart-controls {
+  display: flex;
+  gap: var(--tw-space-3);
+  align-items: center;
+}
+
+/* Chart Action Buttons */
+.chart-action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: var(--tw-space-2) var(--tw-space-3);
+  color: white;
+  font-size: var(--tw-text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--tw-transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--tw-space-2);
+}
+
+.chart-action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: var(--tw-shadow-md);
+}
+
+.chart-action-btn:active {
+  transform: translateY(0);
+}
+
+/* Status Indicators */
+.chart-status {
+  display: flex;
+  align-items: center;
+  gap: var(--tw-space-2);
+  font-size: var(--tw-text-sm);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.loading {
+  background: var(--tw-warning-amber);
+}
+
+.status-indicator.success {
+  background: var(--tw-profit-green);
+}
+
+.status-indicator.error {
+  background: var(--tw-loss-red);
+}
+
+/* ========================================
+   PLOTLY CHART ENHANCEMENTS
+   ======================================== */
+
+/* Plotly Container Styling */
+.plotly-graph-div {
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Custom Plotly Toolbar */
+.modebar {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px);
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 4px !important;
+}
+
+.modebar-btn {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 8px !important;
+  margin: 2px !important;
+  transition: all 0.2s ease !important;
+}
+
+.modebar-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.05) !important;
+}
+
+.modebar-btn svg {
+  filter: brightness(0) invert(1) !important;
+}
+
+/* ========================================
+   PROGRESSIVE ANALYSIS ENHANCEMENTS
+   ======================================== */
+
+.progressive-analysis-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tw-space-6);
+}
+
+/* Loading States */
+.loading-states {
+  background: var(--tw-glass-bg);
+  backdrop-filter: var(--tw-glass-backdrop);
+  -webkit-backdrop-filter: var(--tw-glass-backdrop);
+  border: 1px solid var(--tw-glass-border);
+  border-radius: 20px;
+  padding: var(--tw-space-6);
+  margin: var(--tw-space-4) auto;
+  max-width: 800px;
+  width: 95%;
+  text-align: center;
+}
+
+.loading-phase {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tw-space-4);
+  padding: var(--tw-space-4);
+  margin: var(--tw-space-2) 0;
+  border-radius: 16px;
+  transition: all var(--tw-transition-normal);
+  opacity: 0.5;
+}
+
+.loading-phase.active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transform: scale(1.02);
+}
+
+.loading-icon {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-phase.active .loading-icon {
+  border-top-color: var(--tw-accent-gold);
+}
+
+.loading-text {
+  color: white;
+  font-weight: 600;
+  font-size: var(--tw-text-base);
+}
+
+.loading-phase.active .loading-text {
+  color: var(--tw-accent-gold-light);
+}
+
+/* Progress Bar */
+.progress-container {
+  margin: var(--tw-space-6) 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  height: 8px;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 10px;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform var(--tw-transition-slow);
+  position: relative;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* ========================================
+   FINANCIAL METRICS STYLING
+   ======================================== */
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--tw-space-4);
+  margin: var(--tw-space-6) 0;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: var(--tw-space-5);
+  text-align: center;
+  transition: all var(--tw-transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transform: scaleX(0);
+  transition: transform var(--tw-transition-normal);
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--tw-shadow-xl);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.metric-card:hover::before {
+  transform: scaleX(1);
+}
+
+.metric-label {
+  font-size: var(--tw-text-sm);
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  margin-bottom: var(--tw-space-2);
+}
+
+.metric-value {
+  font-size: var(--tw-text-xl);
+  font-weight: 700;
+  color: white;
+  margin-bottom: var(--tw-space-1);
+}
+
+.metric-change {
+  font-size: var(--tw-text-sm);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tw-space-1);
+}
+
+.metric-change.positive {
+  color: var(--tw-profit-green);
+}
+
+.metric-change.negative {
+  color: var(--tw-loss-red);
+}
+
+.metric-change.neutral {
+  color: var(--tw-neutral-gray);
+}
+
+/* ========================================
+   ANALYSIS SUMMARY STYLING
+   ======================================== */
+
+.analysis-summary {
+  background: var(--tw-glass-bg);
+  backdrop-filter: var(--tw-glass-backdrop);
+  -webkit-backdrop-filter: var(--tw-glass-backdrop);
+  border: 1px solid var(--tw-glass-border);
+  border-radius: 20px;
+  padding: var(--tw-space-6);
+  margin: var(--tw-space-4) auto;
+  max-width: 1000px;
+  width: 95%;
+  position: relative;
+}
+
+.summary-header {
+  display: flex;
+  align-items: center;
+  gap: var(--tw-space-3);
+  margin-bottom: var(--tw-space-5);
+}
+
+.summary-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--tw-text-lg);
+}
+
+.summary-title {
+  font-size: var(--tw-text-xl);
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.summary-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--tw-space-4);
+}
+
+.summary-item {
+  padding: var(--tw-space-4);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-item strong {
+  color: var(--tw-accent-gold-light);
+  font-weight: 600;
+}
+
+.cache-badge {
+  background: var(--tw-profit-green);
+  color: white;
+  padding: var(--tw-space-1) var(--tw-space-2);
+  border-radius: 6px;
+  font-size: var(--tw-text-xs);
+  font-weight: 600;
+}
+
+/* ========================================
+   PERFORMANCE MONITOR
+   ======================================== */
+
+.performance-monitor {
+  position: fixed;
+  top: var(--tw-space-4);
+  right: var(--tw-space-4);
+  background: var(--tw-glass-bg-strong);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--tw-glass-border);
+  border-radius: 12px;
+  padding: var(--tw-space-3);
+  font-size: var(--tw-text-sm);
+  color: white;
+  z-index: 1000;
+  opacity: 0.8;
+  transition: opacity var(--tw-transition-normal);
+  min-width: 150px;
+}
+
+.performance-monitor:hover {
+  opacity: 1;
+}
+
+.performance-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--tw-space-2);
+  font-weight: 500;
+}
+
+/* ========================================
+   RESPONSIVE CHART STYLING
+   ======================================== */
+
+@media (max-width: 768px) {
+  .chart-container,
+  #basic-chart,
+  #enhanced-chart,
+  #full-analysis {
+    padding: var(--tw-space-4);
+    margin: var(--tw-space-4) auto;
+    border-radius: 16px;
+    width: 98%;
+  }
+  
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--tw-space-3);
+  }
+  
+  .chart-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: var(--tw-space-3);
+  }
+  
+  .summary-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .performance-monitor {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin: var(--tw-space-4) auto;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-title {
+    font-size: var(--tw-text-xl);
+  }
+  
+  .metric-card {
+    padding: var(--tw-space-3);
+  }
+  
+  .loading-states {
+    padding: var(--tw-space-4);
+  }
+  
+  .analysis-summary {
+    padding: var(--tw-space-4);
+  }
+}
+
+/* ========================================
+   CHART-SPECIFIC ANIMATIONS
+   ======================================== */
+
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Apply chart animation to chart containers */
+.chart-container,
+#basic-chart,
+#enhanced-chart,
+#full-analysis {
+  animation: chartFadeIn 0.8s var(--tw-cubic-bezier);
+}
+
+/* Dark mode chart adjustments */
+[data-theme="dark"] .chart-container,
+[data-theme="dark"] #basic-chart,
+[data-theme="dark"] #enhanced-chart,
+[data-theme="dark"] #full-analysis {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(71, 85, 105, 0.3);
+}
+
+[data-theme="dark"] .chart-title {
+  background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-theme="dark"] .metric-card {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(71, 85, 105, 0.3);
+}
