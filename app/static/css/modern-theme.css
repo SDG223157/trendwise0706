@@ -153,10 +153,17 @@ header {
   overflow: hidden;
 }
 
-.user-dropdown:hover .dropdown-content {
+.user-dropdown.open .dropdown-content {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+}
+
+/* Keep hover for visual feedback on button only */
+.user-dropdown:hover .dropdown-button {
+  background: var(--tw-glass-bg-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--tw-shadow-lg);
 }
 
 .dropdown-item {
