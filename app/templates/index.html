@@ -357,13 +357,17 @@
         font-weight: 600 !important;
     }
 
+    /* Exchange info styling in light mode - simple text */
+    .suggestions .suggestion-item .exchange,
+    .suggestions .suggestion-item .meta,
     .suggestion-item .exchange,
     .suggestion-item .meta,
     .suggestions .exchange,
     .suggestions .meta {
-        color: #1f2937 !important;
-        font-size: 0.8rem !important;
-        font-weight: 600 !important;
+        color: #374151 !important;
+        font-size: 0.75rem !important;
+        font-weight: 500 !important;
+        opacity: 0.8 !important;
     }
 
     /* Dark mode suggestion styling */
@@ -375,11 +379,16 @@
         color: rgba(255, 255, 255, 0.9) !important;
     }
 
+    /* Dark mode exchange info styling - simple text */
+    [data-theme="dark"] .suggestions .suggestion-item .exchange,
+    [data-theme="dark"] .suggestions .suggestion-item .meta,
     [data-theme="dark"] .suggestion-item .exchange,
     [data-theme="dark"] .suggestion-item .meta,
     [data-theme="dark"] .suggestions .exchange,
     [data-theme="dark"] .suggestions .meta {
-        color: rgba(255, 255, 255, 0.95) !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        font-weight: 500 !important;
+        opacity: 0.9 !important;
     }
 
     /* Dark theme specific adjustments */
