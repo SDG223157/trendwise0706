@@ -266,7 +266,7 @@
                                             currentSection = 'points';
                                         } else if (trimmed.toLowerCase().includes('context')) {
                                             currentSection = 'context';
-                                        } else if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+                                        } else if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
                                             const content = trimmed.substring(1).trim();
                                             if (currentSection === 'concepts') {
                                                 keyConceptsKeywords.push(content);
@@ -282,19 +282,19 @@
                                         ${keyConceptsKeywords.length > 0 ? `
                                             <div class="mb-3">
                                                 <h4 class="font-semibold text-gray-900 mb-2">Key Concepts/Keywords</h4>
-                                                ${keyConceptsKeywords.map(item => `<div class="text-gray-700">- ${item}</div>`).join('')}
+                                                ${keyConceptsKeywords.map(item => `<div class="text-gray-700">• ${item}</div>`).join('')}
                                             </div>
                                         ` : ''}
                                         ${keyPoints.length > 0 ? `
                                             <div class="mb-3">
                                                 <h4 class="font-semibold text-gray-900 mb-2">Key Points</h4>
-                                                ${keyPoints.map(item => `<div class="text-gray-700">- ${item}</div>`).join('')}
+                                                ${keyPoints.map(item => `<div class="text-gray-700">• ${item}</div>`).join('')}
                                             </div>
                                         ` : ''}
                                         ${context.length > 0 ? `
                                             <div class="mb-3">
                                                 <h4 class="font-semibold text-gray-900 mb-2">Context</h4>
-                                                ${context.map(item => `<div class="text-gray-700">- ${item}</div>`).join('')}
+                                                ${context.map(item => `<div class="text-gray-700">• ${item}</div>`).join('')}
                                             </div>
                                         ` : ''}
                                     `;
@@ -337,7 +337,7 @@
                                             currentSection = 'implications';
                                         } else if (trimmed.toLowerCase().includes('conclusion')) {
                                             currentSection = 'conclusion';
-                                        } else if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+                                        } else if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
                                             const content = trimmed.substring(1).trim();
                                             if (currentSection === 'insights') {
                                                 keyInsights.push(content);
@@ -353,19 +353,19 @@
                                         ${keyInsights.length > 0 ? `
                                             <div class="mb-3">
                                                 <h4 class="font-semibold text-gray-900 mb-2">Key Insights</h4>
-                                                ${keyInsights.map(item => `<div class="text-gray-700">- ${item}</div>`).join('')}
+                                                ${keyInsights.map(item => `<div class="text-gray-700">• ${item}</div>`).join('')}
                                             </div>
                                         ` : ''}
                                         ${marketImplications.length > 0 ? `
                                             <div class="mb-3">
                                                 <h4 class="font-semibold text-gray-900 mb-2">Market Implications</h4>
-                                                ${marketImplications.map(item => `<div class="text-gray-700">- ${item}</div>`).join('')}
+                                                ${marketImplications.map(item => `<div class="text-gray-700">• ${item}</div>`).join('')}
                                             </div>
                                         ` : ''}
                                         ${conclusion.length > 0 ? `
                                             <div class="mb-3">
                                                 <h4 class="font-semibold text-gray-900 mb-2">Conclusion</h4>
-                                                ${conclusion.map(item => `<div class="text-gray-700">- ${item}</div>`).join('')}
+                                                ${conclusion.map(item => `<div class="text-gray-700">• ${item}</div>`).join('')}
                                             </div>
                                         ` : ''}
                                     `;
