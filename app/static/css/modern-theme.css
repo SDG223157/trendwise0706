@@ -1094,29 +1094,43 @@ input[type="submit"]:active {
     order: 2;
   }
   
-  /* Put title first and center it - much smaller on iPhone */
+  /* Put title first and center it - move up for spacing */
   h1 {
     font-size: 1rem !important;
-    margin: 4px 0 !important;
+    margin: -4px 0 8px 0 !important;
     order: 1;
     width: 100%;
     text-align: center;
     font-weight: 700 !important;
     letter-spacing: -0.01em;
+    position: relative;
+    top: -6px;
+  }
+  
+  /* Force dropdown menus down with spacing */
+  .top-nav {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: var(--tw-space-1) !important;
+    order: 2;
+    margin-top: 12px !important;
+    padding-top: 8px !important;
   }
   
   /* Make dropdown buttons smaller */
   .dropdown-button {
-    padding: 4px 8px !important;
-    font-size: 0.65rem !important;
+    padding: 3px 6px !important;
+    font-size: 0.6rem !important;
     font-weight: 500 !important;
     min-width: auto !important;
     white-space: nowrap;
+    margin: 1px 0 !important;
   }
   
-  /* Individual dropdown styling */
+  /* Individual dropdown styling with more spacing */
   .user-dropdown {
-    margin: 2px !important;
+    margin: 3px 2px !important;
     width: auto !important;
   }
   
