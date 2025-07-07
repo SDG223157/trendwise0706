@@ -250,7 +250,7 @@ h1 {
   width: 95%;
 }
 
-/* Global input styling for all forms */
+/* Global input styling for all forms - Light Mode Optimized */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -263,20 +263,27 @@ textarea,
 .form-input,
 .search-input {
   width: 100%;
-  height: 48px;
-  padding: 12px 16px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  height: 52px;
+  padding: 14px 18px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: white;
   font-weight: 500;
   font-size: 16px;
-  transition: all var(--tw-transition-normal);
+  line-height: 1.5;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 
+              0 2px 8px rgba(0, 0, 0, 0.04),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
+/* Enhanced focus states with premium styling */
 input[type="text"]:focus,
 input[type="email"]:focus,
 input[type="password"]:focus,
@@ -288,36 +295,85 @@ select:focus,
 textarea:focus,
 .form-input:focus,
 .search-input:focus {
-  border-color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.15),
+              0 8px 32px rgba(0, 0, 0, 0.12),
+              0 4px 16px rgba(0, 0, 0, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px) scale(1.01);
   outline: none;
 }
 
+/* Enhanced hover states */
+input[type="text"]:hover:not(:focus),
+input[type="email"]:hover:not(:focus),
+input[type="password"]:hover:not(:focus),
+input[type="number"]:hover:not(:focus),
+input[type="date"]:hover:not(:focus),
+input[type="datetime-local"]:hover:not(:focus),
+input[type="search"]:hover:not(:focus),
+select:hover:not(:focus),
+textarea:hover:not(:focus),
+.form-input:hover:not(:focus),
+.search-input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.17);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1),
+              0 3px 12px rgba(0, 0, 0, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Beautiful placeholder styling */
 input::placeholder,
 textarea::placeholder,
 .form-input::placeholder,
 .search-input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
   font-weight: 400;
+  font-style: italic;
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
-/* Global label styling */
+input:focus::placeholder,
+textarea:focus::placeholder,
+.form-input:focus::placeholder,
+.search-input:focus::placeholder {
+  opacity: 0.6;
+  transform: translateX(4px);
+}
+
+/* Enhanced label styling with premium glassmorphism */
 label,
 .form-label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-weight: 600;
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   width: fit-content;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  letter-spacing: 0.025em;
+}
+
+label:hover,
+.form-label:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* Checkbox and radio styling */
@@ -370,7 +426,7 @@ select option {
   padding: 8px;
 }
 
-/* Button styling for forms */
+/* Enhanced Button styling for forms */
 .auth-form button,
 .search-form button,
 .news-form button,
@@ -380,16 +436,38 @@ button[type="submit"],
 input[type="submit"] {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  border-radius: 12px;
-  padding: var(--tw-space-4) var(--tw-space-6);
+  border-radius: 16px;
+  padding: 16px 24px;
   color: white;
   font-weight: 600;
-  font-size: var(--tw-text-base);
+  font-size: 16px;
   cursor: pointer;
-  transition: all var(--tw-transition-normal);
-  box-shadow: var(--tw-shadow-md);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3),
+              0 2px 8px rgba(102, 126, 234, 0.2);
   width: 100%;
-  margin-top: var(--tw-space-4);
+  margin-top: 20px;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.025em;
+  min-height: 52px;
+}
+
+.auth-form button::before,
+.search-form button::before,
+.news-form button::before,
+.profile-form button::before,
+.admin-form button::before,
+button[type="submit"]::before,
+input[type="submit"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease;
 }
 
 .auth-form button:hover,
@@ -399,11 +477,88 @@ input[type="submit"] {
 .admin-form button:hover,
 button[type="submit"]:hover,
 input[type="submit"]:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--tw-shadow-lg);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4),
+              0 4px 16px rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, #5b6fe8 0%, #6d44a0 100%);
 }
 
-/* Dark mode adjustments for global forms */
+.auth-form button:hover::before,
+.search-form button:hover::before,
+.news-form button:hover::before,
+.profile-form button:hover::before,
+.admin-form button:hover::before,
+button[type="submit"]:hover::before,
+input[type="submit"]:hover::before {
+  left: 100%;
+}
+
+.auth-form button:active,
+.search-form button:active,
+.news-form button:active,
+.profile-form button:active,
+.admin-form button:active,
+button[type="submit"]:active,
+input[type="submit"]:active {
+  transform: translateY(-1px) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+/* Floating label effect for premium forms */
+.floating-label {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.floating-label input,
+.floating-label textarea,
+.floating-label select {
+  padding-top: 20px;
+  padding-bottom: 12px;
+}
+
+.floating-label label {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  font-weight: 400;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  pointer-events: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: auto;
+  box-shadow: none;
+}
+
+.floating-label input:focus + label,
+.floating-label input:not(:placeholder-shown) + label,
+.floating-label textarea:focus + label,
+.floating-label textarea:not(:placeholder-shown) + label,
+.floating-label select:focus + label {
+  top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(0);
+}
+
+[data-theme="dark"] .floating-label label {
+  color: rgba(148, 163, 184, 0.7);
+}
+
+[data-theme="dark"] .floating-label input:focus + label,
+[data-theme="dark"] .floating-label input:not(:placeholder-shown) + label,
+[data-theme="dark"] .floating-label textarea:focus + label,
+[data-theme="dark"] .floating-label textarea:not(:placeholder-shown) + label,
+[data-theme="dark"] .floating-label select:focus + label {
+  color: rgba(226, 232, 240, 0.9);
+}
+
+/* Enhanced Dark Mode - Premium Styling */
 [data-theme="dark"] input[type="text"],
 [data-theme="dark"] input[type="email"],
 [data-theme="dark"] input[type="password"],
@@ -415,10 +570,33 @@ input[type="submit"]:hover {
 [data-theme="dark"] textarea,
 [data-theme="dark"] .form-input,
 [data-theme="dark"] .search-input {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(148, 163, 184, 0.7);
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(71, 85, 105, 0.4);
   color: #f1f5f9;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25),
+              0 2px 8px rgba(0, 0, 0, 0.15),
+              inset 0 1px 0 rgba(148, 163, 184, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+[data-theme="dark"] input[type="text"]:hover:not(:focus),
+[data-theme="dark"] input[type="email"]:hover:not(:focus),
+[data-theme="dark"] input[type="password"]:hover:not(:focus),
+[data-theme="dark"] input[type="number"]:hover:not(:focus),
+[data-theme="dark"] input[type="date"]:hover:not(:focus),
+[data-theme="dark"] input[type="datetime-local"]:hover:not(:focus),
+[data-theme="dark"] input[type="search"]:hover:not(:focus),
+[data-theme="dark"] select:hover:not(:focus),
+[data-theme="dark"] textarea:hover:not(:focus),
+[data-theme="dark"] .form-input:hover:not(:focus),
+[data-theme="dark"] .search-input:hover:not(:focus) {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(71, 85, 105, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3),
+              0 3px 12px rgba(0, 0, 0, 0.2),
+              inset 0 1px 0 rgba(148, 163, 184, 0.12);
 }
 
 [data-theme="dark"] input:focus,
@@ -426,17 +604,47 @@ input[type="submit"]:hover {
 [data-theme="dark"] textarea:focus,
 [data-theme="dark"] .form-input:focus,
 [data-theme="dark"] .search-input:focus {
-  background: rgba(30, 41, 59, 0.95);
-  border-color: rgba(148, 163, 184, 1);
-  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.2), 0 2px 12px rgba(0, 0, 0, 0.4);
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(59, 130, 246, 0.8);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15),
+              0 8px 32px rgba(0, 0, 0, 0.4),
+              0 4px 16px rgba(0, 0, 0, 0.25),
+              inset 0 1px 0 rgba(148, 163, 184, 0.15);
+  transform: translateY(-2px) scale(1.01);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] .form-input::placeholder,
+[data-theme="dark"] .search-input::placeholder {
+  color: rgba(148, 163, 184, 0.7);
+  font-style: italic;
+}
+
+[data-theme="dark"] input:focus::placeholder,
+[data-theme="dark"] textarea:focus::placeholder,
+[data-theme="dark"] .form-input:focus::placeholder,
+[data-theme="dark"] .search-input:focus::placeholder {
+  opacity: 0.5;
+  transform: translateX(4px);
 }
 
 [data-theme="dark"] label,
 [data-theme="dark"] .form-label {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(71, 85, 105, 0.4);
   color: #e2e8f0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2),
+              inset 0 1px 0 rgba(148, 163, 184, 0.08);
+}
+
+[data-theme="dark"] label:hover,
+[data-theme="dark"] .form-label:hover {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(71, 85, 105, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25),
+              inset 0 1px 0 rgba(148, 163, 184, 0.12);
 }
 
 [data-theme="dark"] .auth-container,
@@ -445,8 +653,10 @@ input[type="submit"]:hover {
 [data-theme="dark"] .news-form,
 [data-theme="dark"] .profile-form,
 [data-theme="dark"] .admin-form {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.7);
   border-color: rgba(71, 85, 105, 0.3);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3),
+              0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* ========================================
