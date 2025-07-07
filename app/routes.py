@@ -2517,10 +2517,15 @@ def get_analysis_summary():
         logger.error(f"Error getting analysis summary: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+# Import optimization utilities
+from app.utils.performance.response_optimizer import optimized_response, response_optimizer
+from app.utils.analysis.async_indicators import async_indicators, calculate_basic_indicators
+
 @bp.route('/api/basic-chart', methods=['POST'])
-@login_required 
+@login_required
+@optimized_response(cache_ttl=300, cache_key_params=['ticker', 'lookback_days', 'end_date'])
 def get_basic_chart():
-    """Get basic price chart for immediate display"""
+    """Get basic price chart for immediate display with optimized response"""
     try:
         data = request.get_json()
         ticker = data.get('ticker', '').upper()
@@ -2602,16 +2607,18 @@ def get_basic_chart():
         # Cache the compressed chart
         long_period_cache.set_compressed_chart_data(ticker, lookback_days, end_date, chart_data)
         
-        return jsonify(chart_data)
+        # Return optimized response (handled by decorator)
+        return chart_data
         
     except Exception as e:
         logger.error(f"Error generating basic chart: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return {'error': str(e), 'type': 'basic_chart_error'}, 500
 
 @bp.route('/api/enhanced-chart', methods=['POST'])
 @login_required
-def get_enhanced_chart():
-    """Get enhanced chart with technical indicators"""
+@optimized_response(cache_ttl=180, cache_key_params=['ticker', 'lookback_days', 'end_date'])
+async def get_enhanced_chart():
+    """Get enhanced chart with async technical indicators"""
     try:
         data = request.get_json()
         ticker = data.get('ticker', '').upper()
@@ -2629,11 +2636,28 @@ def get_enhanced_chart():
         )
         
         if historical_data.empty:
-            return jsonify({'error': 'No data available'}), 404
+            return {'error': 'No data available', 'type': 'no_data_error'}, 404
         
-        # Add basic technical indicators
-        historical_data['SMA20'] = historical_data['Close'].rolling(window=20).mean()
-        historical_data['SMA50'] = historical_data['Close'].rolling(window=50).mean()
+        # Calculate technical indicators asynchronously
+        try:
+            indicators = await calculate_basic_indicators(historical_data['Close'])
+            sma20_values = indicators.get('SMA_20', {}).get('values', [])
+            sma50_values = indicators.get('SMA_50', {}).get('values', [])
+            rsi_values = indicators.get('RSI_14', {}).get('values', [])
+            
+            # Add to dataframe if calculations succeeded
+            if sma20_values:
+                historical_data['SMA20'] = sma20_values[:len(historical_data)]
+            if sma50_values:
+                historical_data['SMA50'] = sma50_values[:len(historical_data)]
+            if rsi_values:
+                historical_data['RSI'] = rsi_values[:len(historical_data)]
+                
+        except Exception as indicator_error:
+            logger.warning(f"Async indicator calculation failed: {indicator_error}")
+            # Fallback to synchronous calculation
+            historical_data['SMA20'] = historical_data['Close'].rolling(window=20).mean()
+            historical_data['SMA50'] = historical_data['Close'].rolling(window=50).mean()
         
         # Create enhanced chart
         chart_data = {
@@ -2672,16 +2696,18 @@ def get_enhanced_chart():
             }
         }
         
-        return jsonify(chart_data)
+        # Return optimized response
+        return chart_data
         
     except Exception as e:
         logger.error(f"Error generating enhanced chart: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return {'error': str(e), 'type': 'enhanced_chart_error'}, 500
 
 @bp.route('/api/full-analysis', methods=['POST'])
 @login_required
+@optimized_response(cache_ttl=600, cache_key_params=['ticker', 'lookback_days', 'crossover_days', 'end_date'])
 def get_full_analysis():
-    """Get complete analysis dashboard"""
+    """Get complete analysis dashboard with optimization"""
     try:
         data = request.get_json()
         ticker = data.get('ticker', '').upper()
@@ -2711,10 +2737,71 @@ def get_full_analysis():
         }
         long_period_cache.set_progressive_analysis(ticker, lookback_days, end_date, progressive_data)
         
-        return jsonify(analysis_data)
+        # Return optimized response
+        return analysis_data
         
     except Exception as e:
         logger.error(f"Error generating full analysis: {str(e)}")
+        return {'error': str(e), 'type': 'full_analysis_error'}, 500
+
+# Performance monitoring routes
+@bp.route('/api/performance/response-stats', methods=['GET'])
+@login_required
+def get_response_performance_stats():
+    """Get response optimization performance statistics"""
+    try:
+        stats = response_optimizer.get_performance_stats()
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'timestamp': time.time()
+        })
+    except Exception as e:
+        logger.error(f"Error getting response stats: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/performance/indicators-stats', methods=['GET'])
+@login_required
+def get_indicators_performance_stats():
+    """Get technical indicators performance statistics"""
+    try:
+        stats = async_indicators.get_performance_stats()
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'timestamp': time.time()
+        })
+    except Exception as e:
+        logger.error(f"Error getting indicators stats: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/performance/clear-cache', methods=['POST'])
+@login_required
+def clear_performance_cache():
+    """Clear all performance-related caches"""
+    try:
+        # Clear response cache
+        response_cache_cleared = response_optimizer.clear_cache()
+        
+        # Clear indicators cache
+        indicators_cache_cleared = False
+        try:
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            indicators_cache_cleared = loop.run_until_complete(async_indicators.clear_cache())
+            loop.close()
+        except Exception as e:
+            logger.warning(f"Async indicators cache clear failed: {e}")
+        
+        return jsonify({
+            'success': True,
+            'response_cache_cleared': response_cache_cleared,
+            'indicators_cache_cleared': indicators_cache_cleared,
+            'timestamp': time.time()
+        })
+    except Exception as e:
+        logger.error(f"Error clearing cache: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/company-info/<ticker>', methods=['GET'])
