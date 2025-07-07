@@ -484,6 +484,20 @@ class VisualizationService:
                     align='left'
                 ))
 
+        # Add TrendWise Finance watermark for downloadable charts
+        annotations.append(dict(
+            x=0.99,
+            y=0.01,
+            xref='paper',
+            yref='paper',
+            text='©2025 TrendWise Finance',
+            showarrow=False,
+            font=dict(size=10, color='rgba(128, 128, 128, 0.8)'),
+            align='right',
+            xanchor='right',
+            yanchor='bottom'
+        ))
+
         return annotations
 
     @staticmethod

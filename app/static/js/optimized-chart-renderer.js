@@ -356,7 +356,23 @@ class OptimizedChartRenderer {
                 font: { size: 12, family: 'Arial, sans-serif' },
                 margin: { t: 40, r: 30, b: 40, l: 60 },
                 hovermode: 'x unified',
-                showlegend: chartData.data?.length > 1
+                showlegend: chartData.data?.length > 1,
+                // Add TrendWise Finance watermark for downloadable charts
+                annotations: [
+                    ...(chartData.layout?.annotations || []),
+                    {
+                        x: 0.99,
+                        y: 0.01,
+                        xref: 'paper',
+                        yref: 'paper',
+                        text: '©2025 TrendWise Finance',
+                        showarrow: false,
+                        font: { size: 10, color: 'rgba(128, 128, 128, 0.8)' },
+                        align: 'right',
+                        xanchor: 'right',
+                        yanchor: 'bottom'
+                    }
+                ]
             };
             
             // Create or update chart
