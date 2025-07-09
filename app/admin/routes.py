@@ -1,7 +1,7 @@
 from flask import render_template, request, flash, redirect, url_for, current_app, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models import UserActivity, User, NewsArticle, ArticleSymbol
+from app.models import UserActivity, User, NewsArticle, ArticleSymbol, NewsSearchIndex
 from datetime import datetime, timedelta
 from functools import wraps
 from app.admin import bp
@@ -259,26 +259,32 @@ def news_management():
     from datetime import datetime, timedelta
     
     try:
-        # Total articles
-        total_articles = NewsArticle.query.count()
+        # Buffer table statistics
+        buffer_count = NewsArticle.query.count()
         
-        # Articles from last 24 hours
+        # Search index statistics
+        search_index_count = NewsSearchIndex.query.count()
+        
+        # Articles from last 24 hours (buffer table)
         last_24h = datetime.utcnow() - timedelta(hours=24)
-        articles_24h = NewsArticle.query.filter(NewsArticle.created_at >= last_24h).count()
+        buffer_articles_24h = NewsArticle.query.filter(NewsArticle.created_at >= last_24h).count()
         
-        # Investing.com articles from last 24 hours
+        # Search index articles from last 24 hours
+        search_index_24h = NewsSearchIndex.query.filter(NewsSearchIndex.created_at >= last_24h).count()
+        
+        # Investing.com articles from last 24 hours (buffer)
         investing_24h = NewsArticle.query.filter(
             NewsArticle.created_at >= last_24h,
             NewsArticle.source.ilike('%investing%')
         ).count()
         
-        # TradingView articles from last 24 hours
+        # TradingView articles from last 24 hours (buffer)
         tradingview_24h = NewsArticle.query.filter(
             NewsArticle.created_at >= last_24h,
             NewsArticle.source.ilike('%tradingview%')
         ).count()
         
-        # Articles by source in last 24 hours
+        # Articles by source in last 24 hours (buffer)
         source_stats = db.session.execute(
             db.text("""
                 SELECT source, COUNT(*) as count 
@@ -291,8 +297,11 @@ def news_management():
         ).fetchall()
         
         stats = {
-            'total_articles': total_articles,
-            'articles_24h': articles_24h,
+            'buffer_count': buffer_count,
+            'search_index_count': search_index_count,
+            'total_articles': buffer_count,  # Keep for compatibility
+            'articles_24h': buffer_articles_24h,
+            'search_index_24h': search_index_24h,
             'investing_24h': investing_24h,
             'tradingview_24h': tradingview_24h,
             'source_stats': [{'source': row[0], 'count': row[1]} for row in source_stats]
@@ -303,6 +312,216 @@ def news_management():
     except Exception as e:
         logger.error(f"Error getting news statistics: {str(e)}")
         return render_template("admin/news_management.html", stats=None, error=str(e))
+
+@bp.route("/api/clear-buffer-articles", methods=['POST'])
+@login_required
+@admin_required
+def clear_buffer_articles():
+    """Clear all articles from the news_articles buffer table (safe operation)"""
+    try:
+        data = request.get_json()
+        confirm = data.get('confirm', False)
+        
+        if not confirm:
+            return jsonify({
+                'status': 'error',
+                'message': 'Confirmation required for buffer clearing'
+            }), 400
+        
+        # Count articles before deletion
+        article_count = NewsArticle.query.count()
+        
+        if article_count == 0:
+            return jsonify({
+                'status': 'success',
+                'message': 'Buffer table is already empty',
+                'cleared_count': 0
+            })
+        
+        # Clear all articles from buffer (this is safe - buffer table only)
+        cleared_count = NewsArticle.query.delete()
+        db.session.commit()
+        
+        logger.info(f"Admin {current_user.username} cleared {cleared_count} articles from buffer table")
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Successfully cleared {cleared_count} articles from buffer table',
+            'cleared_count': cleared_count,
+            'note': 'Permanent articles remain safe in search index table'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error clearing buffer articles: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Error clearing buffer articles: {str(e)}'
+        }), 500
+
+@bp.route("/api/clear-search-index", methods=['POST'])
+@login_required
+@admin_required
+def clear_search_index():
+    """Clear all articles from the news_search_index permanent table (DANGEROUS - requires admin password)"""
+    try:
+        data = request.get_json()
+        confirm = data.get('confirm', False)
+        admin_password = data.get('admin_password', '')
+        
+        if not confirm:
+            return jsonify({
+                'status': 'error',
+                'message': 'Confirmation required for search index clearing'
+            }), 400
+        
+        if not admin_password:
+            return jsonify({
+                'status': 'error',
+                'message': 'Admin password required for this dangerous operation'
+            }), 400
+        
+        # Verify admin password
+        from app.utils.admin_auth import AdminAuth
+        if not AdminAuth.verify_admin_password(admin_password):
+            logger.warning(f"Failed admin password attempt for search index clearing by {current_user.username}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid admin password'
+            }), 401
+        
+        # Count articles before deletion
+        index_count = NewsSearchIndex.query.count()
+        
+        if index_count == 0:
+            return jsonify({
+                'status': 'success',
+                'message': 'Search index table is already empty',
+                'cleared_count': 0
+            })
+        
+        # Clear all articles from search index (DANGEROUS - permanent data)
+        cleared_count = NewsSearchIndex.query.delete()
+        db.session.commit()
+        
+        logger.warning(f"Admin {current_user.username} cleared {cleared_count} articles from PERMANENT search index table")
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Successfully cleared {cleared_count} articles from PERMANENT search index table',
+            'cleared_count': cleared_count,
+            'warning': 'PERMANENT DATA DELETED - This action cannot be undone'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error clearing search index: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Error clearing search index: {str(e)}'
+        }), 500
+
+@bp.route("/api/force-kill-schedulers", methods=['POST'])
+@login_required
+@admin_required
+def force_kill_schedulers():
+    """Emergency force kill both schedulers via admin panel"""
+    try:
+        data = request.get_json()
+        confirm = data.get('confirm', False)
+        
+        if not confirm:
+            return jsonify({
+                'status': 'error',
+                'message': 'Confirmation required for emergency scheduler kill'
+            }), 400
+        
+        logger.warning(f"Admin {current_user.username} initiated emergency scheduler force kill")
+        
+        try:
+            from app.utils.scheduler.news_scheduler import news_scheduler
+            from app.utils.scheduler.news_fetch_scheduler import news_fetch_scheduler
+            import schedule
+            
+            results = {'ai': False, 'fetch': False}
+            
+            # Force kill AI scheduler
+            try:
+                # Try graceful stop first
+                if hasattr(news_scheduler, 'running') and news_scheduler.running:
+                    success = news_scheduler.stop()
+                    if success:
+                        results['ai'] = True
+                        logger.info("AI scheduler stopped gracefully")
+                    else:
+                        logger.warning("Graceful stop failed, forcing...")
+                
+                # Force kill if needed
+                if not results['ai']:
+                    news_scheduler.running = False
+                    if hasattr(news_scheduler, 'scheduler_thread'):
+                        news_scheduler.scheduler_thread = None
+                    schedule.clear()
+                    results['ai'] = True
+                    logger.warning("AI scheduler force killed")
+                    
+            except Exception as e:
+                logger.error(f"Failed to force kill AI scheduler: {e}")
+            
+            # Force kill fetch scheduler
+            try:
+                # Try graceful stop first
+                if hasattr(news_fetch_scheduler, 'running') and news_fetch_scheduler.running:
+                    success = news_fetch_scheduler.stop()
+                    if success:
+                        results['fetch'] = True
+                        logger.info("Fetch scheduler stopped gracefully")
+                    else:
+                        logger.warning("Graceful stop failed, forcing...")
+                
+                # Force kill if needed
+                if not results['fetch']:
+                    news_fetch_scheduler.running = False
+                    if hasattr(news_fetch_scheduler, 'thread'):
+                        news_fetch_scheduler.thread = None
+                    if hasattr(news_fetch_scheduler, 'manual_threads'):
+                        news_fetch_scheduler.manual_threads = []
+                    results['fetch'] = True
+                    logger.warning("Fetch scheduler force killed")
+                    
+            except Exception as e:
+                logger.error(f"Failed to force kill fetch scheduler: {e}")
+            
+            if results['ai'] and results['fetch']:
+                message = "Emergency force kill completed successfully"
+                logger.info(message)
+                return jsonify({
+                    'status': 'success',
+                    'message': message,
+                    'results': results
+                })
+            else:
+                message = "Partial force kill - some schedulers may still be running"
+                logger.warning(message)
+                return jsonify({
+                    'status': 'warning',
+                    'message': message,
+                    'results': results
+                })
+                
+        except Exception as e:
+            logger.error(f"Critical error during force kill: {e}")
+            return jsonify({
+                'status': 'error',
+                'message': f'Critical error during force kill: {str(e)}'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error in force kill API: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Error in force kill API: {str(e)}'
+        }), 500
 
 @bp.route("/api/delete-investing-articles", methods=['POST'])
 @login_required
