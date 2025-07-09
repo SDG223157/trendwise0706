@@ -20,6 +20,7 @@ from app.models import (
 )
 from app.utils.ai.keyword_extraction_service import keyword_extraction_service
 from app.utils.cache.news_cache import NewsCache
+from app.utils.search.acronym_expansion import acronym_expansion_service
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -89,25 +90,29 @@ class IntelligentSuggestionService:
         # Generate suggestions using multiple strategies
         suggestions = []
         
-        # 1. Keyword-based suggestions
-        keyword_suggestions = self._get_keyword_suggestions(query, limit // 2)
+        # 1. 🔑 ACRONYM EXPANSION: Handle short forms like "fed" → "federal reserve"
+        acronym_suggestions = self._get_acronym_suggestions(query, limit // 3)
+        suggestions.extend(acronym_suggestions)
+        
+        # 2. Keyword-based suggestions
+        keyword_suggestions = self._get_keyword_suggestions(query, limit // 3)
         suggestions.extend(keyword_suggestions)
         
-        # 2. Symbol suggestions
-        symbol_suggestions = self._get_symbol_suggestions(query, limit // 4)
+        # 3. Symbol suggestions
+        symbol_suggestions = self._get_symbol_suggestions(query, limit // 6)
         suggestions.extend(symbol_suggestions)
         
-        # 3. Semantic similarity suggestions
-        semantic_suggestions = self._get_semantic_suggestions(query, limit // 4)
+        # 4. Semantic similarity suggestions
+        semantic_suggestions = self._get_semantic_suggestions(query, limit // 6)
         suggestions.extend(semantic_suggestions)
         
-        # 4. User behavior suggestions (if user_id provided)
+        # 5. User behavior suggestions (if user_id provided)
         if user_id:
-            user_suggestions = self._get_user_behavior_suggestions(query, user_id, limit // 4)
+            user_suggestions = self._get_user_behavior_suggestions(query, user_id, limit // 6)
             suggestions.extend(user_suggestions)
         
-        # 5. Trending suggestions
-        trending_suggestions = self._get_trending_suggestions(query, limit // 4)
+        # 6. Trending suggestions
+        trending_suggestions = self._get_trending_suggestions(query, limit // 6)
         suggestions.extend(trending_suggestions)
         
         # Remove duplicates and rank
@@ -124,6 +129,26 @@ class IntelligentSuggestionService:
         self._track_suggestion_request(query, user_id, session_id, len(suggestions))
         
         return self._add_suggestion_context(suggestions, include_context)
+    
+    def _get_acronym_suggestions(self, query: str, limit: int) -> List[Dict]:
+        """Get suggestions based on acronym expansion"""
+        suggestions = []
+        
+        try:
+            # Use the acronym expansion service
+            acronym_suggestions = acronym_expansion_service.get_acronym_suggestions(query, limit)
+            
+            # Add priority boost for acronym suggestions
+            for suggestion in acronym_suggestions:
+                suggestion['relevance_score'] = min(1.0, suggestion['relevance_score'] + 0.1)
+                suggestions.append(suggestion)
+                
+            logger.info(f"Acronym expansion for '{query}': {len(suggestions)} suggestions")
+            
+        except Exception as e:
+            logger.warning(f"Acronym suggestions failed: {str(e)}")
+        
+        return suggestions
     
     def _get_keyword_suggestions(self, query: str, limit: int) -> List[Dict]:
         """Get suggestions based on keyword matching"""
@@ -324,6 +349,8 @@ class IntelligentSuggestionService:
         
         # Sort by relevance score, frequency, and type priority
         type_priority = {
+            'acronym_expansion': 7,     # Highest priority for acronym expansions
+            'related_term': 6,          # High priority for related terms
             'keyword': 5,
             'symbol': 4,
             'trending': 3,

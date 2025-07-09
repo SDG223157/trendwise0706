@@ -2860,6 +2860,48 @@ def api_search():
             'message': 'Search failed. Please try again.'
         }), 500
 
+@bp.route('/api/enhanced-search', methods=['GET'])
+@login_required
+def api_enhanced_search():
+    """Enhanced search API with acronym expansion and relevance scoring"""
+    try:
+        from app.utils.search.acronym_expansion import acronym_expansion_service
+        
+        query = request.args.get('q', '').strip()
+        limit = min(50, int(request.args.get('limit', 20)))
+        
+        if not query:
+            return jsonify({
+                'status': 'error',
+                'message': 'Search query is required'
+            }), 400
+        
+        # Get expanded search results
+        results = acronym_expansion_service.get_expanded_search_results(query, limit)
+        
+        # Get expansion details
+        expansion_info = acronym_expansion_service.expand_query(query)
+        
+        logger.info(f"Enhanced search for '{query}': {len(results)} results, "
+                   f"expanded to: {expansion_info['expanded']}")
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'query': query,
+                'results': results,
+                'expansion_info': expansion_info,
+                'total_results': len(results)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Enhanced search API error: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Enhanced search failed'
+        }), 500
+
 @bp.route('/api/suggestions', methods=['GET'])
 def api_search_suggestions():
     """
