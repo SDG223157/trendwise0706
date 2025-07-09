@@ -640,6 +640,43 @@
     [data-theme="dark"] .ai-suggestions-footer small {
         color: #a78bfa;
     }
+    
+    /* 🔧 Related Symbols Styling Fix - Better contrast for light mode */
+    .symbol-tag {
+        background: rgba(59, 130, 246, 0.9) !important;
+        color: white !important;
+        border: 1px solid rgba(59, 130, 246, 0.7) !important;
+        padding: 4px 10px !important;
+        border-radius: 6px !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        text-decoration: none !important;
+        transition: all 0.2s ease !important;
+        display: inline-block !important;
+        margin-right: 6px !important;
+        margin-bottom: 4px !important;
+    }
+    
+    .symbol-tag:hover {
+        background: rgba(37, 99, 235, 1) !important;
+        color: white !important;
+        text-decoration: none !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
+    }
+    
+    /* Dark mode symbol tags */
+    [data-theme="dark"] .symbol-tag {
+        background: rgba(30, 41, 59, 0.9) !important;
+        color: #f1f5f9 !important;
+        border-color: rgba(71, 85, 105, 0.7) !important;
+    }
+    
+    [data-theme="dark"] .symbol-tag:hover {
+        background: rgba(51, 65, 85, 1) !important;
+        color: #f1f5f9 !important;
+        border-color: rgba(71, 85, 105, 1) !important;
+    }
 </style>
 {% endblock %}
 
@@ -823,12 +860,10 @@
                     <div class="mt-1">
                         Related Symbols: 
                         {% for symbol in article.symbols %}
-                        <span class="inline-block bg-blue-100 px-2 py-1 rounded text-sm mr-1 mb-1">
-                            <a href="{{ url_for('news.search', symbol=symbol.symbol) }}" 
-                               class="text-blue-600 hover:text-blue-800">
-                                {{ symbol.symbol }}
-                            </a>
-                        </span>
+                        <a href="{{ url_for('news.search', symbol=symbol.symbol) }}" 
+                           class="symbol-tag">
+                            {{ symbol.symbol }}
+                        </a>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -914,7 +949,7 @@
                                 <div class="mt-1 flex flex-wrap gap-1">
                                     {% for symbol in article.symbols %}
                                     <a href="{{ url_for('news.search', symbol=symbol.symbol if symbol.symbol else symbol) }}" 
-                                       class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200">
+                                       class="symbol-tag">
                                         {{ symbol.symbol if symbol.symbol else symbol }}
                                     </a>
                                     {% endfor %}
