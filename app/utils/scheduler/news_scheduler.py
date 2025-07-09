@@ -25,6 +25,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from flask import current_app
+from openai import OpenAI
 
 # Import models for auto-sync functionality  
 from app.models import NewsArticle
@@ -903,45 +904,33 @@ Content: {content}"""
             return None
             
     def call_openrouter_api(self, prompt, max_tokens=750):  # Increased for DeepSeek V3's larger context
-        """Call OpenRouter API for AI generation"""
+        """Call OpenRouter API for AI generation using OpenAI client"""
         try:
             api_key = os.getenv('OPENROUTER_API_KEY')
             if not api_key:
                 logger.error("OPENROUTER_API_KEY not found")
                 return None
                 
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://trendwise.com",
-                "X-Title": "TrendWise News AI Scheduler"
-            }
+            # Create OpenAI client for OpenRouter
+            client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=api_key
+            )
             
-            data = {
-                "model": "deepseek/deepseek-chat-v3-0324:free",
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ],
-                "max_tokens": max_tokens,
-                "temperature": 0.3
-            }
-            
-            response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers=headers,
-                json=data,
+            completion = client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+                    "X-Title": "TrendWise News AI Scheduler"  # Optional. Site title for rankings on openrouter.ai.
+                },
+                model="deepseek/deepseek-chat-v3-0324:free",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_tokens,
+                temperature=0.3,
                 timeout=30
             )
             
-            if response.status_code == 200:
-                result = response.json()
-                if 'choices' in result and result['choices']:
-                    content = result['choices'][0]['message']['content'].strip()
-                    return content if content else None
-            else:
-                logger.error(f"OpenRouter API error: {response.status_code} - {response.text}")
-                
-            return None
+            content = completion.choices[0].message.content.strip()
+            return content if content else None
             
         except Exception as e:
             logger.error(f"Error calling OpenRouter API: {str(e)}")

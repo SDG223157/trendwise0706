@@ -1183,19 +1183,17 @@ def update_ai_summaries():
         import requests
 
         OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
-        OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
         # Validate API key
         if not OPENROUTER_API_KEY:
             logger.error("OPENROUTER_API_KEY not found in environment variables")
             return jsonify({'status': 'error', 'message': 'API key not configured'}), 500
 
-        headers = {
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
-            "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
-        }
+        # Create OpenAI client for OpenRouter
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=OPENROUTER_API_KEY
+        )
 
         # Only fetch articles that have BOTH missing AI fields AND full content
         articles = NewsArticle.query.filter(
@@ -1292,21 +1290,21 @@ Article to analyze: {content}"""
                     }
                     
                     logger.debug(f"Sending summary request for article {article.id}")
-                    summary_response = requests.post(OPENROUTER_API_URL, headers=headers, json=summary_payload, timeout=30)
                     
-                    # Log response details for debugging
-                    logger.debug(f"Summary response status: {summary_response.status_code}")
-                    if summary_response.status_code != 200:
-                        logger.error(f"Summary API error for article {article.id}: {summary_response.text}")
-                        
-                    summary_response.raise_for_status()
-                    response_data = summary_response.json()
+                    completion = client.chat.completions.create(
+                        extra_headers={
+                            "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+                            "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
+                        },
+                        model=summary_payload["model"],
+                        messages=summary_payload["messages"],
+                        max_tokens=summary_payload["max_tokens"],
+                        temperature=summary_payload["temperature"],
+                        timeout=30
+                    )
                     
-                    if 'choices' in response_data and len(response_data['choices']) > 0:
-                        ai_summary = response_data['choices'][0]['message']['content']
-                    else:
-                        logger.error(f"Unexpected response format for summary: {response_data}")
-                        raise ValueError("Invalid response format")
+                    ai_summary = completion.choices[0].message.content
+                    logger.debug(f"Summary completed for article {article.id}")
 
                 if not article.ai_insights:
                     insights_payload = {
@@ -1337,20 +1335,21 @@ Article to analyze: {content}"""
                     }
                     
                     logger.debug(f"Sending insights request for article {article.id}")
-                    insights_response = requests.post(OPENROUTER_API_URL, headers=headers, json=insights_payload, timeout=30)
                     
-                    logger.debug(f"Insights response status: {insights_response.status_code}")
-                    if insights_response.status_code != 200:
-                        logger.error(f"Insights API error for article {article.id}: {insights_response.text}")
-                        
-                    insights_response.raise_for_status()
-                    response_data = insights_response.json()
+                    completion = client.chat.completions.create(
+                        extra_headers={
+                            "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+                            "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
+                        },
+                        model=insights_payload["model"],
+                        messages=insights_payload["messages"],
+                        max_tokens=insights_payload["max_tokens"],
+                        temperature=insights_payload["temperature"],
+                        timeout=30
+                    )
                     
-                    if 'choices' in response_data and len(response_data['choices']) > 0:
-                        ai_insights = response_data['choices'][0]['message']['content']
-                    else:
-                        logger.error(f"Unexpected response format for insights: {response_data}")
-                        raise ValueError("Invalid response format")
+                    ai_insights = completion.choices[0].message.content
+                    logger.debug(f"Insights completed for article {article.id}")
 
                 if article.ai_sentiment_rating is None:
                     sentiment_payload = {
@@ -1366,25 +1365,26 @@ Article to analyze: {content}"""
                     }
                     
                     logger.debug(f"Sending sentiment request for article {article.id}")
-                    sentiment_response = requests.post(OPENROUTER_API_URL, headers=headers, json=sentiment_payload, timeout=30)
                     
-                    logger.debug(f"Sentiment response status: {sentiment_response.status_code}")
-                    if sentiment_response.status_code != 200:
-                        logger.error(f"Sentiment API error for article {article.id}: {sentiment_response.text}")
-                        
-                    sentiment_response.raise_for_status()
-                    response_data = sentiment_response.json()
+                    completion = client.chat.completions.create(
+                        extra_headers={
+                            "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+                            "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
+                        },
+                        model=sentiment_payload["model"],
+                        messages=sentiment_payload["messages"],
+                        max_tokens=sentiment_payload["max_tokens"],
+                        temperature=sentiment_payload["temperature"],
+                        timeout=30
+                    )
                     
-                    if 'choices' in response_data and len(response_data['choices']) > 0:
-                        try:
-                            rating_text = response_data['choices'][0]['message']['content'].strip()
-                            rating = int(rating_text)
-                            ai_sentiment_rating = max(min(rating, 100), -100)
-                        except ValueError:
-                            logger.error(f"Could not parse sentiment rating for article {article.id}: {rating_text}")
-                            ai_sentiment_rating = 0
-                    else:
-                        logger.error(f"Unexpected response format for sentiment: {response_data}")
+                    try:
+                        rating_text = completion.choices[0].message.content.strip()
+                        rating = int(rating_text)
+                        ai_sentiment_rating = max(min(rating, 100), -100)
+                        logger.debug(f"Sentiment completed for article {article.id}: {ai_sentiment_rating}")
+                    except ValueError:
+                        logger.error(f"Could not parse sentiment rating for article {article.id}: {rating_text}")
                         ai_sentiment_rating = 0
 
                 # Calculate total content length to verify if processing was successful
@@ -1990,14 +1990,12 @@ def reprocess_article(article_id):
             }), 400
         
         OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
-        OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-        headers = {
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
-            "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
-        }
+        # Create OpenAI client for OpenRouter
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=OPENROUTER_API_KEY
+        )
         
         # Process summary
         summary_payload = {
@@ -2023,9 +2021,16 @@ Use proper line breaks between list items. Article: {article.content}"""
             ],
             "max_tokens": 750  # Increased for DeepSeek V3's larger context
         }
-        summary_response = requests.post(OPENROUTER_API_URL, headers=headers, json=summary_payload)
-        summary_response.raise_for_status()
-        ai_summary = summary_response.json()['choices'][0]['message']['content']
+        completion = client.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+                "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
+            },
+            model=summary_payload["model"],
+            messages=summary_payload["messages"],
+            max_tokens=summary_payload["max_tokens"]
+        )
+        ai_summary = completion.choices[0].message.content
         
         # Process insights
         insights_payload = {
@@ -2054,9 +2059,17 @@ Article to analyze: {content}"""
             "max_tokens": 750,  # Increased for DeepSeek V3's larger context
             "temperature": 0.7
         }
-        insights_response = requests.post(OPENROUTER_API_URL, headers=headers, json=insights_payload)
-        insights_response.raise_for_status()
-        ai_insights = insights_response.json()['choices'][0]['message']['content']
+        completion = client.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+                "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
+            },
+            model=insights_payload["model"],
+            messages=insights_payload["messages"],
+            max_tokens=insights_payload["max_tokens"],
+            temperature=insights_payload["temperature"]
+        )
+        ai_insights = completion.choices[0].message.content
         
         # Process sentiment
         sentiment_payload = {
@@ -2069,11 +2082,18 @@ Article to analyze: {content}"""
             ],
             "max_tokens": 10
         }
-        sentiment_response = requests.post(OPENROUTER_API_URL, headers=headers, json=sentiment_payload)
-        sentiment_response.raise_for_status()
+        completion = client.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+                "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
+            },
+            model=sentiment_payload["model"],
+            messages=sentiment_payload["messages"],
+            max_tokens=sentiment_payload["max_tokens"]
+        )
         
         try:
-            rating = int(sentiment_response.json()['choices'][0]['message']['content'].strip())
+            rating = int(completion.choices[0].message.content.strip())
             ai_sentiment_rating = max(min(rating, 100), -100)
         except ValueError:
             logger.error(f"Could not parse sentiment rating for article {article.id}")

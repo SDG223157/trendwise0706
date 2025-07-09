@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from collections import Counter
 import requests
 import nltk
+from openai import OpenAI
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -201,51 +202,51 @@ Focus on searchable terms that users would actually type.
 Article:
 {combined_text[:8000]}"""
 
-            headers = {
-                "Authorization": f"Bearer {self.openrouter_api_key}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
-                "X-Title": "TrendWise AI Keyword Extraction"  # Optional. Site title for rankings on openrouter.ai.
-            }
+            # Create OpenAI client for OpenRouter
+            client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=self.openrouter_api_key
+            )
             
-            data = {
-                "model": "deepseek/deepseek-chat-v3-0324:free",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 750,  # Increased for DeepSeek V3's larger context
-                "temperature": 0.1
-            }
+            completion = client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+                    "X-Title": "TrendWise AI Keyword Extraction"  # Optional. Site title for rankings on openrouter.ai.
+                },
+                model="deepseek/deepseek-chat-v3-0324:free",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=750,  # Increased for DeepSeek V3's larger context
+                temperature=0.1,
+                timeout=30
+            )
             
-            response = requests.post(self.openrouter_url, headers=headers, json=data, timeout=30)
+            content = completion.choices[0].message.content.strip()
             
-            if response.status_code == 200:
-                result = response.json()
-                content = result['choices'][0]['message']['content'].strip()
-                
-                # Parse JSON response
-                try:
-                    # Extract JSON from response
-                    json_start = content.find('[')
-                    json_end = content.rfind(']') + 1
-                    if json_start >= 0 and json_end > json_start:
-                        json_str = content[json_start:json_end]
-                        ai_keywords = json.loads(json_str)
-                        
-                        # Convert to our format
-                        keywords = []
-                        for item in ai_keywords:
-                            if isinstance(item, dict) and 'keyword' in item:
-                                keywords.append({
-                                    'keyword': item['keyword'].strip(),
-                                    'category': item.get('category', 'concept'),
-                                    'relevance_score': float(item.get('relevance', 0.5)),
-                                    'source': 'ai_extraction'
-                                })
-                        
-                        logger.debug(f"Extracted {len(keywords)} AI keywords")
-                        return keywords
-                        
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse AI keyword response: {str(e)}")
+            # Parse JSON response
+            try:
+                # Extract JSON from response
+                json_start = content.find('[')
+                json_end = content.rfind(']') + 1
+                if json_start >= 0 and json_end > json_start:
+                    json_str = content[json_start:json_end]
+                    ai_keywords = json.loads(json_str)
+                    
+                    # Convert to our format
+                    keywords = []
+                    for item in ai_keywords:
+                        if isinstance(item, dict) and 'keyword' in item:
+                            keywords.append({
+                                'keyword': item['keyword'].strip(),
+                                'category': item.get('category', 'concept'),
+                                'relevance_score': float(item.get('relevance', 0.5)),
+                                'source': 'ai_extraction'
+                            })
+                    
+                    logger.debug(f"Extracted {len(keywords)} AI keywords")
+                    return keywords
+                    
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse AI keyword response: {str(e)}")
             
         except Exception as e:
             logger.warning(f"AI keyword extraction failed: {str(e)}")
