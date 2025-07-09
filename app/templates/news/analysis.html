@@ -4,109 +4,571 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/news.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/modern-theme.css') }}">
+<style>
+/* Analysis-specific glassmorphism styles */
+.analysis-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, 
+        var(--gradient-primary-start) 0%, 
+        var(--gradient-primary-mid) 35%, 
+        var(--gradient-primary-end) 100%);
+    transition: all 0.3s ease;
+}
+
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-hover);
+}
+
+.metric-card {
+    background: var(--glass-bg-light);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border-light);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-1px);
+    background: var(--glass-bg-lighter);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.metric-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sentiment-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sentiment-positive {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+    color: #059669;
+}
+
+.sentiment-neutral {
+    background: linear-gradient(135deg, rgba(107, 114, 128, 0.2), rgba(107, 114, 128, 0.1));
+    color: #6B7280;
+}
+
+.sentiment-negative {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+    color: #DC2626;
+}
+
+.trending-topic {
+    background: var(--glass-bg-light);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border-light);
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.trending-topic:hover {
+    background: var(--glass-bg-lighter);
+    transform: translateY(-1px);
+}
+
+.article-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.article-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--glass-shadow-hover);
+}
+
+.article-title {
+    color: var(--text-primary);
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+    transition: color 0.3s ease;
+}
+
+.article-title:hover {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.article-summary {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.symbol-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background: var(--glass-bg-light);
+    border: 1px solid var(--glass-border-light);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0.25rem 0.25rem 0.25rem 0;
+    transition: all 0.3s ease;
+}
+
+.symbol-tag:hover {
+    background: var(--glass-bg-lighter);
+    transform: scale(1.05);
+}
+
+.period-filter {
+    display: flex;
+    gap: 0.5rem;
+    background: var(--glass-bg-light);
+    padding: 0.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border-light);
+}
+
+.period-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.period-btn.active {
+    background: var(--glass-bg);
+    color: var(--text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    z-index: 50;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--glass-shadow);
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: var(--glass-shadow-hover);
+}
+
+.error-alert {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #DC2626;
+    backdrop-filter: blur(15px);
+    border-radius: 12px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .analysis-container {
+        padding: 1rem;
+    }
+    
+    .glass-card {
+        border-radius: 16px;
+        padding: 1rem;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+    }
+    
+    .theme-toggle {
+        top: 1rem;
+        right: 1rem;
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+}
+
+/* Dark mode specific adjustments */
+[data-theme="dark"] .sentiment-positive {
+    color: #34D399;
+}
+
+[data-theme="dark"] .sentiment-negative {
+    color: #F87171;
+}
+
+[data-theme="dark"] .sentiment-neutral {
+    color: #9CA3AF;
+}
+
+/* Loading states */
+.loading-shimmer {
+    background: linear-gradient(90deg, 
+        var(--glass-bg) 25%, 
+        var(--glass-bg-light) 50%, 
+        var(--glass-bg) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Error Alert -->
-    {% if error %}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-        <span class="block sm:inline">{{ error }}</span>
-    </div>
-    {% endif %}
+<div class="analysis-container" data-theme="light">
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <svg class="sun-icon w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+        </svg>
+        <svg class="moon-icon w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+        </svg>
+    </button>
 
-    <!-- Dashboard Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold mb-2">News Analysis Dashboard</h1>
-        <p class="text-gray-600">Track and analyze market news and sentiment</p>
-    </div>
-
-    <!-- Sentiment Summary Card -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 class="text-xl font-semibold mb-4">Sentiment Overview</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="text-center">
-                <div class="text-2xl font-bold text-blue-600">{{ sentiment_summary.total_articles }}</div>
-                <div class="text-gray-600">Total Articles</div>
+    <div class="container mx-auto px-4 py-8">
+        <!-- Error Alert -->
+        {% if error %}
+        <div class="error-alert px-4 py-3 rounded-lg mb-6" role="alert">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <span>{{ error }}</span>
             </div>
-            <div class="text-center">
-                <div class="text-2xl font-bold {% if sentiment_summary.average_sentiment > 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                    {{ "%.2f"|format(sentiment_summary.average_sentiment) }}
-                </div>
-                <div class="text-gray-600">Average Sentiment</div>
-            </div>
-            <div class="text-center">
-                <div class="flex justify-center space-x-4">
-                    <div>
-                        <span class="text-green-600 font-bold">{{ sentiment_summary.sentiment_distribution.positive }}</span>
-                        <span class="text-gray-600">Positive</span>
-                    </div>
-                    <div>
-                        <span class="text-gray-600 font-bold">{{ sentiment_summary.sentiment_distribution.neutral }}</span>
-                        <span class="text-gray-600">Neutral</span>
-                    </div>
-                    <div>
-                        <span class="text-red-600 font-bold">{{ sentiment_summary.sentiment_distribution.negative }}</span>
-                        <span class="text-gray-600">Negative</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Trending Topics -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 class="text-xl font-semibold mb-4">Trending Topics</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {% for topic in trending_topics %}
-            <div class="bg-gray-50 rounded p-4">
-                <div class="font-semibold">{{ topic.topic }}</div>
-                <div class="text-sm text-gray-600">{{ topic.count }} mentions</div>
-                <div class="text-xs text-gray-500">Trend: {{ topic.trend }}%</div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Recent Articles -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-semibold mb-4">Recent Articles</h2>
-        <div class="space-y-6">
-            {% for article in articles %}
-            <div class="border-b border-gray-200 pb-4 last:border-b-0">
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="text-lg font-medium">
-                        <a href="{{ article.url }}" target="_blank" class="text-blue-600 hover:text-blue-800">
-                            {{ article.title }}
-                        </a>
-                    </h3>
-                    <span class="text-sm text-gray-500">{{ article.published_at }}</span>
-                </div>
-                <p class="text-gray-600 mb-2">{{ article.summary.brief }}</p>
-                <div class="flex flex-wrap gap-2">
-                    {% for symbol in article.symbols %}
-                    <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">{{ symbol }}</span>
-                    {% endfor %}
-                    <span class="bg-{{ article.sentiment.overall_sentiment|lower }}-100 text-{{ article.sentiment.overall_sentiment|lower }}-700 px-2 py-1 rounded text-sm">
-                        {{ article.sentiment.overall_sentiment|title }}
-                    </span>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Pagination -->
-        {% if total_articles > 10 %}
-        <div class="mt-6 flex justify-center">
-            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <!-- Add pagination controls here -->
-            </nav>
         </div>
         {% endif %}
+
+        <!-- Dashboard Header -->
+        <div class="glass-card p-8 mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        News Analysis Dashboard
+                    </h1>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">
+                        Track and analyze market news and sentiment in real-time
+                    </p>
+                </div>
+                
+                <!-- Period Filter -->
+                <div class="period-filter mt-4 md:mt-0">
+                    <button class="period-btn {% if period == 'day' %}active{% endif %}" onclick="setPeriod('day')">
+                        Today
+                    </button>
+                    <button class="period-btn {% if period == 'week' %}active{% endif %}" onclick="setPeriod('week')">
+                        Week
+                    </button>
+                    <button class="period-btn {% if period == 'month' %}active{% endif %}" onclick="setPeriod('month')">
+                        Month
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sentiment Overview -->
+        <div class="glass-card p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
+                </svg>
+                Sentiment Overview
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Total Articles -->
+                <div class="metric-card">
+                    <div class="metric-value text-blue-600">
+                        {{ sentiment_summary.total_articles if sentiment_summary.total_articles else 0 }}
+                    </div>
+                    <div class="metric-label">Total Articles</div>
+                </div>
+                
+                <!-- Overall Score -->
+                <div class="metric-card">
+                    <div class="metric-value {% if sentiment_summary.overall_score > 0 %}text-green-600{% elif sentiment_summary.overall_score < 0 %}text-red-600{% else %}text-gray-600{% endif %}">
+                        {{ "%.1f"|format(sentiment_summary.overall_score) if sentiment_summary.overall_score else "0.0" }}
+                    </div>
+                    <div class="metric-label">Overall Score</div>
+                </div>
+                
+                <!-- Sentiment Distribution -->
+                <div class="metric-card md:col-span-2">
+                    <div class="flex justify-center gap-6">
+                        <div class="text-center">
+                            <div class="sentiment-indicator sentiment-positive">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-.464 5.535a1 1 0 10-1.415-1.414 3 3 0 01-4.242 0 1 1 0 00-1.415 1.414 5 5 0 007.072 0z" clip-rule="evenodd"/>
+                                </svg>
+                                {{ sentiment_summary.sentiment_distribution.positive if sentiment_summary.sentiment_distribution.positive else 0 }}
+                            </div>
+                            <div class="metric-label mt-2">Positive</div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="sentiment-indicator sentiment-neutral">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-5 5a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                                </svg>
+                                {{ sentiment_summary.sentiment_distribution.neutral if sentiment_summary.sentiment_distribution.neutral else 0 }}
+                            </div>
+                            <div class="metric-label mt-2">Neutral</div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="sentiment-indicator sentiment-negative">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-7.536 5.879a1 1 0 001.415 1.414 3 3 0 004.242 0 1 1 0 001.415-1.414 5 5 0 00-7.072 0z" clip-rule="evenodd"/>
+                                </svg>
+                                {{ sentiment_summary.sentiment_distribution.negative if sentiment_summary.sentiment_distribution.negative else 0 }}
+                            </div>
+                            <div class="metric-label mt-2">Negative</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trending Symbols -->
+        {% if trending_symbols %}
+        <div class="glass-card p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
+                </svg>
+                Trending Symbols
+            </h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {% for symbol in trending_symbols[:12] %}
+                <div class="trending-topic">
+                    <div class="font-bold text-lg mb-1">{{ symbol.symbol }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">{{ symbol.count }} articles</div>
+                    {% if symbol.get('sentiment_avg') %}
+                    <div class="text-xs mt-1 {% if symbol.sentiment_avg > 0 %}text-green-600{% elif symbol.sentiment_avg < 0 %}text-red-600{% else %}text-gray-600{% endif %}">
+                        Sentiment: {{ "%.1f"|format(symbol.sentiment_avg) }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Articles -->
+        <div class="glass-card p-6">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
+                </svg>
+                Recent Articles
+                <span class="ml-2 text-sm font-normal text-gray-500">
+                    ({{ latest_articles|length if latest_articles else 0 }} articles)
+                </span>
+            </h2>
+            
+            {% if latest_articles %}
+            <div class="space-y-4">
+                {% for article in latest_articles %}
+                <div class="article-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="article-title flex-1">
+                            <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer">
+                                {{ article.title }}
+                            </a>
+                        </h3>
+                        <span class="text-sm text-gray-500 ml-4 whitespace-nowrap">
+                            {{ article.published_at.strftime('%m/%d %H:%M') if article.published_at else 'Unknown' }}
+                        </span>
+                    </div>
+                    
+                    {% if article.ai_summary %}
+                    <div class="article-summary">
+                        {{ article.ai_summary[:200] }}{% if article.ai_summary|length > 200 %}...{% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Symbols -->
+                        {% if article.symbols %}
+                            {% for symbol in article.symbols[:5] %}
+                            <span class="symbol-tag">
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                </svg>
+                                {{ symbol.symbol if symbol.symbol else symbol }}
+                            </span>
+                            {% endfor %}
+                            {% if article.symbols|length > 5 %}
+                            <span class="symbol-tag opacity-60">
+                                +{{ article.symbols|length - 5 }} more
+                            </span>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <!-- Sentiment -->
+                        {% if article.ai_sentiment_rating is not none %}
+                        <span class="sentiment-indicator {% if article.ai_sentiment_rating > 20 %}sentiment-positive{% elif article.ai_sentiment_rating < -20 %}sentiment-negative{% else %}sentiment-neutral{% endif %}">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"/>
+                            </svg>
+                            {{ article.ai_sentiment_rating }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No articles available</h3>
+                <p class="text-gray-500 dark:text-gray-400">Check back later or try adjusting your filters.</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/news.js') }}"></script>
+<script>
+// Theme management
+function toggleTheme() {
+    const container = document.querySelector('.analysis-container');
+    const currentTheme = container.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    container.setAttribute('data-theme', newTheme);
+    localStorage.setItem('analysis-theme', newTheme);
+    
+    // Update theme toggle icons
+    const sunIcon = document.querySelector('.sun-icon');
+    const moonIcon = document.querySelector('.moon-icon');
+    
+    if (newTheme === 'dark') {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+    } else {
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+    }
+}
+
+// Set period filter
+function setPeriod(period) {
+    const url = new URL(window.location);
+    url.searchParams.set('period', period);
+    window.location.href = url.toString();
+}
+
+// Initialize theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('analysis-theme') || 'light';
+    const container = document.querySelector('.analysis-container');
+    const sunIcon = document.querySelector('.sun-icon');
+    const moonIcon = document.querySelector('.moon-icon');
+    
+    container.setAttribute('data-theme', savedTheme);
+    
+    if (savedTheme === 'dark') {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+    } else {
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+    }
+    
+    // Add loading animation to cards
+    const cards = document.querySelectorAll('.glass-card, .metric-card, .article-card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('animate-fade-in');
+    });
+});
+
+// Add smooth animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in {
+        animation: fade-in 0.6s ease-out forwards;
+    }
+`;
+document.head.appendChild(style);
+</script>
 {% endblock %}
