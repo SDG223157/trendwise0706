@@ -3184,7 +3184,7 @@ def api_suggestion_analytics():
 
 @bp.route('/api/search-suggestions', methods=['POST'])
 @login_required
-def api_search_suggestions():
+def api_ai_search_suggestions():
     """Generate AI-powered search suggestions when no results are found"""
     try:
         data = request.get_json()
