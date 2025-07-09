@@ -427,12 +427,23 @@ def search():
 
         logger.info(f"Search completed: {len(articles)} articles, has_more: {has_more}, type: {search_params.get('search_type', 'symbol')}")
 
+        # Generate AI-powered suggestions if no results found
+        ai_suggestions = None
+        if not articles and (search_query or symbol or keywords):
+            original_query = search_query or symbol or keywords
+            try:
+                ai_suggestions = _generate_ai_search_suggestions(original_query)
+                logger.info(f"Generated {len(ai_suggestions)} AI suggestions for empty search: {original_query}")
+            except Exception as e:
+                logger.warning(f"Failed to generate AI suggestions: {str(e)}")
+
         return render_template(
             'news/search.html',
             articles=articles,
             pagination=pagination,
             search_params=search_params,
             search_type='unified',
+            ai_suggestions=ai_suggestions,
             min=min
         )
 
@@ -446,6 +457,16 @@ def search():
             error_message = "Search running in compatibility mode (cache unavailable)."
             logger.info("🔄 Search operating without Redis cache")
         
+        # Generate AI suggestions even in error case if we have a query
+        ai_suggestions = None
+        if search_query or symbol or keywords:
+            original_query = search_query or symbol or keywords
+            try:
+                ai_suggestions = _generate_ai_search_suggestions(original_query)
+                logger.info(f"Generated {len(ai_suggestions)} AI suggestions for error case: {original_query}")
+            except Exception as e:
+                logger.warning(f"Failed to generate AI suggestions for error case: {str(e)}")
+
         return render_template(
             'news/search.html',
             articles=[],
@@ -453,6 +474,7 @@ def search():
             search_params={'q': search_query, 'symbol': symbol, 'keywords': keywords},
             search_type='unified',
             error=error_message,
+            ai_suggestions=ai_suggestions,
             min=min
         )
 
@@ -3159,3 +3181,173 @@ def api_suggestion_analytics():
             'status': 'error',
             'message': 'Failed to get suggestion analytics'
         }), 500
+
+@bp.route('/api/search-suggestions', methods=['POST'])
+@login_required
+def api_search_suggestions():
+    """Generate AI-powered search suggestions when no results are found"""
+    try:
+        data = request.get_json()
+        original_query = data.get('query', '').strip()
+        
+        if not original_query:
+            return jsonify({
+                'status': 'error',
+                'message': 'Query is required'
+            }), 400
+        
+        # Use AI to generate relevant search suggestions
+        suggestions = _generate_ai_search_suggestions(original_query)
+        
+        return jsonify({
+            'status': 'success',
+            'original_query': original_query,
+            'suggestions': suggestions
+        })
+        
+    except Exception as e:
+        logger.error(f"Error generating search suggestions: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to generate suggestions'
+        }), 500
+
+def _generate_ai_search_suggestions(query):
+    """Generate AI-powered search suggestions for a query that returned no results"""
+    try:
+        from openai import OpenAI
+        
+        api_key = os.getenv('OPENROUTER_API_KEY')
+        if not api_key:
+            logger.warning("OpenRouter API key not available for search suggestions")
+            return _get_fallback_suggestions(query)
+        
+        # Create OpenAI client for OpenRouter
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key
+        )
+        
+        prompt = f"""The user searched for "{query}" in a financial news database but got no results. 
+
+Generate 5-8 alternative search terms that are more likely to find relevant financial news articles. Consider:
+- Synonyms and related financial terms
+- Company symbols vs company names
+- Industry sectors and categories
+- Financial events and terminology
+- Broader or more specific terms
+
+Return ONLY a JSON array of suggestions with this format:
+[
+    {{"term": "alternative search term", "type": "synonym", "reason": "brief explanation"}},
+    {{"term": "another term", "type": "symbol", "reason": "brief explanation"}}
+]
+
+Types should be: "synonym", "symbol", "industry", "broader", "specific", "related"
+
+Original query: "{query}"
+"""
+        
+        completion = client.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": "https://trendwise.com",
+                "X-Title": "TrendWise Search Suggestions"
+            },
+            model="deepseek/deepseek-chat-v3-0324:free",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=500,
+            temperature=0.7,
+            timeout=15
+        )
+        
+        content = completion.choices[0].message.content.strip()
+        
+        # Parse JSON response
+        try:
+            import json
+            json_start = content.find('[')
+            json_end = content.rfind(']') + 1
+            if json_start >= 0 and json_end > json_start:
+                json_str = content[json_start:json_end]
+                suggestions = json.loads(json_str)
+                
+                # Validate and clean suggestions
+                valid_suggestions = []
+                for suggestion in suggestions:
+                    if isinstance(suggestion, dict) and 'term' in suggestion:
+                        valid_suggestions.append({
+                            'term': suggestion['term'].strip(),
+                            'type': suggestion.get('type', 'related'),
+                            'reason': suggestion.get('reason', 'Alternative search term')
+                        })
+                
+                if valid_suggestions:
+                    logger.info(f"Generated {len(valid_suggestions)} AI suggestions for query: {query}")
+                    return valid_suggestions
+                    
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Failed to parse AI suggestions response: {str(e)}")
+        
+        # Fallback to manual suggestions if AI parsing fails
+        return _get_fallback_suggestions(query)
+        
+    except Exception as e:
+        logger.warning(f"AI suggestion generation failed: {str(e)}")
+        return _get_fallback_suggestions(query)
+
+def _get_fallback_suggestions(query):
+    """Generate fallback search suggestions using rule-based logic"""
+    suggestions = []
+    query_lower = query.lower()
+    
+    # Financial term mappings
+    financial_mappings = {
+        'ai': ['artificial intelligence', 'machine learning', 'technology', 'NVDA', 'GOOGL'],
+        'artificial intelligence': ['ai', 'machine learning', 'tech stocks', 'automation'],
+        'electric vehicle': ['EV', 'TSLA', 'automotive', 'clean energy'], 
+        'ev': ['electric vehicle', 'TSLA', 'automotive', 'battery'],
+        'crypto': ['cryptocurrency', 'bitcoin', 'blockchain', 'MSTR'],
+        'bitcoin': ['cryptocurrency', 'crypto', 'digital currency', 'BTC'],
+        'earnings': ['quarterly results', 'financial results', 'profit', 'revenue'],
+        'merger': ['acquisition', 'M&A', 'takeover', 'deal'],
+        'ipo': ['initial public offering', 'new listing', 'public offering'],
+        'dividend': ['yield', 'payout', 'distribution', 'income'],
+        'oil': ['energy', 'petroleum', 'crude', 'XOM', 'CVX'],
+        'gold': ['precious metals', 'commodities', 'GLD', 'mining'],
+        'china': ['chinese stocks', 'asia', 'emerging markets', 'BABA'],
+        'fed': ['federal reserve', 'interest rates', 'monetary policy', 'FOMC'],
+        'inflation': ['CPI', 'price increase', 'economic data', 'monetary policy']
+    }
+    
+    # Check for direct mappings
+    for key, alternatives in financial_mappings.items():
+        if key in query_lower:
+            for alt in alternatives:
+                suggestions.append({
+                    'term': alt,
+                    'type': 'related',
+                    'reason': f'Related to {key}'
+                })
+            break
+    
+    # Add broader search suggestions
+    broader_terms = ['earnings', 'market news', 'financial results', 'stock analysis']
+    for term in broader_terms:
+        if term.lower() not in query_lower:
+            suggestions.append({
+                'term': term,
+                'type': 'broader',
+                'reason': 'Broader financial topic'
+            })
+    
+    # Add popular symbols if query might be a company name
+    if len(query.split()) <= 3 and not any(char.isdigit() for char in query):
+        popular_symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA']
+        for symbol in popular_symbols[:3]:
+            suggestions.append({
+                'term': symbol,
+                'type': 'symbol',
+                'reason': 'Popular stock symbol'
+            })
+    
+    return suggestions[:6]  # Limit to 6 suggestions

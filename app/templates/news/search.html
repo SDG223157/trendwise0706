@@ -449,6 +449,197 @@
         background: rgba(251, 191, 36, 0.3);
         color: #fbbf24;
     }
+    
+    /* 🤖 AI Search Suggestions Styling */
+    .ai-suggestions-container {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 20px;
+        padding: 20px;
+        margin: 20px 0;
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    [data-theme="dark"] .ai-suggestions-container {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.10) 100%);
+        border-color: rgba(139, 92, 246, 0.3);
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+    }
+    
+    .ai-suggestions-header h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #7c3aed;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    [data-theme="dark"] .ai-suggestions-header h3 {
+        color: #a78bfa;
+    }
+    
+    .ai-suggestions-header p {
+        margin: 0 0 16px 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+    
+    [data-theme="dark"] .ai-suggestions-header p {
+        color: #9ca3af;
+    }
+    
+    .suggestions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    @media (max-width: 768px) {
+        .suggestions-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .ai-suggestions-container {
+            margin: 16px 0;
+            padding: 16px;
+        }
+        
+        .suggestion-btn {
+            padding: 10px 14px;
+        }
+    }
+    
+    .suggestion-btn {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 12px;
+        padding: 12px 16px;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
+    }
+    
+    [data-theme="dark"] .suggestion-btn {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(139, 92, 246, 0.3);
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.15);
+    }
+    
+    .suggestion-btn:hover {
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(139, 92, 246, 0.4);
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+    }
+    
+    [data-theme="dark"] .suggestion-btn:hover {
+        background: rgba(30, 41, 59, 0.95);
+        border-color: rgba(139, 92, 246, 0.5);
+    }
+    
+    .suggestion-btn:active {
+        transform: translateY(0);
+        background: rgba(139, 92, 246, 0.1);
+    }
+    
+    .suggestion-term {
+        display: block;
+        font-weight: 600;
+        font-size: 15px;
+        color: #374151;
+        margin-bottom: 4px;
+    }
+    
+    [data-theme="dark"] .suggestion-term {
+        color: #f3f4f6;
+    }
+    
+    .suggestion-type {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+    
+    .suggestion-type-symbol {
+        background: rgba(34, 197, 94, 0.15);
+        color: #16a34a;
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+    
+    .suggestion-type-related {
+        background: rgba(59, 130, 246, 0.15);
+        color: #2563eb;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    
+    .suggestion-type-broader {
+        background: rgba(245, 158, 11, 0.15);
+        color: #d97706;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    
+    .suggestion-type-industry {
+        background: rgba(168, 85, 247, 0.15);
+        color: #9333ea;
+        border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+    
+    .suggestion-type-synonym {
+        background: rgba(236, 72, 153, 0.15);
+        color: #db2777;
+        border: 1px solid rgba(236, 72, 153, 0.2);
+    }
+    
+    .suggestion-type-specific {
+        background: rgba(20, 184, 166, 0.15);
+        color: #0d9488;
+        border: 1px solid rgba(20, 184, 166, 0.2);
+    }
+    
+    .suggestion-reason {
+        display: block;
+        font-size: 12px;
+        color: #6b7280;
+        font-style: italic;
+    }
+    
+    [data-theme="dark"] .suggestion-reason {
+        color: #9ca3af;
+    }
+    
+    .ai-suggestions-footer {
+        text-align: center;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(139, 92, 246, 0.2);
+    }
+    
+    .ai-suggestions-footer small {
+        color: #8b5cf6;
+        font-size: 11px;
+    }
+    
+    [data-theme="dark"] .ai-suggestions-footer small {
+        color: #a78bfa;
+    }
 </style>
 {% endblock %}
 
@@ -547,6 +738,28 @@
             {% endif %}
         {% endif %}
     </div>
+    
+    <!-- AI-Powered Search Suggestions -->
+    {% if ai_suggestions and not articles %}
+    <div class="ai-suggestions-container">
+        <div class="ai-suggestions-header">
+            <h3>🤖 AI Search Suggestions</h3>
+            <p>Try these related terms that might have more results:</p>
+        </div>
+        <div class="suggestions-grid">
+            {% for suggestion in ai_suggestions %}
+            <button class="suggestion-btn" onclick="searchWithSuggestion('{{ suggestion.term }}', '{{ suggestion.type }}')">
+                <span class="suggestion-term">{{ suggestion.term }}</span>
+                <span class="suggestion-type suggestion-type-{{ suggestion.type }}">{{ suggestion.type }}</span>
+                <span class="suggestion-reason">{{ suggestion.reason }}</span>
+            </button>
+            {% endfor %}
+        </div>
+        <div class="ai-suggestions-footer">
+            <small>💡 These suggestions are generated by AI based on your search query</small>
+        </div>
+    </div>
+    {% endif %}
     
     <!-- Top Pagination -->
     {% if articles and pagination and pagination.pages > 1 %}
@@ -795,6 +1008,69 @@
             });
         }
     });
+    
+    // Handle AI suggestion clicks
+    function searchWithSuggestion(term, type) {
+        const searchInput = document.getElementById('q');
+        const searchForm = document.getElementById('searchForm');
+        
+        if (searchInput && searchForm) {
+            // Set the suggestion term in the search input
+            searchInput.value = term;
+            
+            // Add visual feedback to show the suggestion was selected
+            const suggestionBtns = document.querySelectorAll('.suggestion-btn');
+            suggestionBtns.forEach(btn => {
+                if (btn.querySelector('.suggestion-term').textContent === term) {
+                    btn.style.background = 'rgba(139, 92, 246, 0.3)';
+                    btn.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        btn.style.background = '';
+                        btn.style.transform = '';
+                    }, 200);
+                }
+            });
+            
+            // Track the suggestion click for analytics
+            trackSuggestionClick(term, type);
+            
+            // Trigger the search
+            setTimeout(() => {
+                searchForm.submit();
+            }, 100);
+        }
+    }
+    
+    // Track suggestion clicks for analytics (optional)
+    function trackSuggestionClick(term, type) {
+        try {
+            // Log to console for debugging
+            console.log('AI Suggestion clicked:', { term, type });
+            
+            // Optional: Send analytics to server (only if endpoint exists)
+            const originalQuery = '{{ search_params.q or search_params.symbol or search_params.keywords }}';
+            if (originalQuery) {
+                fetch('/news/api/suggestions/click', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        suggestion_term: term,
+                        suggestion_type: type,
+                        original_query: originalQuery,
+                        timestamp: new Date().toISOString()
+                    })
+                }).catch(err => {
+                    // Fail silently for analytics
+                    console.log('Analytics tracking failed (this is normal):', err);
+                });
+            }
+        } catch (err) {
+            // Fail silently for analytics
+            console.log('Analytics error:', err);
+        }
+    }
 </script>
 
 <!-- Enhanced Search JavaScript -->
