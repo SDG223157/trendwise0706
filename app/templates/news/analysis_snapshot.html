@@ -1,0 +1,740 @@
+{% extends "base.html" %}
+
+{% block title %}News Analysis Snapshot{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/news.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/modern-theme.css') }}">
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+/* Analysis Snapshot specific glassmorphism styles */
+.snapshot-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, 
+        var(--gradient-primary-start) 0%, 
+        var(--gradient-primary-mid) 35%, 
+        var(--gradient-primary-end) 100%);
+    transition: all 0.3s ease;
+}
+
+.chart-container {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.chart-container:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-hover);
+}
+
+.chart-header {
+    padding: 1.5rem 2rem 1rem 2rem;
+    border-bottom: 1px solid var(--glass-border-light);
+    background: var(--glass-bg-light);
+}
+
+.chart-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.chart-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0.5rem 0 0 0;
+}
+
+.chart-content {
+    padding: 0;
+    min-height: 400px;
+    position: relative;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--glass-bg-light);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border-light);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-1px);
+    background: var(--glass-bg-lighter);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.filter-section {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--glass-shadow);
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.filter-select, .filter-input {
+    background: var(--glass-bg-light);
+    border: 1px solid var(--glass-border-light);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+}
+
+.filter-select:focus, .filter-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filter-button {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.filter-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    z-index: 50;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--glass-shadow);
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: var(--glass-shadow-hover);
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    z-index: 10;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(102, 126, 234, 0.3);
+    border-top: 3px solid var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+}
+
+.error-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1rem;
+    color: #EF4444;
+}
+
+.charts-grid {
+    display: grid;
+    gap: 2rem;
+}
+
+.chart-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.chart-row-1 {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .snapshot-container {
+        padding: 1rem;
+    }
+    
+    .chart-row-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-header {
+        padding: 1rem 1.5rem 0.75rem 1.5rem;
+    }
+    
+    .chart-title {
+        font-size: 1.25rem;
+    }
+    
+    .theme-toggle {
+        top: 1rem;
+        right: 1rem;
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Dark mode specific chart adjustments */
+[data-theme="dark"] .plotly .main-svg {
+    background: transparent !important;
+}
+
+[data-theme="dark"] .plotly .plot-container {
+    background: transparent !important;
+}
+
+/* Loading shimmer effect */
+.loading-shimmer {
+    background: linear-gradient(90deg, 
+        var(--glass-bg) 25%, 
+        var(--glass-bg-light) 50%, 
+        var(--glass-bg) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="snapshot-container" data-theme="light">
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <svg class="sun-icon w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+        </svg>
+        <svg class="moon-icon w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+        </svg>
+    </button>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                📊 News Analysis Snapshot
+            </h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Interactive analytics dashboard with real-time news sentiment analysis, trending symbols, and comprehensive market insights
+            </p>
+        </div>
+
+        <!-- Error Display -->
+        {% if error %}
+        <div class="chart-container mb-8">
+            <div class="error-state">
+                <svg class="error-icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <h3 class="text-xl font-semibold mb-2">Error Loading Analytics</h3>
+                <p class="text-gray-600 dark:text-gray-400">{{ error }}</p>
+                <button onclick="location.reload()" class="filter-button mt-4">
+                    Try Again
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Filters Section -->
+        <div class="filter-section">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Time Period</label>
+                    <select id="days-filter" class="filter-select">
+                        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
+                        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 Days</option>
+                        <option value="60" {% if days == 60 %}selected{% endif %}>Last 60 Days</option>
+                        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Symbol Filter</label>
+                    <input type="text" id="symbol-filter" class="filter-input" 
+                           placeholder="Enter symbol (e.g., AAPL)" 
+                           value="{% if symbol != 'all' %}{{ symbol }}{% endif %}">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Region</label>
+                    <select id="region-filter" class="filter-select">
+                        <option value="all" {% if region == 'all' %}selected{% endif %}>All Regions</option>
+                        <option value="US" {% if region == 'US' %}selected{% endif %}>United States</option>
+                        <option value="CHINA" {% if region == 'CHINA' %}selected{% endif %}>China</option>
+                        <option value="HK" {% if region == 'HK' %}selected{% endif %}>Hong Kong</option>
+                        <option value="UK" {% if region == 'UK' %}selected{% endif %}>United Kingdom</option>
+                        <option value="JP" {% if region == 'JP' %}selected{% endif %}>Japan</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">&nbsp;</label>
+                    <button onclick="applyFilters()" class="filter-button">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Update Charts
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        {% if analytics_data.summary_stats %}
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ analytics_data.summary_stats.total_articles }}</div>
+                <div class="stat-label">Total Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ "%.1f"|format(analytics_data.summary_stats.avg_sentiment) }}</div>
+                <div class="stat-label">Average Sentiment</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ days }}</div>
+                <div class="stat-label">Days Analyzed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">
+                    {% if symbol == 'all' %}All{% else %}{{ symbol }}{% endif %}
+                </div>
+                <div class="stat-label">Symbol Focus</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Sentiment Timeline Chart -->
+            <div class="chart-row-1">
+                <div class="chart-container" id="sentiment-timeline-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            Sentiment Timeline
+                        </h3>
+                        <p class="chart-subtitle">Daily sentiment trends with article volume overlay</p>
+                    </div>
+                    <div class="chart-content" id="sentiment-timeline-chart">
+                        <div class="loading-overlay">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Symbols and Sentiment Distribution -->
+            <div class="chart-row-2">
+                <div class="chart-container" id="top-symbols-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                            Top Symbols
+                        </h3>
+                        <p class="chart-subtitle">Most mentioned symbols by article volume</p>
+                    </div>
+                    <div class="chart-content" id="top-symbols-chart">
+                        <div class="loading-overlay">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container" id="sentiment-distribution-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+                            </svg>
+                            Sentiment Distribution
+                        </h3>
+                        <p class="chart-subtitle">Overall sentiment breakdown</p>
+                    </div>
+                    <div class="chart-content" id="sentiment-distribution-chart">
+                        <div class="loading-overlay">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Article Volume by Hour -->
+            <div class="chart-row-1">
+                <div class="chart-container" id="article-volume-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Article Volume by Hour
+                        </h3>
+                        <p class="chart-subtitle">Publishing patterns throughout the day</p>
+                    </div>
+                    <div class="chart-content" id="article-volume-chart">
+                        <div class="loading-overlay">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Global variables
+let currentTheme = 'light';
+let analyticsData = {{ analytics_data|tojson if analytics_data else '{}' }};
+
+// Theme management
+function toggleTheme() {
+    const container = document.querySelector('.snapshot-container');
+    const currentTheme = container.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    container.setAttribute('data-theme', newTheme);
+    localStorage.setItem('snapshot-theme', newTheme);
+    
+    // Update theme toggle icons
+    const sunIcon = document.querySelector('.sun-icon');
+    const moonIcon = document.querySelector('.moon-icon');
+    
+    if (newTheme === 'dark') {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+    } else {
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+    }
+    
+    // Update chart themes
+    updateChartThemes(newTheme);
+}
+
+function updateChartThemes(theme) {
+    const isDark = theme === 'dark';
+    const textColor = isDark ? '#E5E7EB' : '#374151';
+    const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    
+    // Update all chart layouts
+    const chartIds = ['sentiment-timeline-chart', 'top-symbols-chart', 'sentiment-distribution-chart', 'article-volume-chart'];
+    
+    chartIds.forEach(chartId => {
+        const chartDiv = document.getElementById(chartId);
+        if (chartDiv && chartDiv.data) {
+            const update = {
+                'font.color': textColor,
+                'xaxis.gridcolor': gridColor,
+                'yaxis.gridcolor': gridColor,
+                'plot_bgcolor': 'rgba(0,0,0,0)',
+                'paper_bgcolor': 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.relayout(chartDiv, update);
+        }
+    });
+}
+
+// Filter management
+function applyFilters() {
+    const days = document.getElementById('days-filter').value;
+    const symbol = document.getElementById('symbol-filter').value.trim() || 'all';
+    const region = document.getElementById('region-filter').value;
+    
+    // Update URL and reload
+    const url = new URL(window.location);
+    url.searchParams.set('days', days);
+    url.searchParams.set('symbol', symbol);
+    url.searchParams.set('region', region);
+    
+    window.location.href = url.toString();
+}
+
+// Chart rendering functions
+function renderCharts() {
+    if (!analyticsData || Object.keys(analyticsData).length === 0) {
+        showEmptyState();
+        return;
+    }
+
+    const isDark = currentTheme === 'dark';
+    const commonLayout = {
+        font: { 
+            family: 'Inter, sans-serif', 
+            color: isDark ? '#E5E7EB' : '#374151' 
+        },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        margin: { t: 50, r: 50, b: 50, l: 50 }
+    };
+
+    // Render sentiment timeline
+    if (analyticsData.sentiment_timeline) {
+        hideLoading('sentiment-timeline-chart');
+        const sentimentData = analyticsData.sentiment_timeline;
+        sentimentData.layout = { ...sentimentData.layout, ...commonLayout };
+        Plotly.newPlot('sentiment-timeline-chart', sentimentData.data, sentimentData.layout, {
+            responsive: true,
+            displayModeBar: false
+        });
+    }
+
+    // Render top symbols
+    if (analyticsData.top_symbols) {
+        hideLoading('top-symbols-chart');
+        const symbolsData = analyticsData.top_symbols;
+        symbolsData.layout = { ...symbolsData.layout, ...commonLayout };
+        Plotly.newPlot('top-symbols-chart', symbolsData.data, symbolsData.layout, {
+            responsive: true,
+            displayModeBar: false
+        });
+    }
+
+    // Render sentiment distribution
+    if (analyticsData.sentiment_distribution) {
+        hideLoading('sentiment-distribution-chart');
+        const distributionData = analyticsData.sentiment_distribution;
+        distributionData.layout = { ...distributionData.layout, ...commonLayout };
+        Plotly.newPlot('sentiment-distribution-chart', distributionData.data, distributionData.layout, {
+            responsive: true,
+            displayModeBar: false
+        });
+    }
+
+    // Render article volume
+    if (analyticsData.article_volume) {
+        hideLoading('article-volume-chart');
+        const volumeData = analyticsData.article_volume;
+        volumeData.layout = { ...volumeData.layout, ...commonLayout };
+        Plotly.newPlot('article-volume-chart', volumeData.data, volumeData.layout, {
+            responsive: true,
+            displayModeBar: false
+        });
+    }
+}
+
+function hideLoading(chartId) {
+    const chartContainer = document.getElementById(chartId);
+    const loadingOverlay = chartContainer.querySelector('.loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+function showEmptyState() {
+    const containers = ['sentiment-timeline-chart', 'top-symbols-chart', 'sentiment-distribution-chart', 'article-volume-chart'];
+    
+    containers.forEach(containerId => {
+        hideLoading(containerId);
+        const container = document.getElementById(containerId);
+        container.innerHTML = `
+            <div class="error-state">
+                <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <h4 class="text-lg font-medium mb-2">No Data Available</h4>
+                <p class="text-sm">Try adjusting your filters or check back later.</p>
+            </div>
+        `;
+    });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+            case 't':
+                e.preventDefault();
+                toggleTheme();
+                break;
+            case 'r':
+                e.preventDefault();
+                applyFilters();
+                break;
+        }
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize theme
+    const savedTheme = localStorage.getItem('snapshot-theme') || 'light';
+    const container = document.querySelector('.snapshot-container');
+    const sunIcon = document.querySelector('.sun-icon');
+    const moonIcon = document.querySelector('.moon-icon');
+    
+    container.setAttribute('data-theme', savedTheme);
+    currentTheme = savedTheme;
+    
+    if (savedTheme === 'dark') {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+    } else {
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+    }
+    
+    // Add animation classes to containers
+    const containers = document.querySelectorAll('.chart-container, .filter-section, .stat-card');
+    containers.forEach((container, index) => {
+        container.style.animationDelay = `${index * 0.1}s`;
+        container.classList.add('fade-in');
+    });
+    
+    // Render charts after a short delay to allow DOM to settle
+    setTimeout(renderCharts, 300);
+});
+
+// Make charts responsive to window resize
+window.addEventListener('resize', function() {
+    const chartIds = ['sentiment-timeline-chart', 'top-symbols-chart', 'sentiment-distribution-chart', 'article-volume-chart'];
+    
+    chartIds.forEach(chartId => {
+        const chartDiv = document.getElementById(chartId);
+        if (chartDiv && chartDiv.data) {
+            Plotly.Plots.resize(chartDiv);
+        }
+    });
+});
+
+// Enter key support for symbol filter
+document.getElementById('symbol-filter').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        applyFilters();
+    }
+});
+
+console.log('📊 News Analysis Snapshot loaded with', Object.keys(analyticsData).length, 'chart datasets');
+</script>
+{% endblock %} 

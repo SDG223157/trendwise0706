@@ -3175,32 +3175,407 @@ def api_suggestion_analytics():
 @bp.route('/api/search-suggestions', methods=['POST'])
 @login_required
 def api_ai_search_suggestions():
-    """Generate AI-powered search suggestions when no results are found"""
+    """
+    Generate AI-powered search suggestions for empty search results.
+    Returns a list of intelligent suggestions with different categories.
+    """
     try:
         data = request.get_json()
-        original_query = data.get('query', '').strip()
-        
-        if not original_query:
+        if not data or not data.get('query'):
             return jsonify({
                 'status': 'error',
                 'message': 'Query is required'
             }), 400
         
-        # Use AI to generate relevant search suggestions
-        suggestions = _generate_ai_search_suggestions(original_query)
+        query = data['query'].strip()
+        suggestions = _generate_ai_search_suggestions(query)
         
         return jsonify({
             'status': 'success',
-            'original_query': original_query,
-            'suggestions': suggestions
+            'data': {
+                'query': query,
+                'suggestions': suggestions,
+                'total': len(suggestions)
+            }
         })
         
     except Exception as e:
-        logger.error(f"Error generating search suggestions: {str(e)}")
+        logger.error(f"Error generating AI search suggestions: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': 'Failed to generate suggestions'
         }), 500
+
+@bp.route('/snapshot')
+@login_required
+def analysis_snapshot():
+    """Analysis snapshot page with interactive Plotly charts"""
+    try:
+        # Get filter parameters
+        days = min(int(request.args.get('days', 30)), 90)  # Cap at 90 days
+        symbol = request.args.get('symbol', 'all')
+        region = request.args.get('region', 'all')
+        
+        # Generate analytics data for charts
+        analytics_data = _generate_analytics_data(days, symbol, region)
+        
+        return render_template(
+            'news/analysis_snapshot.html',
+            analytics_data=analytics_data,
+            days=days,
+            symbol=symbol,
+            region=region
+        )
+        
+    except Exception as e:
+        logger.error(f"Error rendering analysis snapshot: {str(e)}")
+        return render_template(
+            'news/analysis_snapshot.html',
+            error=str(e),
+            analytics_data={},
+            days=30,
+            symbol='all',
+            region='all'
+        )
+
+@bp.route('/api/analytics-data', methods=['GET'])
+@login_required  
+def api_analytics_data():
+    """API endpoint for analytics data used by Plotly charts"""
+    try:
+        days = min(int(request.args.get('days', 30)), 90)
+        symbol = request.args.get('symbol', 'all')
+        region = request.args.get('region', 'all')
+        chart_type = request.args.get('chart_type', 'all')
+        
+        analytics_data = _generate_analytics_data(days, symbol, region, chart_type)
+        
+        return jsonify({
+            'status': 'success',
+            'data': analytics_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error generating analytics data: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+def _generate_analytics_data(days, symbol='all', region='all', chart_type='all'):
+    """Generate comprehensive analytics data for Plotly charts"""
+    try:
+        from datetime import datetime, timedelta
+        import pandas as pd
+        import plotly.graph_objects as go
+        import plotly.express as px
+        from plotly.subplots import make_subplots
+        import json
+        
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+        
+        # Initialize data structure
+        analytics = {
+            'sentiment_timeline': None,
+            'top_symbols': None,
+            'article_volume': None,
+            'sentiment_distribution': None,
+            'regional_analysis': None,
+            'keyword_trends': None,
+            'summary_stats': {}
+        }
+        
+        # Base query for articles in date range
+        base_query = NewsArticle.query.filter(
+            NewsArticle.published_at >= start_date,
+            NewsArticle.published_at <= end_date
+        )
+        
+        # Apply symbol filter
+        if symbol != 'all':
+            base_query = base_query.join(ArticleSymbol).filter(
+                ArticleSymbol.symbol.ilike(f'%{symbol}%')
+            )
+        
+        articles = base_query.all()
+        
+        if not articles:
+            return analytics
+        
+        # Generate summary statistics
+        analytics['summary_stats'] = {
+            'total_articles': len(articles),
+            'date_range': f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
+            'symbol_filter': symbol,
+            'region_filter': region,
+            'avg_sentiment': sum(a.ai_sentiment_rating for a in articles if a.ai_sentiment_rating is not None) / max(1, len([a for a in articles if a.ai_sentiment_rating is not None]))
+        }
+        
+        # 1. Sentiment Timeline Chart
+        if chart_type in ['all', 'sentiment_timeline']:
+            sentiment_data = []
+            current_date = start_date
+            
+            while current_date <= end_date:
+                day_articles = [a for a in articles if a.published_at.date() == current_date.date()]
+                day_sentiments = [a.ai_sentiment_rating for a in day_articles if a.ai_sentiment_rating is not None]
+                
+                if day_sentiments:
+                    avg_sentiment = sum(day_sentiments) / len(day_sentiments)
+                    sentiment_data.append({
+                        'date': current_date.strftime('%Y-%m-%d'),
+                        'sentiment': avg_sentiment,
+                        'article_count': len(day_articles),
+                        'positive_count': len([s for s in day_sentiments if s > 20]),
+                        'neutral_count': len([s for s in day_sentiments if -20 <= s <= 20]),
+                        'negative_count': len([s for s in day_sentiments if s < -20])
+                    })
+                else:
+                    sentiment_data.append({
+                        'date': current_date.strftime('%Y-%m-%d'),
+                        'sentiment': 0,
+                        'article_count': 0,
+                        'positive_count': 0,
+                        'neutral_count': 0,
+                        'negative_count': 0
+                    })
+                
+                current_date += timedelta(days=1)
+            
+            # Create sentiment timeline chart
+            fig = go.Figure()
+            
+            dates = [d['date'] for d in sentiment_data]
+            sentiments = [d['sentiment'] for d in sentiment_data]
+            article_counts = [d['article_count'] for d in sentiment_data]
+            
+            # Add sentiment line
+            fig.add_trace(go.Scatter(
+                x=dates,
+                y=sentiments,
+                mode='lines+markers',
+                name='Average Sentiment',
+                line=dict(color='#667eea', width=3),
+                marker=dict(size=8, color='#667eea'),
+                hovertemplate='<b>%{x}</b><br>Sentiment: %{y:.1f}<br><extra></extra>'
+            ))
+            
+            # Add article volume as secondary y-axis
+            fig.add_trace(go.Bar(
+                x=dates,
+                y=article_counts,
+                name='Article Volume',
+                yaxis='y2',
+                opacity=0.3,
+                marker_color='#f093fb',
+                hovertemplate='<b>%{x}</b><br>Articles: %{y}<br><extra></extra>'
+            ))
+            
+            fig.update_layout(
+                title=dict(
+                    text=f'Sentiment Timeline - Last {days} Days',
+                    x=0.5,
+                    font=dict(size=20, family='Inter, sans-serif')
+                ),
+                xaxis=dict(
+                    title='Date',
+                    showgrid=True,
+                    gridcolor='rgba(255,255,255,0.1)'
+                ),
+                yaxis=dict(
+                    title='Average Sentiment',
+                    range=[-100, 100],
+                    showgrid=True,
+                    gridcolor='rgba(255,255,255,0.1)'
+                ),
+                yaxis2=dict(
+                    title='Article Count',
+                    overlaying='y',
+                    side='right',
+                    showgrid=False
+                ),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(family='Inter, sans-serif'),
+                hovermode='x unified',
+                showlegend=True,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
+            )
+            
+            analytics['sentiment_timeline'] = json.loads(fig.to_json())
+        
+        # 2. Top Symbols Chart
+        if chart_type in ['all', 'top_symbols']:
+            symbol_counts = {}
+            symbol_sentiments = {}
+            
+            for article in articles:
+                if hasattr(article, 'symbols') and article.symbols:
+                    for symbol in article.symbols:
+                        symbol_name = symbol.symbol if hasattr(symbol, 'symbol') else str(symbol)
+                        if symbol_name not in symbol_counts:
+                            symbol_counts[symbol_name] = 0
+                            symbol_sentiments[symbol_name] = []
+                        
+                        symbol_counts[symbol_name] += 1
+                        if article.ai_sentiment_rating is not None:
+                            symbol_sentiments[symbol_name].append(article.ai_sentiment_rating)
+            
+            # Get top 20 symbols by article count
+            top_symbols = sorted(symbol_counts.items(), key=lambda x: x[1], reverse=True)[:20]
+            
+            if top_symbols:
+                symbols = [s[0] for s in top_symbols]
+                counts = [s[1] for s in top_symbols]
+                avg_sentiments = []
+                
+                for symbol in symbols:
+                    if symbol_sentiments[symbol]:
+                        avg_sentiment = sum(symbol_sentiments[symbol]) / len(symbol_sentiments[symbol])
+                    else:
+                        avg_sentiment = 0
+                    avg_sentiments.append(avg_sentiment)
+                
+                # Create color scale based on sentiment
+                colors = []
+                for sentiment in avg_sentiments:
+                    if sentiment > 20:
+                        colors.append('#22C55E')  # Green for positive
+                    elif sentiment < -20:
+                        colors.append('#EF4444')  # Red for negative
+                    else:
+                        colors.append('#6B7280')  # Gray for neutral
+                
+                fig = go.Figure(data=[
+                    go.Bar(
+                        x=symbols,
+                        y=counts,
+                        marker_color=colors,
+                        hovertemplate='<b>%{x}</b><br>Articles: %{y}<br>Avg Sentiment: %{customdata:.1f}<br><extra></extra>',
+                        customdata=avg_sentiments
+                    )
+                ])
+                
+                fig.update_layout(
+                    title=dict(
+                        text=f'Top Symbols by Article Volume',
+                        x=0.5,
+                        font=dict(size=20, family='Inter, sans-serif')
+                    ),
+                    xaxis=dict(
+                        title='Symbol',
+                        tickangle=45,
+                        showgrid=False
+                    ),
+                    yaxis=dict(
+                        title='Article Count',
+                        showgrid=True,
+                        gridcolor='rgba(255,255,255,0.1)'
+                    ),
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(family='Inter, sans-serif')
+                )
+                
+                analytics['top_symbols'] = json.loads(fig.to_json())
+        
+        # 3. Article Volume by Hour
+        if chart_type in ['all', 'article_volume']:
+            hourly_counts = {}
+            for hour in range(24):
+                hourly_counts[hour] = 0
+            
+            for article in articles:
+                if article.published_at:
+                    hour = article.published_at.hour
+                    hourly_counts[hour] += 1
+            
+            hours = list(range(24))
+            counts = [hourly_counts[h] for h in hours]
+            hour_labels = [f"{h:02d}:00" for h in hours]
+            
+            fig = go.Figure(data=[
+                go.Bar(
+                    x=hour_labels,
+                    y=counts,
+                    marker_color='#4facfe',
+                    hovertemplate='<b>%{x}</b><br>Articles: %{y}<br><extra></extra>'
+                )
+            ])
+            
+            fig.update_layout(
+                title=dict(
+                    text='Article Volume by Hour of Day',
+                    x=0.5,
+                    font=dict(size=20, family='Inter, sans-serif')
+                ),
+                xaxis=dict(
+                    title='Hour of Day',
+                    showgrid=False
+                ),
+                yaxis=dict(
+                    title='Article Count',
+                    showgrid=True,
+                    gridcolor='rgba(255,255,255,0.1)'
+                ),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(family='Inter, sans-serif')
+            )
+            
+            analytics['article_volume'] = json.loads(fig.to_json())
+        
+        # 4. Sentiment Distribution Pie Chart
+        if chart_type in ['all', 'sentiment_distribution']:
+            sentiments = [a.ai_sentiment_rating for a in articles if a.ai_sentiment_rating is not None]
+            
+            if sentiments:
+                positive_count = len([s for s in sentiments if s > 20])
+                neutral_count = len([s for s in sentiments if -20 <= s <= 20])
+                negative_count = len([s for s in sentiments if s < -20])
+                
+                fig = go.Figure(data=[
+                    go.Pie(
+                        labels=['Positive', 'Neutral', 'Negative'],
+                        values=[positive_count, neutral_count, negative_count],
+                        marker=dict(colors=['#22C55E', '#6B7280', '#EF4444']),
+                        hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<br><extra></extra>'
+                    )
+                ])
+                
+                fig.update_layout(
+                    title=dict(
+                        text='Sentiment Distribution',
+                        x=0.5,
+                        font=dict(size=20, family='Inter, sans-serif')
+                    ),
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(family='Inter, sans-serif'),
+                    showlegend=True,
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.1,
+                        xanchor="center",
+                        x=0.5
+                    )
+                )
+                
+                analytics['sentiment_distribution'] = json.loads(fig.to_json())
+        
+        return analytics
+        
+    except Exception as e:
+        logger.error(f"Error in _generate_analytics_data: {str(e)}")
+        return {}
 
 def _generate_ai_search_suggestions(query):
     """Generate AI-powered search suggestions for a query that returned no results"""
