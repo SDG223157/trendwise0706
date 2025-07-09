@@ -38,8 +38,8 @@ class AIModelTester:
         }
         
         # Initialize AI clients with separate API keys for each model
-        self.sonnet_api_key = "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"
-        self.deepseek_api_key = "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"
+        self.sonnet_api_key = "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"
+        self.deepseek_api_key = "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"
         
         # Create separate clients for each model
         self.sonnet_client = OpenAI(
