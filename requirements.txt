@@ -31,3 +31,5 @@ flask-limiter
 markdown>=3.6
 schedule>=1.2.0
 packaging>=21.0
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.21.1

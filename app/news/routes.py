@@ -2859,3 +2859,239 @@ def api_search():
             'status': 'error',
             'message': 'Search failed. Please try again.'
         }), 500
+
+@bp.route('/api/suggestions', methods=['GET'])
+def api_search_suggestions():
+    """
+    Get intelligent search suggestions based on user input.
+    
+    Query Parameters:
+    - q: Search query (required)
+    - limit: Maximum number of suggestions (default: 10)
+    - user_id: User ID for personalization (optional)
+    - session_id: Session ID for tracking (optional)
+    - context: Include context information (default: true)
+    
+    Returns:
+    JSON response with suggestions and metadata
+    """
+    try:
+        from app.utils.search.intelligent_suggestions import intelligent_suggestion_service
+        
+        query = request.args.get('q', '').strip()
+        limit = int(request.args.get('limit', 10))
+        user_id = request.args.get('user_id')
+        session_id = request.args.get('session_id')
+        include_context = request.args.get('context', 'true').lower() == 'true'
+        
+        # Convert user_id to int if provided
+        if user_id:
+            try:
+                user_id = int(user_id)
+            except ValueError:
+                user_id = None
+        
+        # Get suggestions
+        suggestions = intelligent_suggestion_service.get_search_suggestions(
+            query=query,
+            user_id=user_id,
+            session_id=session_id,
+            limit=limit,
+            include_context=include_context
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'query': query,
+                'suggestions': suggestions,
+                'count': len(suggestions)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in search suggestions API: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to get search suggestions'
+        }), 500
+
+
+@bp.route('/api/suggestions/click', methods=['POST'])
+def api_suggestion_click():
+    """
+    Track when a user clicks on a search suggestion.
+    
+    Request Body:
+    - query: Original search query
+    - selected_suggestion: The suggestion that was clicked
+    - user_id: User ID (optional)
+    - session_id: Session ID (optional)
+    
+    Returns:
+    JSON response confirming the tracking
+    """
+    try:
+        from app.utils.search.intelligent_suggestions import intelligent_suggestion_service
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'JSON data required'
+            }), 400
+        
+        query = data.get('query', '')
+        selected_suggestion = data.get('selected_suggestion', '')
+        user_id = data.get('user_id')
+        session_id = data.get('session_id')
+        
+        if not query or not selected_suggestion:
+            return jsonify({
+                'status': 'error',
+                'message': 'Query and selected_suggestion are required'
+            }), 400
+        
+        # Convert user_id to int if provided
+        if user_id:
+            try:
+                user_id = int(user_id)
+            except ValueError:
+                user_id = None
+        
+        # Track the click
+        intelligent_suggestion_service.track_suggestion_click(
+            query=query,
+            selected_suggestion=selected_suggestion,
+            user_id=user_id,
+            session_id=session_id
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Suggestion click tracked successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error tracking suggestion click: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to track suggestion click'
+        }), 500
+
+
+@bp.route('/api/keywords/extract', methods=['POST'])
+def api_extract_keywords():
+    """
+    Extract keywords from a batch of articles.
+    
+    Request Body:
+    - limit: Number of articles to process (default: 100)
+    - skip_processed: Skip already processed articles (default: true)
+    
+    Returns:
+    JSON response with extraction statistics
+    """
+    try:
+        from app.utils.ai.keyword_extraction_service import keyword_extraction_service
+        
+        data = request.get_json() or {}
+        limit = data.get('limit', 100)
+        skip_processed = data.get('skip_processed', True)
+        
+        # Process articles
+        stats = keyword_extraction_service.process_articles_batch(
+            limit=limit,
+            skip_processed=skip_processed
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'extraction_stats': stats,
+                'message': f"Processed {stats['processed']} articles, extracted {stats['keywords_extracted']} keywords"
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in keyword extraction API: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to extract keywords'
+        }), 500
+
+
+@bp.route('/api/keywords/trending', methods=['GET'])
+def api_trending_keywords():
+    """
+    Get trending keywords from recent articles.
+    
+    Query Parameters:
+    - days: Number of days to look back (default: 7)
+    - limit: Maximum number of keywords (default: 20)
+    
+    Returns:
+    JSON response with trending keywords
+    """
+    try:
+        from app.utils.ai.keyword_extraction_service import keyword_extraction_service
+        
+        days = int(request.args.get('days', 7))
+        limit = int(request.args.get('limit', 20))
+        
+        trending_keywords = keyword_extraction_service.get_trending_keywords(
+            days=days,
+            limit=limit
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'trending_keywords': trending_keywords,
+                'period_days': days,
+                'count': len(trending_keywords)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting trending keywords: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to get trending keywords'
+        }), 500
+
+
+@bp.route('/api/analytics/suggestions', methods=['GET'])
+def api_suggestion_analytics():
+    """
+    Get analytics about suggestion usage.
+    
+    Query Parameters:
+    - days: Number of days to analyze (default: 30)
+    - limit: Maximum number of results (default: 50)
+    
+    Returns:
+    JSON response with suggestion analytics
+    """
+    try:
+        from app.utils.search.intelligent_suggestions import intelligent_suggestion_service
+        
+        days = int(request.args.get('days', 30))
+        limit = int(request.args.get('limit', 50))
+        
+        analytics = intelligent_suggestion_service.get_suggestion_analytics(
+            days=days,
+            limit=limit
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'data': analytics
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting suggestion analytics: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to get suggestion analytics'
+        }), 500

@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import (Column, Integer, String, Float, DateTime, 
                       Text, ForeignKey, Enum, UniqueConstraint, Boolean, Index)
 from sqlalchemy.orm import relationship
+import json
 
 class NewsArticle(db.Model):
    __tablename__ = 'news_articles'
@@ -265,3 +266,143 @@ class UserActivity(db.Model):
     
     def __repr__(self):
         return f'<UserActivity {self.activity_type}: {self.user.username if self.user else "Unknown"} at {self.timestamp}>'
+
+class NewsKeyword(db.Model):
+    """
+    Extracted keywords and concepts from news articles for intelligent search suggestions.
+    This table stores AI-extracted keywords with relevance scoring and semantic relationships.
+    """
+    __tablename__ = 'news_keywords'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    keyword = db.Column(db.String(100), nullable=False, index=True)
+    normalized_keyword = db.Column(db.String(100), nullable=False, index=True)  # Lowercase, stemmed
+    category = db.Column(db.String(50), nullable=False, index=True)  # 'company', 'technology', 'financial', 'industry', 'concept'
+    relevance_score = db.Column(db.Float, default=0.0, index=True)  # AI-calculated relevance
+    frequency = db.Column(db.Integer, default=1, index=True)  # How often this keyword appears
+    sentiment_association = db.Column(db.Float, default=0.0)  # Average sentiment when this keyword appears
+    first_seen = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    article_keywords = relationship('ArticleKeyword', back_populates='keyword_ref', cascade='all, delete-orphan')
+    
+    __table_args__ = (
+        db.UniqueConstraint('normalized_keyword', 'category'),
+        Index('idx_keyword_relevance', 'keyword', 'relevance_score'),
+        Index('idx_keyword_frequency', 'keyword', 'frequency'),
+        Index('idx_keyword_category_relevance', 'category', 'relevance_score'),
+        Index('idx_keyword_search', 'normalized_keyword', 'category', 'frequency'),
+    )
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'keyword': self.keyword,
+            'category': self.category,
+            'relevance_score': self.relevance_score,
+            'frequency': self.frequency,
+            'sentiment_association': self.sentiment_association,
+            'first_seen': self.first_seen.isoformat() if self.first_seen else None,
+            'last_seen': self.last_seen.isoformat() if self.last_seen else None
+        }
+
+
+class ArticleKeyword(db.Model):
+    """
+    Junction table linking articles to their extracted keywords with context-specific scoring.
+    """
+    __tablename__ = 'article_keywords'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('news_articles.id', ondelete='CASCADE'), nullable=False, index=True)
+    keyword_id = db.Column(db.Integer, db.ForeignKey('news_keywords.id', ondelete='CASCADE'), nullable=False, index=True)
+    relevance_in_article = db.Column(db.Float, default=0.0)  # How relevant this keyword is to this specific article
+    extraction_source = db.Column(db.String(20), default='ai_summary')  # 'title', 'ai_summary', 'ai_insights'
+    position_weight = db.Column(db.Float, default=1.0)  # Higher weight for keywords appearing early/prominently
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    article = relationship('NewsArticle', backref='article_keywords')
+    keyword_ref = relationship('NewsKeyword', back_populates='article_keywords')
+    
+    __table_args__ = (
+        db.UniqueConstraint('article_id', 'keyword_id'),
+        Index('idx_article_keyword_relevance', 'article_id', 'relevance_in_article'),
+        Index('idx_keyword_article_relevance', 'keyword_id', 'relevance_in_article'),
+    )
+
+
+class KeywordSimilarity(db.Model):
+    """
+    Stores semantic similarity relationships between keywords for intelligent suggestions.
+    """
+    __tablename__ = 'keyword_similarities'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    keyword1_id = db.Column(db.Integer, db.ForeignKey('news_keywords.id', ondelete='CASCADE'), nullable=False, index=True)
+    keyword2_id = db.Column(db.Integer, db.ForeignKey('news_keywords.id', ondelete='CASCADE'), nullable=False, index=True)
+    similarity_score = db.Column(db.Float, nullable=False, index=True)  # 0.0 to 1.0
+    relationship_type = db.Column(db.String(50), default='semantic')  # 'semantic', 'co-occurrence', 'synonym'
+    confidence = db.Column(db.Float, default=0.0)  # Confidence in the similarity
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    keyword1 = relationship('NewsKeyword', foreign_keys=[keyword1_id])
+    keyword2 = relationship('NewsKeyword', foreign_keys=[keyword2_id])
+    
+    __table_args__ = (
+        db.UniqueConstraint('keyword1_id', 'keyword2_id'),
+        Index('idx_similarity_score', 'similarity_score'),
+        Index('idx_keyword_similarity', 'keyword1_id', 'similarity_score'),
+    )
+
+
+class SearchAnalytics(db.Model):
+    """
+    Track user search patterns to improve keyword suggestions and search experience.
+    """
+    __tablename__ = 'search_analytics'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)  # Can be null for anonymous
+    session_id = db.Column(db.String(100), nullable=False, index=True)  # Browser session
+    search_query = db.Column(db.String(500), nullable=False, index=True)
+    search_type = db.Column(db.String(20), nullable=False)  # 'symbol', 'keyword', 'mixed'
+    results_count = db.Column(db.Integer, default=0)
+    clicked_suggestions = db.Column(db.Text)  # JSON array of suggestions clicked
+    selected_keywords = db.Column(db.Text)  # JSON array of final keywords used
+    search_duration_ms = db.Column(db.Integer, default=0)  # Time to complete search
+    result_clicked = db.Column(db.Boolean, default=False)  # Whether user clicked any results
+    search_satisfied = db.Column(db.Boolean, default=None)  # Whether search was successful (inferred)
+    ip_address = db.Column(db.String(45), index=True)
+    user_agent = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    # Relationships
+    user = relationship('User', backref='search_analytics')
+    
+    __table_args__ = (
+        Index('idx_search_analytics_query', 'search_query'),
+        Index('idx_search_analytics_time', 'created_at'),
+        Index('idx_search_analytics_session', 'session_id', 'created_at'),
+        Index('idx_search_analytics_user_time', 'user_id', 'created_at'),
+    )
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'search_query': self.search_query,
+            'search_type': self.search_type,
+            'results_count': self.results_count,
+            'clicked_suggestions': json.loads(self.clicked_suggestions) if self.clicked_suggestions else [],
+            'selected_keywords': json.loads(self.selected_keywords) if self.selected_keywords else [],
+            'search_duration_ms': self.search_duration_ms,
+            'result_clicked': self.result_clicked,
+            'search_satisfied': self.search_satisfied,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
