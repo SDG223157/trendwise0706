@@ -1,467 +1,802 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>News Search</title>
-   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-   <style>
-       .markdown-content {
-           @apply space-y-4;
-       }
-       .markdown-content ul {
-           list-style: disc !important;
-           padding-left: 2rem !important;
-           margin-bottom: 1rem !important;
-       }
-       .markdown-content ul ul {
-           list-style: circle !important;
-           padding-left: 2rem !important;
-       }
-       .markdown-content ul ul ul {
-           list-style: square !important;
-       }
-       .markdown-content li {
-           display: list-item !important;
-           list-style-position: outside !important;
-           margin-bottom: 0.5rem !important;
-       }
-       .markdown-content li::marker {
-           color: #4a5568;  /* Match text color */
-           font-size: 1.1em;
-       }
-       .markdown-content h3 {
-           @apply text-lg font-semibold mt-4 mb-2;
-       }
-       .markdown-content h2 {
-           font-size: 1.25rem;
-           font-weight: 600;
-           margin-top: 1rem;
-           margin-bottom: 0.5rem;
-       }
-       .markdown-content h4 {
-           @apply font-medium text-gray-700 mt-4 mb-2 text-base;
-       }
-       /* Article layout container */
-       .article-layout {
-           display: grid;
-           gap: 1.5rem;
-           margin: 1rem 0;
-       }
+{% extends "base.html" %}
 
-       /* Mobile-first: single column */
-       @media (min-width: 1024px) {
-           .article-layout {
-               grid-template-columns: 3fr 2fr; /* 60% left, 40% right */
-           }
-       }
+{% block head %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+    /* 🎨 Glassmorphism Form Container - Same as Home Page */
+    .form-container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        padding: 20px 25px;
+        margin: 20px auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
+                    0 4px 16px rgba(0, 0, 0, 0.05);
+        max-width: 1100px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Dark mode form container */
+    [data-theme="dark"] .form-container {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: rgba(71, 85, 105, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                    0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Enhanced glassmorphism form inputs */
+    .form-group input,
+    .form-control,
+    input[type="text"],
+    button[type="submit"] {
+        height: 48px !important;
+        padding: 12px 16px !important;
+        border: 2px solid rgba(255, 255, 255, 0.7) !important;
+        border-radius: 12px !important;
+        font-size: 16px !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        color: #1f2937 !important;
+        font-weight: 500 !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+        box-sizing: border-box !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    /* Button specific styling */
+    button[type="submit"],
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+        border-color: #3b82f6 !important;
+        color: white !important;
+        cursor: pointer !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+    }
+    
+    button[type="submit"]:hover,
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+    }
+    
+    .btn-secondary {
+        background: rgba(107, 114, 128, 0.9) !important;
+        border-color: rgba(107, 114, 128, 0.7) !important;
+        color: white !important;
+    }
+    
+    .btn-secondary:hover {
+        background: rgba(75, 85, 99, 1) !important;
+        transform: translateY(-1px) !important;
+    }
+    
+         input[type="text"]:focus {
+         border-color: #3b82f6 !important;
+         background: rgba(255, 255, 255, 0.98) !important;
+         color: #1f2937 !important;
+         box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+         transform: translateY(-1px) !important;
+         outline: none !important;
+     }
+     
+     /* Smooth transition for double-click animation */
+     input[type="text"] {
+         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.15s ease !important;
+     }
+    
+    input[type="text"]::placeholder {
+        color: rgba(31, 41, 59, 0.6) !important;
+        font-weight: 400 !important;
+    }
+    
+    /* Enhanced labels */
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #ffffff !important;
+        background: rgba(30, 41, 59, 0.8) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        padding: 6px 12px !important;
+        border-radius: 8px !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        width: fit-content !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+        letter-spacing: 0.025em !important;
+    }
+    
+    /* Dark mode input overrides */
+    [data-theme="dark"] .form-group input,
+    [data-theme="dark"] .form-control,
+    [data-theme="dark"] input[type="text"] {
+        background: rgba(30, 41, 59, 0.95) !important;
+        border-color: rgba(148, 163, 184, 0.8) !important;
+        color: #f1f5f9 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+    }
+    
+    [data-theme="dark"] input[type="text"]:focus {
+        background: rgba(30, 41, 59, 0.98) !important;
+        border-color: rgba(148, 163, 184, 1) !important;
+        color: #f1f5f9 !important;
+        box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.3), 0 2px 12px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    [data-theme="dark"] input[type="text"]::placeholder {
+        color: rgba(241, 245, 249, 0.7) !important;
+    }
+    
+    [data-theme="dark"] .form-group label {
+        color: #f1f5f9 !important;
+        background: rgba(71, 85, 105, 0.8) !important;
+        border-color: rgba(148, 163, 184, 0.3) !important;
+    }
+    
+    /* 🎨 Article Cards with Glassmorphism */
+    .article-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    .article-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    [data-theme="dark"] .article-card {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: rgba(71, 85, 105, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    [data-theme="dark"] .article-card:hover {
+        border-color: rgba(71, 85, 105, 0.5);
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+    }
+    
+    /* Article Content Areas */
+    .article-main, .article-insights {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+    
+    [data-theme="dark"] .article-main,
+    [data-theme="dark"] .article-insights {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(71, 85, 105, 0.3);
+    }
+    
+    /* Enhanced Typography */
+    .article-title {
+        color: #1f2937;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .article-title:hover {
+        color: #3b82f6;
+        text-decoration: none;
+    }
+    
+    [data-theme="dark"] .article-title {
+        color: #f1f5f9;
+    }
+    
+    [data-theme="dark"] .article-title:hover {
+        color: #60a5fa;
+    }
+    
+    .article-meta {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-bottom: 16px;
+    }
+    
+    [data-theme="dark"] .article-meta {
+        color: #9ca3af;
+    }
+    
+    /* Content badges */
+    .content-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .badge-summary {
+        background: rgba(14, 165, 233, 0.2);
+        color: #0369a1;
+        border-color: rgba(14, 165, 233, 0.3);
+    }
+    
+    .badge-insights {
+        background: rgba(168, 85, 247, 0.2);
+        color: #7e22ce;
+        border-color: rgba(168, 85, 247, 0.3);
+    }
+    
+    [data-theme="dark"] .badge-summary {
+        background: rgba(14, 165, 233, 0.3);
+        color: #7dd3fc;
+    }
+    
+    [data-theme="dark"] .badge-insights {
+        background: rgba(168, 85, 247, 0.3);
+        color: #c084fc;
+    }
+    
+    /* Pagination with glassmorphism */
+    .pagination-container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 16px;
+        margin: 24px 0;
+    }
+    
+    [data-theme="dark"] .pagination-container {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: rgba(71, 85, 105, 0.3);
+    }
+    
+    .pagination-btn {
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 8px !important;
+        padding: 8px 12px !important;
+        color: #1f2937 !important;
+        text-decoration: none !important;
+        transition: all 0.2s ease !important;
+        font-weight: 500 !important;
+        min-width: 44px !important;
+        text-align: center !important;
+        display: inline-block !important;
+    }
+    
+    .pagination-btn:hover {
+        background: rgba(59, 130, 246, 0.8) !important;
+        color: white !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    .pagination-btn.active {
+        background: rgba(59, 130, 246, 0.9) !important;
+        color: white !important;
+    }
+    
+    [data-theme="dark"] .pagination-btn {
+        background: rgba(30, 41, 59, 0.8) !important;
+        border-color: rgba(71, 85, 105, 0.3) !important;
+        color: #f1f5f9 !important;
+    }
+    
+    [data-theme="dark"] .pagination-btn:hover {
+        background: rgba(59, 130, 246, 0.8) !important;
+        color: white !important;
+    }
+    
+    /* Search examples styling */
+    .search-examples {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 0.75rem;
+        color: #4b5563;
+        margin-top: 8px;
+    }
+    
+    [data-theme="dark"] .search-examples {
+        background: rgba(30, 41, 59, 0.6);
+        border-color: rgba(71, 85, 105, 0.3);
+        color: #9ca3af;
+    }
+    
+    /* Results count styling */
+    .results-count {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        font-size: 1rem;
+        color: #374151;
+        font-weight: 500;
+    }
+    
+    [data-theme="dark"] .results-count {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(71, 85, 105, 0.3);
+        color: #d1d5db;
+    }
+    
+    /* Markdown content styling */
+    .markdown-content {
+        line-height: 1.6;
+    }
+    
+    .markdown-content ul {
+        list-style: disc !important;
+        padding-left: 1.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .markdown-content li {
+        display: list-item !important;
+        margin-bottom: 0.5rem !important;
+        color: inherit;
+    }
+    
+    .markdown-content h2, .markdown-content h3, .markdown-content h4 {
+        font-weight: 600;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        color: inherit;
+    }
+    
+    [data-theme="dark"] .markdown-content {
+        color: #e5e7eb;
+    }
+    
+    /* Article layout responsiveness */
+    .article-layout {
+        display: grid;
+        gap: 1.5rem;
+        margin: 1rem 0;
+    }
+    
+    @media (min-width: 1024px) {
+        .article-layout {
+            grid-template-columns: 3fr 2fr;
+        }
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        .form-container {
+            margin: 1rem;
+            padding: 1rem;
+        }
+        
+        .article-card {
+            margin: 1rem;
+            padding: 16px;
+        }
+        
+        .pagination-container {
+            margin: 1rem;
+        }
+    }
+    
+    /* Sentiment badges */
+    .sentiment-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .sentiment-positive {
+        background: rgba(34, 197, 94, 0.2);
+        color: #15803d;
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+    
+    .sentiment-negative {
+        background: rgba(239, 68, 68, 0.2);
+        color: #dc2626;
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+    
+    .sentiment-neutral {
+        background: rgba(251, 191, 36, 0.2);
+        color: #d97706;
+        border-color: rgba(251, 191, 36, 0.3);
+    }
+    
+    [data-theme="dark"] .sentiment-positive {
+        background: rgba(34, 197, 94, 0.3);
+        color: #4ade80;
+    }
+    
+    [data-theme="dark"] .sentiment-negative {
+        background: rgba(239, 68, 68, 0.3);
+        color: #f87171;
+    }
+    
+    [data-theme="dark"] .sentiment-neutral {
+        background: rgba(251, 191, 36, 0.3);
+        color: #fbbf24;
+    }
+</style>
+{% endblock %}
 
-       /* Article main content */
-       .article-main {
-           background-color: white;
-           border-radius: 0.5rem;
-           padding: 1.25rem;
-           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-       }
+{% block content %}
+<div class="container mx-auto p-4">
+    <!-- Search Form with Glassmorphism -->
+    <div class="form-container">
+        <div class="mb-4">
+            <h1 class="text-2xl font-bold mb-4" style="color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">News Search</h1>
+            
+            <form id="searchForm" method="GET" action="{{ url_for('news.search') }}">
+                <div class="form-group">
+                    <label for="q">Enter Stock Symbol or Keywords:</label>
+                                         <div class="flex space-x-4">
+                         <input type="text" 
+                                id="q" 
+                                name="q" 
+                                value="{{ search_params.q or search_params.symbol or search_params.keywords }}"
+                                class="form-control flex-grow"
+                                placeholder="AAPL or artificial intelligence or AAPL earnings"
+                                title="Double-click to clear search">
+                         <button type="submit" class="btn-primary">
+                             Search
+                         </button>
+                     </div>
+                </div>
+                
+                                 <!-- Search examples helper -->
+                 <div class="search-examples">
+                     <strong>Search Examples:</strong> 
+                     <span class="font-mono">AAPL</span> (symbols), 
+                     <span class="font-mono">artificial intelligence</span> (keywords), 
+                     <span class="font-mono">china latest</span> (region), 
+                     <span class="font-mono">highest sentiment</span> (sort), 
+                     <span class="font-mono">lowest china</span> (sort + region)
+                     <br><strong>💡 Tip:</strong> Double-click search box to clear
+                 </div>
+            </form>
+        </div>
+    </div>
 
-       /* Article sidebar */
-       .article-insights {
-           background-color: white;
-           border-radius: 0.5rem;
-           padding: 1.25rem;
-           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-       }
+    <!-- Results Count -->
+    <div class="results-count">
+        {% if error %}
+            <div class="text-red-500">Error: {{ error }}</div>
+        {% elif articles %}
+            {% if pagination and pagination.total > 0 %}
+                Article {{ pagination.page }} of {{ pagination.total }}
+                {% if region_info %}
+                    <span class="text-blue-600 font-medium">🌍 {{ region_info }}</span>
+                {% endif %}
+                {% if search_params.get('sort_order') == 'HIGHEST' %}
+                    <span class="text-red-500 font-medium">🔝 Highest Sentiment</span>
+                {% elif search_params.get('sort_order') == 'LOWEST' %}
+                    <span class="text-orange-500 font-medium">🔻 Lowest Sentiment</span>
+                {% endif %}
+                {% if search_params.get('has_latest') %}
+                    <span class="text-purple-600 font-medium">🕐 Last 3 Days</span>
+                {% endif %}
+            {% else %}
+                No articles found for "{{ search_params.q or search_params.symbol or search_params.keywords }}"
+                {% if region_info %}
+                    <span class="text-blue-600 font-medium">🌍 {{ region_info }}</span>
+                {% endif %}
+                {% if search_params.get('sort_order') == 'HIGHEST' %}
+                    <span class="text-red-500 font-medium">🔝 Highest Sentiment</span>
+                {% elif search_params.get('sort_order') == 'LOWEST' %}
+                    <span class="text-orange-500 font-medium">🔻 Lowest Sentiment</span>
+                {% endif %}
+                {% if search_params.get('has_latest') %}
+                    <span class="text-purple-600 font-medium">🕐 Last 3 Days</span>
+                {% endif %}
+                {% if session.get('last_search_variants') %}
+                <div class="text-sm opacity-75 mt-1">
+                    (Searched for variants: {{ session.get('last_search_variants')|join(", ") }})
+                </div>
+                {% endif %}
+            {% endif %}
+        {% elif search_params.q or search_params.symbol or search_params.keywords %}
+            No articles found for "{{ search_params.q or search_params.symbol or search_params.keywords }}"
+            {% if region_info %}
+                <span class="text-blue-600 font-medium">🌍 {{ region_info }}</span>
+            {% endif %}
+            {% if search_params.get('sort_order') == 'HIGHEST' %}
+                <span class="text-red-500 font-medium">🔝 Highest Sentiment</span>
+            {% elif search_params.get('sort_order') == 'LOWEST' %}
+                <span class="text-orange-500 font-medium">🔻 Lowest Sentiment</span>
+            {% endif %}
+            {% if search_params.get('has_latest') %}
+                <span class="text-purple-600 font-medium">🕐 Last 3 Days</span>
+            {% endif %}
+            {% if session.get('last_search_variants') %}
+            <div class="text-sm opacity-75 mt-1">
+                (Searched for variants: {{ session.get('last_search_variants')|join(", ") }})
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+    
+    <!-- Top Pagination -->
+    {% if articles and pagination and pagination.pages > 1 %}
+    <div class="pagination-container">
+        <div class="flex justify-between items-center">
+            <div class="flex space-x-2">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q, 
+                        sort_order=search_params.get('sort_order'), 
+                        region_filter=search_params.get('region_filter'),
+                        date_filter=search_params.get('date_filter'),
+                        processing_filter=search_params.get('processing_filter'),
+                        sentiment_filter=search_params.get('sentiment_filter')) }}"
+                   class="pagination-btn">
+                    ← Previous
+                </a>
+                {% else %}
+                <span class="pagination-btn opacity-50 cursor-not-allowed">
+                    ← Previous
+                </span>
+                {% endif %}
+                
+                {% if pagination.has_next %}
+                <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q,
+                        sort_order=search_params.get('sort_order'), 
+                        region_filter=search_params.get('region_filter'),
+                        date_filter=search_params.get('date_filter'),
+                        processing_filter=search_params.get('processing_filter'),
+                        sentiment_filter=search_params.get('sentiment_filter')) }}"
+                   class="pagination-btn">
+                    Next →
+                </a>
+                {% else %}
+                <span class="pagination-btn opacity-50 cursor-not-allowed">
+                    Next →
+                </span>
+                {% endif %}
+            </div>
+            
+            <div class="text-sm opacity-75">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
-       /* Sticky sidebar on desktop */
-       @media (min-width: 1024px) {
-           .article-insights {
-               position: sticky;
-               top: 1rem;
-           }
-       }
+    <!-- Articles Container -->
+    <div id="articlesContainer">
+        {% if articles %}
+            {% for article in articles %}
+            <div class="article-card">
+                <!-- Article header -->
+                <a href="{{ article.url }}" target="_blank" 
+                   class="article-title block mb-3 hover:opacity-80">
+                    {{ article.title }}
+                </a>
+                
+                <div class="article-meta">
+                    Published: {{ article.published_at if article.published_at else 'Unknown' }}
+                    {% if article.symbols %}
+                    <div class="mt-1">
+                        Related Symbols: 
+                        {% for symbol in article.symbols %}
+                        <span class="inline-block bg-blue-100 px-2 py-1 rounded text-sm mr-1 mb-1">
+                            <a href="{{ url_for('news.search', symbol=symbol.symbol) }}" 
+                               class="text-blue-600 hover:text-blue-800">
+                                {{ symbol.symbol }}
+                            </a>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
 
-       /* Badge styles */
-       .content-badge {
-           display: inline-block;
-           padding: 0.5rem 1rem;
-           border-radius: 9999px;
-           font-size: 0.875rem;
-           font-weight: 500;
-           margin-bottom: 1rem;
-       }
+                <!-- Two-column layout -->
+                <div class="article-layout">
+                    <!-- Left column: Main content -->
+                    <div class="article-main">
+                        <!-- AI Summary (if available) -->
+                        {% if article.summary and article.summary.ai_summary %}
+                        <div class="mb-6">
+                            <span class="content-badge badge-summary">AI Summary</span>
+                            <div class="markdown-content">
+                                {{ article.summary.ai_summary|markdown|safe }}
+                            </div>
+                        </div>
+                        {% endif %}
 
-       .badge-summary {
-           background-color: #e0f2fe;
-           color: #0369a1;
-       }
+                        <!-- Original Content (if AI summary not available) -->
+                        {% if not (article.summary and article.summary.ai_summary) and article.content %}
+                        <div class="mb-6">
+                            <span class="content-badge" style="background: rgba(252, 211, 77, 0.2); color: #92400e; border-color: rgba(252, 211, 77, 0.3);">Original Content</span>
+                            <div class="text-gray-700 leading-relaxed">
+                                {{ article.content[:500] }}{% if article.content|length > 500 %}...{% endif %}
+                            </div>
+                            {% if article.content|length > 500 %}
+                            <a href="{{ article.url }}" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm mt-2 inline-block">
+                                Read full article →
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
 
-       .badge-insights {
-           background-color: #f3e8ff;
-           color: #7e22ce;
-       }
+                        <!-- Fallback when no content available -->
+                        {% if not (article.summary and article.summary.ai_summary) and not article.content %}
+                        <div class="mb-6">
+                            <span class="content-badge" style="background: rgba(254, 202, 202, 0.2); color: #991b1b; border-color: rgba(254, 202, 202, 0.3);">No Content Available</span>
+                            <div class="text-gray-500 italic">
+                                Content not yet fetched. <a href="{{ article.url }}" target="_blank" class="text-blue-500 hover:text-blue-700">View original article →</a>
+                            </div>
+                        </div>
+                        {% endif %}
 
-       /* Mobile safe area for pagination */
-       @supports (padding-bottom: env(safe-area-inset-bottom)) {
-           .pb-safe {
-               padding-bottom: max(4rem, calc(1rem + env(safe-area-inset-bottom)));
-           }
-       }
+                        <!-- AI Sentiment Rating -->
+                        {% if article.summary and article.summary.ai_sentiment_rating is not none %}
+                        <div class="text-sm mt-4 pt-4 border-t border-opacity-20">
+                            <span class="sentiment-badge {% if article.summary.ai_sentiment_rating > 50 %}sentiment-positive{% elif article.summary.ai_sentiment_rating < -50 %}sentiment-negative{% else %}sentiment-neutral{% endif %}">
+                                AI Sentiment Rating: {{ article.summary.ai_sentiment_rating }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
 
-       /* Fallback for browsers without safe-area-inset support */
-       .pb-safe {
-           padding-bottom: 4rem;
-       }
+                    <!-- Right column: AI Insights -->
+                    <div class="article-insights">
+                        {% if article.summary and article.summary.ai_insights %}
+                        <span class="content-badge badge-insights">AI Insights</span>
+                        <div class="markdown-content">
+                            {{ article.summary.ai_insights|markdown|safe }}
+                        </div>
+                        {% else %}
+                        <!-- Show article metadata when AI insights not available -->
+                        <span class="content-badge" style="background: rgba(240, 249, 255, 0.2); color: #0369a1; border-color: rgba(240, 249, 255, 0.3);">Article Info</span>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <span class="font-medium opacity-75">Source:</span>
+                                <span class="opacity-90">{{ article.source or 'Unknown' }}</span>
+                            </div>
+                            {% if article.author %}
+                            <div>
+                                <span class="font-medium opacity-75">Author:</span>
+                                <span class="opacity-90">{{ article.author }}</span>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <span class="font-medium opacity-75">Published:</span>
+                                <span class="opacity-90">{{ article.published_at if article.published_at else 'Unknown' }}</span>
+                            </div>
+                            {% if article.symbols %}
+                            <div>
+                                <span class="font-medium opacity-75">Related Symbols:</span>
+                                <div class="mt-1 flex flex-wrap gap-1">
+                                    {% for symbol in article.symbols %}
+                                    <a href="{{ url_for('news.search', symbol=symbol.symbol if symbol.symbol else symbol) }}" 
+                                       class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200">
+                                        {{ symbol.symbol if symbol.symbol else symbol }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="pt-2 border-t border-opacity-20">
+                                <a href="{{ article.url }}" target="_blank" 
+                                   class="text-blue-500 hover:text-blue-700 text-sm font-medium">
+                                    Read Full Article →
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
 
-       /* Ensure pagination buttons are touch-friendly on mobile */
-       @media (max-width: 640px) {
-           .pagination-container {
-               position: sticky;
-               bottom: 0;
-               background: rgba(255, 255, 255, 0.95);
-               backdrop-filter: blur(10px);
-               border-top: 1px solid #e5e7eb;
-               padding: 1rem;
-               margin: 0 -1rem -1rem -1rem;
-           }
-       }
-   </style>
-</head>
-<body class="bg-gray-50">
-   <div class="container mx-auto p-4">
-       <div class="flex justify-between items-center mb-6">
-           <h1 class="text-2xl font-bold">News Search</h1>
-           <a href="{{ url_for('main.index') }}" 
-              class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
-               Home
-           </a>
-       </div>
+            <!-- Bottom Pagination -->
+            {% if pagination and pagination.pages > 1 %}
+            <div class="pagination-container">
+                <div class="flex justify-center space-x-2 flex-wrap">
+                    {% if pagination.has_prev %}
+                    <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q,
+                            sort_order=search_params.get('sort_order'),
+                            region_filter=search_params.get('region_filter'),
+                            date_filter=search_params.get('date_filter'),
+                            processing_filter=search_params.get('processing_filter'),
+                            sentiment_filter=search_params.get('sentiment_filter')) }}"
+                       class="pagination-btn mb-2">Prev</a>
+                    {% endif %}
 
-       <div class="mb-8 flex justify-between items-center">
-           <form id="searchForm" method="GET" action="{{ url_for('news.search') }}" class="space-y-4 flex-grow">
-               <div class="flex flex-col space-y-2">
-                   <label for="q" class="text-gray-700 font-medium">Enter Stock Symbol or Keywords:</label>
-                   <div class="flex space-x-4">
-                       <input type="text" 
-                              id="q" 
-                              name="q" 
-                              value="{{ search_params.q or search_params.symbol or search_params.keywords }}"
-                              class="form-input rounded-md border-gray-300 shadow-sm w-full"
-                              placeholder="AAPL or artificial intelligence or AAPL earnings">
-                       <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                           Search
-                       </button>
-                       <a href="{{ url_for('news.search') }}" 
-                          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
-                           New Search
-                       </a>
-                   </div>
-               </div>
-               
+                    {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=1, right_edge=1) %}
+                        {% if page_num %}
+                            {% if page_num == pagination.page %}
+                            <span class="pagination-btn active mb-2">
+                                {{ page_num }}
+                            </span>
+                            {% else %}
+                            <a href="{{ url_for('news.search', page=page_num, q=search_params.q,
+                                    sort_order=search_params.get('sort_order'),
+                                    region_filter=search_params.get('region_filter'),
+                                    date_filter=search_params.get('date_filter'),
+                                    processing_filter=search_params.get('processing_filter'),
+                                    sentiment_filter=search_params.get('sentiment_filter')) }}"
+                               class="pagination-btn mb-2">
+                                {{ page_num }}
+                            </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="pagination-btn opacity-50 mb-2">…</span>
+                        {% endif %}
+                    {% endfor %}
 
-               
-               <!-- Search examples helper -->
-               <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                   <strong>Search Examples:</strong> 
-                   <span class="font-mono">AAPL</span> (symbols), 
-                   <span class="font-mono">artificial intelligence</span> (keywords), 
-                   <span class="font-mono">china latest</span> (region), 
-                   <span class="font-mono">highest sentiment</span> (sort), 
-                   <span class="font-mono">lowest china</span> (sort + region)
-               </div>
-           </form>
-       </div>
+                    {% if pagination.has_next %}
+                    <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q,
+                            sort_order=search_params.get('sort_order'),
+                            region_filter=search_params.get('region_filter'),
+                            date_filter=search_params.get('date_filter'),
+                            processing_filter=search_params.get('processing_filter'),
+                            sentiment_filter=search_params.get('sentiment_filter')) }}"
+                       class="pagination-btn mb-2">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
 
-       <div id="resultsCount" class="text-lg text-gray-600 mb-4">
-           {% if error %}
-               <div class="text-red-500">Error: {{ error }}</div>
-           {% elif articles %}
-               {% if pagination and pagination.total > 0 %}
-                   Article {{ pagination.page }} of {{ pagination.total }}
-                   {% if region_info %}
-                       <span class="text-blue-600 font-medium">🌍 {{ region_info }}</span>
-                   {% endif %}
-                   {% if search_params.get('sort_order') == 'HIGHEST' %}
-                       <span class="text-red-500 font-medium">🔝 Highest Sentiment</span>
-                   {% elif search_params.get('sort_order') == 'LOWEST' %}
-                       <span class="text-orange-500 font-medium">🔻 Lowest Sentiment</span>
-                   {% endif %}
-                   {% if search_params.get('has_latest') %}
-                       <span class="text-purple-600 font-medium">🕐 Last 3 Days</span>
-                   {% endif %}
-               {% else %}
-                   No articles found for "{{ search_params.q or search_params.symbol or search_params.keywords }}"
-                   {% if region_info %}
-                       <span class="text-blue-600 font-medium">🌍 {{ region_info }}</span>
-                   {% endif %}
-                   {% if search_params.get('sort_order') == 'HIGHEST' %}
-                       <span class="text-red-500 font-medium">🔝 Highest Sentiment</span>
-                   {% elif search_params.get('sort_order') == 'LOWEST' %}
-                       <span class="text-orange-500 font-medium">🔻 Lowest Sentiment</span>
-                   {% endif %}
-                   {% if search_params.get('has_latest') %}
-                       <span class="text-purple-600 font-medium">🕐 Last 3 Days</span>
-                   {% endif %}
-                   {% if session.get('last_search_variants') %}
-                   <div class="text-sm text-gray-500 mt-1">
-                       (Searched for variants: {{ session.get('last_search_variants')|join(", ") }})
-                   </div>
-                   {% endif %}
-               {% endif %}
-           {% elif search_params.q or search_params.symbol or search_params.keywords %}
-               No articles found for "{{ search_params.q or search_params.symbol or search_params.keywords }}"
-               {% if region_info %}
-                   <span class="text-blue-600 font-medium">🌍 {{ region_info }}</span>
-               {% endif %}
-               {% if search_params.get('sort_order') == 'HIGHEST' %}
-                   <span class="text-red-500 font-medium">🔝 Highest Sentiment</span>
-               {% elif search_params.get('sort_order') == 'LOWEST' %}
-                   <span class="text-orange-500 font-medium">🔻 Lowest Sentiment</span>
-               {% endif %}
-               {% if search_params.get('has_latest') %}
-                   <span class="text-purple-600 font-medium">🕐 Last 3 Days</span>
-               {% endif %}
-               {% if session.get('last_search_variants') %}
-               <div class="text-sm text-gray-500 mt-1">
-                   (Searched for variants: {{ session.get('last_search_variants')|join(", ") }})
-               </div>
-               {% endif %}
-           {% endif %}
-       </div>
-       
-       <!-- Top Pagination Controls -->
-       {% if articles and pagination and pagination.pages > 1 %}
-       <div class="flex justify-between items-center mb-6 py-3 px-4 bg-white border rounded-lg shadow-sm">
-           <div class="flex space-x-2">
-               {% if pagination.has_prev %}
-               <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q, 
-                       sort_order=search_params.get('sort_order'), 
-                       region_filter=search_params.get('region_filter'),
-                       date_filter=search_params.get('date_filter'),
-                       processing_filter=search_params.get('processing_filter'),
-                       sentiment_filter=search_params.get('sentiment_filter')) }}"
-                  class="px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                   ← Previous
-               </a>
-               {% else %}
-               <span class="px-3 py-2 text-sm bg-gray-200 text-gray-400 rounded cursor-not-allowed">
-                   ← Previous
-               </span>
-               {% endif %}
-               
-               {% if pagination.has_next %}
-               <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q,
-                       sort_order=search_params.get('sort_order'), 
-                       region_filter=search_params.get('region_filter'),
-                       date_filter=search_params.get('date_filter'),
-                       processing_filter=search_params.get('processing_filter'),
-                       sentiment_filter=search_params.get('sentiment_filter')) }}"
-                  class="px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                   Next →
-               </a>
-               {% else %}
-               <span class="px-3 py-2 text-sm bg-gray-200 text-gray-400 rounded cursor-not-allowed">
-                   Next →
-               </span>
-               {% endif %}
-           </div>
-           
-           <div class="text-sm text-gray-600">
-               Page {{ pagination.page }} of {{ pagination.pages }}
-           </div>
-       </div>
-       {% endif %}
+<script>
+    function getSentimentClass(rating) {
+        if (rating > 50) return 'sentiment-positive';
+        if (rating < -50) return 'sentiment-negative';
+        return 'sentiment-neutral';
+    }
+    
+    // Double-click to clear search input
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('q');
+        if (searchInput) {
+            searchInput.addEventListener('dblclick', function() {
+                this.value = '';
+                this.focus();
+                // Add a subtle animation to indicate the action
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+            });
+        }
+    });
+</script>
 
-       <div id="articlesContainer" class="space-y-6">
-           {% if articles %}
-               {% for article in articles %}
-               <div class="border-2 border-blue-100 rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow bg-white">
-                   <!-- Article header -->
-                   <a href="{{ article.url }}" target="_blank" 
-                      class="block text-blue-500 text-xl font-semibold mb-3 hover:text-blue-600">
-                       {{ article.title }}
-                   </a>
-                   
-                   <div class="text-gray-500 mb-2">
-                                               Published: {{ article.published_at if article.published_at else 'Unknown' }}
-                       {% if article.symbols %}
-                       <div class="mt-1">
-                           Related Symbols: 
-                           {% for symbol in article.symbols %}
-                           <span class="bg-gray-100 px-2 py-1 rounded text-sm">
-                               <a href="{{ url_for('news.search', symbol=symbol.symbol) }}" 
-                                  class="text-blue-500 hover:text-blue-700">
-                                   {{ symbol.symbol }}
-                               </a>
-                           </span>
-                           {% endfor %}
-                       </div>
-                       {% endif %}
-                   </div>
-
-                   <!-- Two-column layout -->
-                   <div class="article-layout">
-                       <!-- Left column: Main content -->
-                       <div class="article-main">
-
-
-                           <!-- AI Summary (if available) -->
-                           {% if article.summary and article.summary.ai_summary %}
-                           <div class="mb-6">
-                               <span class="content-badge badge-summary">AI Summary</span>
-                               <div class="markdown-content">
-                                   {{ article.summary.ai_summary|markdown|safe }}
-                               </div>
-                           </div>
-                           {% endif %}
-
-                           <!-- Original Content (if AI summary not available) -->
-                           {% if not (article.summary and article.summary.ai_summary) and article.content %}
-                           <div class="mb-6">
-                               <span class="content-badge" style="background-color: #fef3c7; color: #92400e;">Original Content</span>
-                               <div class="text-gray-700 leading-relaxed">
-                                   {{ article.content[:500] }}{% if article.content|length > 500 %}...{% endif %}
-                               </div>
-                               {% if article.content|length > 500 %}
-                               <a href="{{ article.url }}" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm mt-2 inline-block">
-                                   Read full article →
-                               </a>
-                               {% endif %}
-                           </div>
-                           {% endif %}
-
-                           <!-- Fallback when no content available -->
-                           {% if not (article.summary and article.summary.ai_summary) and not article.content %}
-                           <div class="mb-6">
-                               <span class="content-badge" style="background-color: #fee2e2; color: #991b1b;">No Content Available</span>
-                               <div class="text-gray-500 italic">
-                                   Content not yet fetched. <a href="{{ article.url }}" target="_blank" class="text-blue-500 hover:text-blue-700">View original article →</a>
-                               </div>
-                           </div>
-                           {% endif %}
-
-                           <!-- AI Sentiment Rating -->
-                           {% if article.summary and article.summary.ai_sentiment_rating is not none %}
-                           <div class="text-sm text-gray-500 mt-4 border-t pt-4">
-                               <span class="px-4 py-2 mb-4 rounded-full text-sm font-medium 
-                                   {% if article.summary.ai_sentiment_rating > 50 %}bg-green-100 text-green-800
-                                   {% elif article.summary.ai_sentiment_rating < -50 %}bg-red-100 text-red-800
-                                   {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                   AI Sentiment Rating: {{ article.summary.ai_sentiment_rating }}
-                               </span>
-                           </div>
-                           {% endif %}
-                       </div>
-
-                       <!-- Right column: AI Insights -->
-                       <div class="article-insights">
-                           {% if article.summary and article.summary.ai_insights %}
-                           <span class="content-badge badge-insights">AI Insights</span>
-                           <div class="markdown-content">
-                               {{ article.summary.ai_insights|markdown|safe }}
-                           </div>
-                           {% else %}
-                           <!-- Show article metadata when AI insights not available -->
-                           <span class="content-badge" style="background-color: #f0f9ff; color: #0369a1;">Article Info</span>
-                           <div class="space-y-3 text-sm">
-                               <div>
-                                   <span class="font-medium text-gray-700">Source:</span>
-                                   <span class="text-gray-600">{{ article.source or 'Unknown' }}</span>
-                               </div>
-                               {% if article.author %}
-                               <div>
-                                   <span class="font-medium text-gray-700">Author:</span>
-                                   <span class="text-gray-600">{{ article.author }}</span>
-                               </div>
-                               {% endif %}
-                               <div>
-                                   <span class="font-medium text-gray-700">Published:</span>
-                                   <span class="text-gray-600">{{ article.published_at if article.published_at else 'Unknown' }}</span>
-                               </div>
-                               {% if article.symbols %}
-                               <div>
-                                   <span class="font-medium text-gray-700">Related Symbols:</span>
-                                   <div class="mt-1 flex flex-wrap gap-1">
-                                       {% for symbol in article.symbols %}
-                                       <a href="{{ url_for('news.search', symbol=symbol.symbol if symbol.symbol else symbol) }}" 
-                                          class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200">
-                                           {{ symbol.symbol if symbol.symbol else symbol }}
-                                       </a>
-                                       {% endfor %}
-                                   </div>
-                               </div>
-                               {% endif %}
-                               <div class="pt-2 border-t">
-                                   <a href="{{ article.url }}" target="_blank" 
-                                      class="text-blue-500 hover:text-blue-700 text-sm font-medium">
-                                       Read Full Article →
-                                   </a>
-                               </div>
-                           </div>
-                           {% endif %}
-                       </div>
-                   </div>
-               </div>
-               {% endfor %}
-
-               {% if pagination and pagination.pages > 1 %}
-               <div class="pagination-container flex justify-center space-x-1 sm:space-x-2 mt-8 mb-16 pb-safe">
-                   {% if pagination.has_prev %}
-                   <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q,
-                           sort_order=search_params.get('sort_order'),
-                           region_filter=search_params.get('region_filter'),
-                           date_filter=search_params.get('date_filter'),
-                           processing_filter=search_params.get('processing_filter'),
-                           sentiment_filter=search_params.get('sentiment_filter')) }}"
-                      class="px-2 py-2 sm:px-3 sm:py-2 text-sm border rounded hover:bg-gray-100 active:bg-gray-200 min-w-[44px] text-center">Prev</a>
-                   {% endif %}
-
-                   {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=1, right_edge=1) %}
-                       {% if page_num %}
-                           {% if page_num == pagination.page %}
-                           <span class="px-2 py-2 sm:px-3 sm:py-2 text-sm border rounded bg-blue-500 text-white min-w-[44px] text-center">
-                               {{ page_num }}
-                           </span>
-                           {% else %}
-                           <a href="{{ url_for('news.search', page=page_num, q=search_params.q,
-                                   sort_order=search_params.get('sort_order'),
-                                   region_filter=search_params.get('region_filter'),
-                                   date_filter=search_params.get('date_filter'),
-                                   processing_filter=search_params.get('processing_filter'),
-                                   sentiment_filter=search_params.get('sentiment_filter')) }}"
-                              class="px-2 py-2 sm:px-3 sm:py-2 text-sm border rounded hover:bg-gray-100 active:bg-gray-200 min-w-[44px] text-center">
-                               {{ page_num }}
-                           </a>
-                           {% endif %}
-                       {% else %}
-                           <span class="px-2 py-2 text-sm min-w-[44px] text-center">…</span>
-                       {% endif %}
-                   {% endfor %}
-
-                   {% if pagination.has_next %}
-                   <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q,
-                           sort_order=search_params.get('sort_order'),
-                           region_filter=search_params.get('region_filter'),
-                           date_filter=search_params.get('date_filter'),
-                           processing_filter=search_params.get('processing_filter'),
-                           sentiment_filter=search_params.get('sentiment_filter')) }}"
-                      class="px-2 py-2 sm:px-3 sm:py-2 text-sm border rounded hover:bg-gray-100 active:bg-gray-200 min-w-[44px] text-center">Next</a>
-                   {% endif %}
-               </div>
-               {% endif %}
-           {% endif %}
-       </div>
-   </div>
-
-   <script>
-       function getSentimentClass(rating) {
-           if (rating > 50) return 'bg-green-100 text-green-800';
-           if (rating < -50) return 'bg-red-100 text-red-800';
-           return 'bg-yellow-100 text-yellow-800';
-       }
-   </script>
-   
-   <!-- Enhanced Search JavaScript -->
-   <script src="{{ url_for('static', filename='js/enhanced-search.js') }}"></script>
-</body>
-</html>
+<!-- Enhanced Search JavaScript -->
+<script src="{{ url_for('static', filename='js/enhanced-search.js') }}"></script>
+{% endblock %}

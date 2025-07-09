@@ -102,7 +102,7 @@ Access the scheduler management page at:
 ### Processing Limits
 ```python
 MAX_ARTICLES_PER_RUN = 10  # Articles processed per run
-CONTENT_TRUNCATE_LIMIT = 4000  # Max content length for API
+CONTENT_TRUNCATE_LIMIT = 10000  # Max content length for DeepSeek V3 API (16,384 token context)
 ```
 
 ### Scheduling

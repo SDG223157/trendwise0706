@@ -1193,8 +1193,8 @@ def update_ai_summaries():
         headers = {
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://your-app-domain.com",  # Add referer for some APIs
-            "X-Title": "TrendWise AI Analysis"  # Optional app identifier
+            "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+            "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
         }
 
         # Only fetch articles that have BOTH missing AI fields AND full content
@@ -1264,7 +1264,7 @@ def update_ai_summaries():
                 
                 if not article.ai_summary:
                     summary_payload = {
-                        "model": "anthropic/claude-3.5-sonnet",  # Use correct Sonnet model name
+                        "model": "deepseek/deepseek-chat-v3-0324:free",  # Using DeepSeek V3 for AI processing
                         "messages": [
                             {
                                 "role": "user",
@@ -1287,7 +1287,7 @@ IMPORTANT: Replace ALL bracketed placeholders with actual content from the artic
 Article to analyze: {content}"""
                             }
                         ],
-                        "max_tokens": 500,
+                        "max_tokens": 750,  # Increased for DeepSeek V3's larger context
                         "temperature": 0.7
                     }
                     
@@ -1310,7 +1310,7 @@ Article to analyze: {content}"""
 
                 if not article.ai_insights:
                     insights_payload = {
-                        "model": "anthropic/claude-3.5-sonnet",
+                        "model": "deepseek/deepseek-chat-v3-0324:free",
                         "messages": [
                             {
                                 "role": "user",
@@ -1332,7 +1332,7 @@ IMPORTANT: Replace ALL bracketed placeholders with actual insights from the arti
 Article to analyze: {content}"""
                             }
                         ],
-                        "max_tokens": 500,
+                        "max_tokens": 750,  # Increased for DeepSeek V3's larger context
                         "temperature": 0.7
                     }
                     
@@ -1354,7 +1354,7 @@ Article to analyze: {content}"""
 
                 if article.ai_sentiment_rating is None:
                     sentiment_payload = {
-                        "model": "anthropic/claude-3.5-sonnet",
+                        "model": "deepseek/deepseek-chat-v3-0324:free",
                         "messages": [
                             {
                                 "role": "user",
@@ -1994,12 +1994,14 @@ def reprocess_article(article_id):
 
         headers = {
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+            "X-Title": "TrendWise AI Analysis"  # Optional. Site title for rankings on openrouter.ai.
         }
         
         # Process summary
         summary_payload = {
-            "model": "anthropic/claude-3.5-sonnet",
+            "model": "deepseek/deepseek-chat-v3-0324:free",
             "messages": [
                 {
                     "role": "user",
@@ -2019,7 +2021,7 @@ def reprocess_article(article_id):
 Use proper line breaks between list items. Article: {article.content}"""
                 }
             ],
-            "max_tokens": 500
+            "max_tokens": 750  # Increased for DeepSeek V3's larger context
         }
         summary_response = requests.post(OPENROUTER_API_URL, headers=headers, json=summary_payload)
         summary_response.raise_for_status()
@@ -2027,7 +2029,7 @@ Use proper line breaks between list items. Article: {article.content}"""
         
         # Process insights
         insights_payload = {
-            "model": "anthropic/claude-3.5-sonnet",
+            "model": "deepseek/deepseek-chat-v3-0324:free",
             "messages": [
                 {
                     "role": "user",
@@ -2049,7 +2051,7 @@ IMPORTANT: Replace ALL bracketed placeholders with actual insights from the arti
 Article to analyze: {content}"""
                 }
             ],
-            "max_tokens": 500,
+            "max_tokens": 750,  # Increased for DeepSeek V3's larger context
             "temperature": 0.7
         }
         insights_response = requests.post(OPENROUTER_API_URL, headers=headers, json=insights_payload)
@@ -2058,7 +2060,7 @@ Article to analyze: {content}"""
         
         # Process sentiment
         sentiment_payload = {
-            "model": "anthropic/claude-3.5-sonnet",
+            "model": "deepseek/deepseek-chat-v3-0324:free",
             "messages": [
                 {
                     "role": "user",

@@ -199,17 +199,19 @@ Extract 5-15 keywords maximum.
 Focus on searchable terms that users would actually type.
 
 Article:
-{combined_text[:2000]}"""
+{combined_text[:8000]}"""
 
             headers = {
                 "Authorization": f"Bearer {self.openrouter_api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
+                "X-Title": "TrendWise AI Keyword Extraction"  # Optional. Site title for rankings on openrouter.ai.
             }
             
             data = {
-                "model": "meta-llama/llama-3.1-8b-instruct:free",
+                "model": "deepseek/deepseek-chat-v3-0324:free",
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 500,
+                "max_tokens": 750,  # Increased for DeepSeek V3's larger context
                 "temperature": 0.1
             }
             

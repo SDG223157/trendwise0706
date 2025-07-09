@@ -50,7 +50,7 @@ class NewsAIScheduler:
         self.engine = None
         self.Session = None
         self.max_articles_per_run = 10
-        self.content_truncate_limit = 4000
+        self.content_truncate_limit = 10000  # Increased for DeepSeek V3's 16,384 token context
         
     def init_app(self, app):
         """Initialize with Flask app context"""
@@ -902,7 +902,7 @@ Content: {content}"""
             logger.error(f"Error generating AI sentiment: {str(e)}")
             return None
             
-    def call_openrouter_api(self, prompt, max_tokens=500):
+    def call_openrouter_api(self, prompt, max_tokens=750):  # Increased for DeepSeek V3's larger context
         """Call OpenRouter API for AI generation"""
         try:
             api_key = os.getenv('OPENROUTER_API_KEY')
@@ -918,7 +918,7 @@ Content: {content}"""
             }
             
             data = {
-                "model": "anthropic/claude-3.5-sonnet",
+                "model": "deepseek/deepseek-chat-v3-0324:free",
                 "messages": [
                     {"role": "user", "content": prompt}
                 ],
