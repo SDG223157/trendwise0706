@@ -135,11 +135,11 @@ Each run provides comprehensive statistics:
 The News Fetch Scheduler works perfectly with the existing AI Processing Scheduler:
 
 1. **News Fetch Scheduler** (6 times daily at market times): Fetches fresh news articles when markets are most active
-2. **AI Processing Scheduler** (every 10 minutes): Processes articles with AI summaries and insights
+2. **AI Processing Scheduler** (every 5 minutes): Processes articles with AI summaries and insights
 
 This creates a complete automation pipeline:
 - Fresh news is fetched 6 times daily at optimal market timing
-- AI processing happens every 10 minutes for rapid turnaround
+- AI processing happens every 5 minutes for rapid turnaround
 - Your database stays current with market-synchronized content and minimal manual intervention
 - News is captured at the most relevant times for each global market session
 

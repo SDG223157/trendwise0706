@@ -2,12 +2,12 @@
 
 ## Overview
 
-The TrendWise application now includes an **automated background scheduler** that processes news articles with AI summaries and insights every 10 minutes, eliminating the need for manual intervention.
+The TrendWise application now includes an **automated background scheduler** that processes news articles with AI summaries and insights every 5 minutes, eliminating the need for manual intervention.
 
 ## 🎯 Key Features
 
 ### Automated Processing
-- **Runs every 3 minutes** automatically in the background
+- **Runs every 5 minutes** automatically in the background
 - **No manual clicks** required - replaces the "Update AI Summaries" button
 - **Processes up to 10 articles per run** to manage API quotas
 - **Smart filtering** - only processes articles that need AI analysis
@@ -54,7 +54,7 @@ OPENROUTER_API_KEY=your_openrouter_api_key_here
 The scheduler starts automatically when the Flask application launches:
 ```
 🤖 Automated news AI processing scheduler started successfully!
-⏰ Will process articles every 3 minutes automatically
+⏰ Will process articles every 5 minutes automatically
 🔄 Running initial processing job...
 ```
 
@@ -108,7 +108,7 @@ CONTENT_TRUNCATE_LIMIT = 10000  # Max content length for DeepSeek V3 API (16,384
 ### Scheduling
 ```python
 # Schedule the processing job
-schedule.every(3).minutes.do(run_processing_job)  # Every 3 minutes
+schedule.every(5).minutes.do(run_processing_job)  # Every 5 minutes
 ```
 
 ## 📊 Processing Logic
@@ -206,7 +206,7 @@ def scheduler_status():
 ### For Users
 - **No manual intervention** required
 - **Always up-to-date** AI analysis
-- **Consistent processing** every 4 hours
+- **Consistent processing** every 5 minutes
 - **Improved user experience** with automated content
 
 ### For Administrators  
@@ -238,7 +238,7 @@ The automated news AI scheduler transforms TrendWise from a manual processing sy
 
 **Key Benefits:**
 - 🤖 **Fully Automated**: No manual intervention required
-- ⏰ **Regular Processing**: Every 4 hours automatically  
+- ⏰ **Regular Processing**: Every 5 minutes automatically  
 - 🎯 **Smart & Efficient**: Only processes articles that need AI analysis
 - 🛡️ **Safe & Reliable**: Built-in error handling and rate limiting
 - 📊 **Transparent**: Real-time monitoring and control interface
@@ -248,13 +248,13 @@ The system is production-ready and can handle the automated processing of news a
 ## 📈 **Updated Processing Schedule (Latest)**
 
 **Current Configuration:**
-- **Frequency**: Every 3 minutes
+- **Frequency**: Every 5 minutes
 - **Batch Size**: 10 articles per run
-- **Daily Runs**: 480 runs per day (24 hours × 20 runs per hour)
-- **Daily Capacity**: Up to 4,800 articles per day (10 × 480 runs)
+- **Daily Runs**: 288 runs per day (24 hours × 12 runs per hour)
+- **Daily Capacity**: Up to 2,880 articles per day (10 × 288 runs)
 
-**Benefits of 3-Minute Schedule:**
-- **Ultra-Fast Processing**: Articles get AI analysis within 3 minutes
+**Benefits of 5-Minute Schedule:**
+- **Fast Processing**: Articles get AI analysis within 5 minutes
 - **Real-Time Responsiveness**: Users see processed content almost immediately
 - **Efficient Batching**: Smaller batches reduce API load per run
 - **Massive Throughput**: Significantly higher daily processing capacity 

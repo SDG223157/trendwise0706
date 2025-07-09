@@ -11,9 +11,9 @@ TrendWise now features a **complete automation system** that handles news fetchi
 **Frequency**: Every 6 hours (4 times per day)  
 **Function**: Replicates "Fetch Top 100" button functionality  
 
-### 2. AI Processing Scheduler (Every 10 Minutes)
+### 2. AI Processing Scheduler (Every 5 Minutes)
 **Purpose**: Processes articles with AI summaries and insights  
-**Frequency**: Every 10 minutes (144 times per day)  
+**Frequency**: Every 5 minutes (288 times per day)  
 **Function**: Adds structured AI content to fetched articles  
 
 ## 📊 Complete Automation Pipeline
@@ -25,7 +25,7 @@ TrendWise now features a **complete automation system** that handles news fetchi
     ↓
 💾 Stores articles in database
     ↓
-🧠 Every 10 Minutes: AI Processing Scheduler
+🧠 Every 5 Minutes: AI Processing Scheduler
     ↓
 🤖 Processes up to 10 articles with AI summaries
     ↓
@@ -43,7 +43,7 @@ TrendWise now features a **complete automation system** that handles news fetchi
 
 ### **Fresh Content Always**
 - News fetched every 6 hours ensures current content
-- AI processing every 10 minutes keeps summaries up-to-date
+- AI processing every 5 minutes keeps summaries up-to-date
 - 24/7 operation means no missed opportunities
 
 ### **Comprehensive Coverage**
@@ -96,7 +96,7 @@ TrendWise now features a **complete automation system** that handles news fetchi
 |--------|-------|-------------|
 | **News Fetch Runs** | 4 per day | Every 6 hours |
 | **Articles Fetched** | 800+ daily | 200+ per run |
-| **AI Processing Runs** | 144 per day | Every 10 minutes |
+| **AI Processing Runs** | 288 per day | Every 5 minutes |
 | **AI Articles Processed** | 1440 daily | 10 per run |
 | **Total Automation** | 24/7 | Continuous operation |
 
@@ -138,7 +138,7 @@ RETRY_ATTEMPTS = 2                # Error recovery
 
 ### AI Processing Scheduler Settings
 ```python
-PROCESSING_INTERVAL = 10 minutes  # How often to process
+PROCESSING_INTERVAL = 5 minutes  # How often to process
 MAX_ARTICLES_PER_RUN = 10         # Articles per run
 AI_MODEL = "claude-3.5-sonnet"    # AI model used
 STRUCTURED_FORMAT = True          # Use structured summaries
@@ -159,7 +159,7 @@ STRUCTURED_FORMAT = True          # Use structured summaries
 
 **AI Processing Scheduler**:
 ```
-🧠 AI processing scheduler started - will run every 10 minutes
+🧠 AI processing scheduler started - will run every 5 minutes
 🤖 Starting AI processing job...
 📝 Processing article: "Apple Reports Strong Q4 Earnings"
 ✅ Generated structured summary and insights
