@@ -556,13 +556,19 @@ def _parse_unified_search_params(search_query, symbol, keywords, args):
             else:
                 extracted_keywords.append(part)
     
-    # Add specific symbol if provided
+    # Add specific symbol if provided (but avoid duplicates)
     if symbol:
-        extracted_symbols.append(symbol)
+        symbol_parts = symbol.split()
+        for part in symbol_parts:
+            if part.upper() not in extracted_symbols:
+                extracted_symbols.append(part.upper())
     
-    # Add specific keywords if provided
+    # Add specific keywords if provided (but avoid duplicates)
     if keywords:
-        extracted_keywords.extend(keywords.split())
+        keyword_parts = keywords.split()
+        for part in keyword_parts:
+            if part not in extracted_keywords:
+                extracted_keywords.append(part)
     
     # Determine search type
     if extracted_symbols and extracted_keywords:

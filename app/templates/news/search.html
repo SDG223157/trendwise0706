@@ -234,7 +234,12 @@
        <div class="flex justify-between items-center mb-6 py-3 px-4 bg-white border rounded-lg shadow-sm">
            <div class="flex space-x-2">
                {% if pagination.has_prev %}
-               <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q, symbol=search_params.symbol, keywords=search_params.keywords) }}"
+               <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q, 
+                       sort_order=search_params.get('sort_order'), 
+                       region_filter=search_params.get('region_filter'),
+                       date_filter=search_params.get('date_filter'),
+                       processing_filter=search_params.get('processing_filter'),
+                       sentiment_filter=search_params.get('sentiment_filter')) }}"
                   class="px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
                    ← Previous
                </a>
@@ -245,7 +250,12 @@
                {% endif %}
                
                {% if pagination.has_next %}
-               <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q, symbol=search_params.symbol, keywords=search_params.keywords) }}"
+               <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q,
+                       sort_order=search_params.get('sort_order'), 
+                       region_filter=search_params.get('region_filter'),
+                       date_filter=search_params.get('date_filter'),
+                       processing_filter=search_params.get('processing_filter'),
+                       sentiment_filter=search_params.get('sentiment_filter')) }}"
                   class="px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
                    Next →
                </a>
@@ -397,7 +407,12 @@
                {% if pagination and pagination.pages > 1 %}
                <div class="pagination-container flex justify-center space-x-1 sm:space-x-2 mt-8 mb-16 pb-safe">
                    {% if pagination.has_prev %}
-                   <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q, symbol=search_params.symbol, keywords=search_params.keywords) }}"
+                   <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q,
+                           sort_order=search_params.get('sort_order'),
+                           region_filter=search_params.get('region_filter'),
+                           date_filter=search_params.get('date_filter'),
+                           processing_filter=search_params.get('processing_filter'),
+                           sentiment_filter=search_params.get('sentiment_filter')) }}"
                       class="px-2 py-2 sm:px-3 sm:py-2 text-sm border rounded hover:bg-gray-100 active:bg-gray-200 min-w-[44px] text-center">Prev</a>
                    {% endif %}
 
@@ -408,7 +423,12 @@
                                {{ page_num }}
                            </span>
                            {% else %}
-                           <a href="{{ url_for('news.search', page=page_num, q=search_params.q, symbol=search_params.symbol, keywords=search_params.keywords) }}"
+                           <a href="{{ url_for('news.search', page=page_num, q=search_params.q,
+                                   sort_order=search_params.get('sort_order'),
+                                   region_filter=search_params.get('region_filter'),
+                                   date_filter=search_params.get('date_filter'),
+                                   processing_filter=search_params.get('processing_filter'),
+                                   sentiment_filter=search_params.get('sentiment_filter')) }}"
                               class="px-2 py-2 sm:px-3 sm:py-2 text-sm border rounded hover:bg-gray-100 active:bg-gray-200 min-w-[44px] text-center">
                                {{ page_num }}
                            </a>
@@ -419,7 +439,12 @@
                    {% endfor %}
 
                    {% if pagination.has_next %}
-                   <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q, symbol=search_params.symbol, keywords=search_params.keywords) }}"
+                   <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q,
+                           sort_order=search_params.get('sort_order'),
+                           region_filter=search_params.get('region_filter'),
+                           date_filter=search_params.get('date_filter'),
+                           processing_filter=search_params.get('processing_filter'),
+                           sentiment_filter=search_params.get('sentiment_filter')) }}"
                       class="px-2 py-2 sm:px-3 sm:py-2 text-sm border rounded hover:bg-gray-100 active:bg-gray-200 min-w-[44px] text-center">Next</a>
                    {% endif %}
                </div>
