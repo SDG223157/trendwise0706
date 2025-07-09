@@ -29,6 +29,9 @@ from flask import current_app
 # Import models for auto-sync functionality  
 from app.models import NewsArticle
 
+# 🔑 AUTOMATIC KEYWORD EXTRACTION: Import the auto keyword extraction service
+from app.utils.keywords.auto_keyword_extraction import AutoKeywordExtractor
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -742,6 +745,25 @@ class NewsAIScheduler:
             # Update database if we generated any content
             if generated_data:
                 self.update_article_ai_data(session, article_id, generated_data)
+                
+                # 🔑 AUTOMATIC KEYWORD EXTRACTION: Extract keywords after AI processing
+                try:
+                    # Initialize keyword extractor
+                    keyword_extractor = AutoKeywordExtractor()
+                    
+                    # Extract keywords for this article using the buffer table (news_articles)
+                    extraction_result = keyword_extractor.extract_keywords_for_article(article_id)
+                    
+                    if extraction_result.get('success'):
+                        keywords_count = extraction_result.get('keywords_extracted', 0)
+                        logger.info(f"✓ Extracted {keywords_count} keywords for article {article_id}")
+                    else:
+                        logger.warning(f"⚠️ Keyword extraction failed for article {article_id}: {extraction_result.get('message', 'Unknown error')}")
+                        
+                except Exception as e:
+                    logger.error(f"❌ Error extracting keywords for article {article_id}: {str(e)}")
+                    # Don't fail the whole process if keyword extraction fails
+                    pass
                 
                 # 🔄 BATCH SYNC: Individual sync removed - now handled by batch sync at start of processing
                 # This prevents frequent individual syncs and database lock issues
