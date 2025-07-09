@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """
 AI Model Comparison Test Script
-Tests DeepSeek V3 vs Claude Sonnet 3.5 output format compatibility
+Tests DeepSeek V3 vs Claude Sonnet 3.7 output format compatibility
 
 This script validates that DeepSeek V3 produces the same format and quality
-of results as Claude Sonnet 3.5 for all AI processing tasks in TrendWise.
+of results as Claude Sonnet 3.7 for all AI processing tasks in TrendWise.
 
-The script uses hardcoded API keys for each model (no environment variables needed).
+The script uses the OPENROUTER_API_KEY environment variable (matches production setup).
+
+Requirements:
+    - Set OPENROUTER_API_KEY environment variable
+    - Both models available on OpenRouter
 
 Usage:
+    export OPENROUTER_API_KEY=your_api_key_here
     python test_ai_model_comparison.py
     python test_ai_model_comparison.py --verbose
     python test_ai_model_comparison.py --save-results
@@ -37,19 +42,15 @@ class AIModelTester:
             'comparison_results': {}
         }
         
-        # Initialize AI clients with separate API keys for each model
-        self.sonnet_api_key = "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"
-        self.deepseek_api_key = "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"
+        # Use single OpenRouter API key (matches production setup)
+        self.api_key = os.getenv('OPENROUTER_API_KEY')
+        if not self.api_key:
+            raise ValueError("OPENROUTER_API_KEY environment variable is required")
         
-        # Create separate clients for each model
-        self.sonnet_client = OpenAI(
+        # Create single OpenAI client for OpenRouter (matches production setup)
+        self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=self.sonnet_api_key
-        )
-        
-        self.deepseek_client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=self.deepseek_api_key
+            api_key=self.api_key
         )
         
         # Sample financial news article for testing
@@ -68,10 +69,16 @@ Looking ahead, Apple provided guidance for Q1 2024 revenue between $89-93 billio
 Shares of Apple rose 3.2% in after-hours trading following the earnings announcement.'''
         }
         
+        # Test configurations with correct model names from OpenRouter
+        self.models = {
+            'deepseek_v3': 'deepseek/deepseek-r1-0528-qwen3-8b:free',
+            'claude_sonnet_35': 'anthropic/claude-3.7-sonnet'
+        }
+        
         self.log("AI Model Comparison Test Initialized")
-        self.log("Using separate API keys for each model:")
-        self.log(f"- Sonnet 3.5: ...{self.sonnet_api_key[-8:]}")
-        self.log(f"- DeepSeek V3: ...{self.deepseek_api_key[-8:]}")
+        self.log(f"Using OpenRouter API key: ...{self.api_key[-8:]}")
+        self.log(f"- DeepSeek V3: {self.models['deepseek_v3']}")
+        self.log(f"- Claude Sonnet 3.7: {self.models['claude_sonnet_35']}")
         
     def log(self, message: str, level: str = "INFO"):
         """Log message with timestamp"""
@@ -80,21 +87,11 @@ Shares of Apple rose 3.2% in after-hours trading following the earnings announce
             print(f"[{timestamp}] {level}: {message}")
     
     def call_ai_model(self, model: str, prompt: str, max_tokens: int = 750, temperature: float = 0.3) -> Optional[str]:
-        """Call AI model and return response"""
+        """Call AI model and return response using single OpenRouter API key"""
         try:
-            # Select the appropriate client based on the model
-            if "sonnet" in model.lower() or "claude" in model.lower() or "anthropic" in model.lower():
-                client = self.sonnet_client
-                self.log(f"Using Sonnet API key for model: {model}")
-            elif "deepseek" in model.lower():
-                client = self.deepseek_client
-                self.log(f"Using DeepSeek API key for model: {model}")
-            else:
-                # Default to DeepSeek for unknown models
-                client = self.deepseek_client
-                self.log(f"Using DeepSeek API key (default) for model: {model}")
+            self.log(f"Calling model: {model}")
             
-            completion = client.chat.completions.create(
+            completion = self.client.chat.completions.create(
                 extra_headers={
                     "HTTP-Referer": "https://trendwise.com",
                     "X-Title": "TrendWise AI Model Test"
@@ -136,8 +133,8 @@ Title: {self.test_article['title']}
 Content: {self.test_article['content']}"""
         
         # Test both models
-        deepseek_result = self.call_ai_model("deepseek/deepseek-chat-v3-0324:free", prompt)
-        claude_result = self.call_ai_model("anthropic/claude-3.5-sonnet", prompt)
+        deepseek_result = self.call_ai_model(self.models['deepseek_v3'], prompt)
+        claude_result = self.call_ai_model(self.models['claude_sonnet_35'], prompt)
         
         results = {
             'deepseek_v3': deepseek_result,
@@ -174,8 +171,8 @@ Title: {self.test_article['title']}
 Content: {self.test_article['content']}"""
         
         # Test both models
-        deepseek_result = self.call_ai_model("deepseek/deepseek-chat-v3-0324:free", prompt)
-        claude_result = self.call_ai_model("anthropic/claude-3.5-sonnet", prompt)
+        deepseek_result = self.call_ai_model(self.models['deepseek_v3'], prompt)
+        claude_result = self.call_ai_model(self.models['claude_sonnet_35'], prompt)
         
         results = {
             'deepseek_v3': deepseek_result,
@@ -199,8 +196,8 @@ Title: {self.test_article['title']}
 Content: {self.test_article['content']}"""
         
         # Test both models
-        deepseek_result = self.call_ai_model("deepseek/deepseek-chat-v3-0324:free", prompt, max_tokens=10, temperature=0.1)
-        claude_result = self.call_ai_model("anthropic/claude-3.5-sonnet", prompt, max_tokens=10, temperature=0.1)
+        deepseek_result = self.call_ai_model(self.models['deepseek_v3'], prompt, max_tokens=10, temperature=0.1)
+        claude_result = self.call_ai_model(self.models['claude_sonnet_35'], prompt, max_tokens=10, temperature=0.1)
         
         results = {
             'deepseek_v3': deepseek_result,
@@ -235,8 +232,8 @@ Title: {self.test_article['title']}
 Content: {self.test_article['content'][:4000]}"""
         
         # Test both models
-        deepseek_result = self.call_ai_model("deepseek/deepseek-chat-v3-0324:free", prompt, max_tokens=500)
-        claude_result = self.call_ai_model("anthropic/claude-3.5-sonnet", prompt, max_tokens=500)
+        deepseek_result = self.call_ai_model(self.models['deepseek_v3'], prompt, max_tokens=500)
+        claude_result = self.call_ai_model(self.models['claude_sonnet_35'], prompt, max_tokens=500)
         
         results = {
             'deepseek_v3': deepseek_result,
@@ -275,8 +272,8 @@ Types should be: "synonym", "symbol", "industry", "broader", "specific", "relate
 Original query: "{test_query}" """
         
         # Test both models
-        deepseek_result = self.call_ai_model("deepseek/deepseek-chat-v3-0324:free", prompt, max_tokens=500, temperature=0.7)
-        claude_result = self.call_ai_model("anthropic/claude-3.5-sonnet", prompt, max_tokens=500, temperature=0.7)
+        deepseek_result = self.call_ai_model(self.models['deepseek_v3'], prompt, max_tokens=500, temperature=0.7)
+        claude_result = self.call_ai_model(self.models['claude_sonnet_35'], prompt, max_tokens=500, temperature=0.7)
         
         results = {
             'deepseek_v3': deepseek_result,

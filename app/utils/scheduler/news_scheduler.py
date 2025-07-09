@@ -903,7 +903,7 @@ Content: {content}"""
             logger.error(f"Error generating AI sentiment: {str(e)}")
             return None
             
-    def call_openrouter_api(self, prompt, max_tokens=750):  # Increased for DeepSeek V3's larger context
+    def call_openrouter_api(self, prompt, max_tokens=500):  # Increased for DeepSeek V3's larger context
         """Call OpenRouter API for AI generation using OpenAI client"""
         try:
             api_key = os.getenv('OPENROUTER_API_KEY')
@@ -922,7 +922,7 @@ Content: {content}"""
                     "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
                     "X-Title": "TrendWise News AI Scheduler"  # Optional. Site title for rankings on openrouter.ai.
                 },
-                model="deepseek/deepseek-chat-v3-0324:free",
+                model="anthropic/claude-3.7-sonnet",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
                 temperature=0.3,

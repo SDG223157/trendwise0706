@@ -213,9 +213,9 @@ Article:
                     "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
                     "X-Title": "TrendWise AI Keyword Extraction"  # Optional. Site title for rankings on openrouter.ai.
                 },
-                model="deepseek/deepseek-chat-v3-0324:free",
+                model="anthropic/claude-3.7-sonnet",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=750,  # Increased for DeepSeek V3's larger context
+                max_tokens=500,  # Increased for DeepSeek V3's larger context
                 temperature=0.1,
                 timeout=30
             )

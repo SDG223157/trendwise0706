@@ -1,0 +1,89 @@
+{
+  "test_run_id": "2025-07-09T17:01:05.447864",
+  "deepseek_v3": {
+    "summary": null,
+    "insights": null,
+    "sentiment": null,
+    "keywords": null,
+    "suggestions": null
+  },
+  "claude_sonnet_35": {
+    "summary": null,
+    "insights": null,
+    "sentiment": null,
+    "keywords": null,
+    "suggestions": null
+  },
+  "comparison_results": {
+    "test_results": {
+      "summary": {
+        "deepseek_v3": null,
+        "claude_sonnet_35": null,
+        "format_validation": {
+          "valid": false,
+          "reason": "No response"
+        },
+        "content_comparison": {
+          "comparable": false,
+          "reason": "Missing responses"
+        }
+      },
+      "insights": {
+        "deepseek_v3": null,
+        "claude_sonnet_35": null,
+        "format_validation": {
+          "valid": false,
+          "reason": "No response"
+        },
+        "content_comparison": {
+          "comparable": false,
+          "reason": "Missing responses"
+        }
+      },
+      "sentiment": {
+        "deepseek_v3": null,
+        "claude_sonnet_35": null,
+        "format_validation": {
+          "valid": false,
+          "reason": "No response"
+        },
+        "score_comparison": {
+          "comparable": false,
+          "reason": "Missing responses"
+        }
+      },
+      "keywords": {
+        "deepseek_v3": null,
+        "claude_sonnet_35": null,
+        "format_validation": {
+          "valid": false,
+          "reason": "No response"
+        },
+        "content_comparison": {
+          "comparable": false,
+          "reason": "Missing responses"
+        }
+      },
+      "suggestions": {
+        "deepseek_v3": null,
+        "claude_sonnet_35": null,
+        "format_validation": {
+          "valid": false,
+          "reason": "No response"
+        },
+        "content_comparison": {
+          "comparable": false,
+          "reason": "Missing responses"
+        }
+      }
+    },
+    "summary_report": {
+      "overall_compatibility_score": 0.0,
+      "total_tests": 5,
+      "passed_tests": 0.0,
+      "failed_tests": 5.0,
+      "test_duration": 4.413861036300659,
+      "recommendation": "POOR: Significant compatibility issues. Extensive prompt engineering required."
+    }
+  }
+}

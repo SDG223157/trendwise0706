@@ -1,0 +1,84 @@
+python3 -c "
+import os
+from openai import OpenAI
+from datetime import datetime
+import json
+
+print('🔍 Detailed AI Diagnostic Test')
+print('=' * 50)
+
+api_key = os.getenv('OPENROUTER_API_KEY')
+print(f'✅ API Key: ...{api_key[-8:]}')
+
+try:
+    client = OpenAI(
+        base_url='https://openrouter.ai/api/v1',
+        api_key=api_key
+    )
+    
+    # Test 1: Simple response with verbose output
+    print('\\n📋 Test 1: Simple Hello Test')
+    completion = client.chat.completions.create(
+        extra_headers={
+            'HTTP-Referer': 'https://trendwise.com',
+            'X-Title': 'TrendWise Diagnostic'
+        },
+        model='deepseek/deepseek-r1-0528-qwen3-8b:free',
+        messages=[{'role': 'user', 'content': 'Say hello world'}],
+        max_tokens=50,
+        temperature=0.7
+    )
+    
+    response = completion.choices[0].message.content
+    print(f'Raw response: \"{response}\"')
+    print(f'Response length: {len(response) if response else 0}')
+    print(f'Response type: {type(response)}')
+    
+    # Test 2: Check if there's usage info
+    print('\\n📊 Usage Information:')
+    if hasattr(completion, 'usage'):
+        print(f'Prompt tokens: {completion.usage.prompt_tokens}')
+        print(f'Completion tokens: {completion.usage.completion_tokens}')
+        print(f'Total tokens: {completion.usage.total_tokens}')
+    
+    # Test 3: Try different model
+    print('\\n📋 Test 2: Try Alternative Model')
+    try:
+        completion2 = client.chat.completions.create(
+            extra_headers={
+                'HTTP-Referer': 'https://trendwise.com',
+                'X-Title': 'TrendWise Test Alt'
+            },
+            model='openai/gpt-3.5-turbo',
+            messages=[{'role': 'user', 'content': 'Say hello'}],
+            max_tokens=20
+        )
+        response2 = completion2.choices[0].message.content
+        print(f'Alternative model response: \"{response2}\"')
+    except Exception as e:
+        print(f'Alternative model failed: {str(e)}')
+    
+    # Test 4: Check available models
+    print('\\n📋 Test 3: Check Available Models')
+    import requests
+    try:
+        headers = {'Authorization': f'Bearer {api_key}'}
+        resp = requests.get('https://openrouter.ai/api/v1/models', headers=headers, timeout=10)
+        if resp.status_code == 200:
+            models_data = resp.json()
+            available_models = [m['id'] for m in models_data.get('data', [])]
+            deepseek_models = [m for m in available_models if 'deepseek' in m.lower()]
+            print(f'Total models available: {len(available_models)}')
+            print(f'DeepSeek models: {deepseek_models[:3]}')  # Show first 3
+        else:
+            print(f'Models API returned: {resp.status_code}')
+    except Exception as e:
+        print(f'Models check failed: {str(e)}')
+    
+    print('\\n✅ Diagnostic completed')
+    
+except Exception as e:
+    print(f'❌ Test failed: {str(e)}')
+    import traceback
+    print(f'Full error: {traceback.format_exc()}')
+"

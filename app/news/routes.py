@@ -1284,31 +1284,27 @@ def update_ai_summaries():
                 
                 if not article.ai_summary:
                     summary_payload = {
-                        "model": "deepseek/deepseek-chat-v3-0324:free",  # Using DeepSeek V3 for AI processing
+                        "model": "anthropic/claude-3.7-sonnet",  # Using DeepSeek V3 for AI processing
                         "messages": [
                             {
                                 "role": "user",
-                                "content": f"""Analyze this news article and create a structured summary using EXACTLY this format:
-
+                                "content": f"""Generate summary with STRICT markdown formatting:
 **Key Concepts/Keywords**  
-- [Extract 3-5 key financial/market concepts, company names, or important terms]
-- [Each item should be a specific concept, not generic placeholders]
+- Keyword 1  
+- Keyword 2  
 
 **Key Points**  
-- [Extract 3-5 main factual points from the article]
-- [Focus on concrete facts, numbers, events, or developments]
+- Point 1  
+- Point 2  
 
 **Context**  
-- [Provide 2-4 background context items that help understand the significance]
-- [Include market conditions, historical context, or related developments]
+- Background 1  
+- Background 2  
 
-IMPORTANT: Replace ALL bracketed placeholders with actual content from the article. Do not use generic terms like "Keyword 1" or "Point 1".
-
-Article to analyze: {content}"""
+Use proper line breaks between list items. Article: {article.content}"""
                             }
                         ],
-                        "max_tokens": 750,  # Increased for DeepSeek V3's larger context
-                        "temperature": 0.7
+                        "max_tokens": 750  # Increased for DeepSeek V3's larger context
                     }
                     
                     logger.debug(f"Sending summary request for article {article.id}")
@@ -1330,30 +1326,26 @@ Article to analyze: {content}"""
 
                 if not article.ai_insights:
                     insights_payload = {
-                        "model": "deepseek/deepseek-chat-v3-0324:free",
+                        "model": "anthropic/claude-3.7-sonnet",
                         "messages": [
                             {
                                 "role": "user",
-                                "content": f"""Analyze this news article and create structured financial insights using EXACTLY this format:
-
+                                "content": f"""Generate insights with STRICT markdown formatting:
 **Key Insights**  
-- [Extract 3-5 key financial insights, market trends, or strategic implications]
-- [Focus on actionable insights for investors and traders]
+- Insight 1  
+- Insight 2  
 
 **Market Implications**  
-- [Identify 2-4 specific market implications or potential impacts]
-- [Consider effects on sectors, competitors, or broader markets]
+- Implication 1  
+- Implication 2  
 
 **Conclusion**  
-- [Provide a clear, concise conclusion summarizing the overall significance]
+- Brief conclusion  
 
-IMPORTANT: Replace ALL bracketed placeholders with actual insights from the article. Do not use generic terms like "Insight 1" or "Implication 1".
-
-Article to analyze: {content}"""
+Use proper line breaks between list items. Article: {article.content}"""
                             }
                         ],
-                        "max_tokens": 750,  # Increased for DeepSeek V3's larger context
-                        "temperature": 0.7
+                        "max_tokens": 750  # Increased for DeepSeek V3's larger context
                     }
                     
                     logger.debug(f"Sending insights request for article {article.id}")
@@ -1375,15 +1367,14 @@ Article to analyze: {content}"""
 
                 if article.ai_sentiment_rating is None:
                     sentiment_payload = {
-                        "model": "deepseek/deepseek-chat-v3-0324:free",
+                        "model": "anthropic/claude-3.7-sonnet",
                         "messages": [
                             {
                                 "role": "user",
-                                "content": f"Analyze the market sentiment of this article and provide a single number rating from -100 (extremely bearish) to 100 (extremely bullish). Only return the number: {content}"
+                                "content": f"Analyze the market sentiment of this article and provide a single number rating from -100 (extremely bearish) to 100 (extremely bullish). Only return the number: {article.content}"
                             }
                         ],
-                        "max_tokens": 10,
-                        "temperature": 0.3
+                        "max_tokens": 750  # Increased for DeepSeek V3's larger context
                     }
                     
                     logger.debug(f"Sending sentiment request for article {article.id}")
@@ -2021,7 +2012,7 @@ def reprocess_article(article_id):
         
         # Process summary
         summary_payload = {
-            "model": "deepseek/deepseek-chat-v3-0324:free",
+            "model": "anthropic/claude-3.7-sonnet",  # Using DeepSeek V3 for AI processing
             "messages": [
                 {
                     "role": "user",
@@ -2056,30 +2047,26 @@ Use proper line breaks between list items. Article: {article.content}"""
         
         # Process insights
         insights_payload = {
-            "model": "deepseek/deepseek-chat-v3-0324:free",
+            "model": "anthropic/claude-3.7-sonnet",
             "messages": [
                 {
                     "role": "user",
-                    "content": f"""Analyze this news article and create structured financial insights using EXACTLY this format:
-
+                    "content": f"""Generate insights with STRICT markdown formatting:
 **Key Insights**  
-- [Extract 3-5 key financial insights, market trends, or strategic implications]
-- [Focus on actionable insights for investors and traders]
+- Insight 1  
+- Insight 2  
 
 **Market Implications**  
-- [Identify 2-4 specific market implications or potential impacts]
-- [Consider effects on sectors, competitors, or broader markets]
+- Implication 1  
+- Implication 2  
 
 **Conclusion**  
-- [Provide a clear, concise conclusion summarizing the overall significance]
+- Brief conclusion  
 
-IMPORTANT: Replace ALL bracketed placeholders with actual insights from the article. Do not use generic terms like "Insight 1" or "Implication 1".
-
-Article to analyze: {content}"""
+Use proper line breaks between list items. Article: {article.content}"""
                 }
             ],
-            "max_tokens": 750,  # Increased for DeepSeek V3's larger context
-            "temperature": 0.7
+            "max_tokens": 750  # Increased for DeepSeek V3's larger context
         }
         completion = client.chat.completions.create(
             extra_headers={
@@ -2089,20 +2076,21 @@ Article to analyze: {content}"""
             model=insights_payload["model"],
             messages=insights_payload["messages"],
             max_tokens=insights_payload["max_tokens"],
-            temperature=insights_payload["temperature"]
+            temperature=insights_payload["temperature"],
+            timeout=30
         )
         ai_insights = completion.choices[0].message.content
         
         # Process sentiment
         sentiment_payload = {
-            "model": "deepseek/deepseek-chat-v3-0324:free",
+            "model": "anthropic/claude-3.7-sonnet",
             "messages": [
                 {
                     "role": "user",
                     "content": f"Analyze the market sentiment of this article and provide a single number rating from -100 (extremely bearish) to 100 (extremely bullish). Only return the number: {article.content}"
                 }
             ],
-            "max_tokens": 10
+            "max_tokens": 750  # Increased for DeepSeek V3's larger context
         }
         completion = client.chat.completions.create(
             extra_headers={
@@ -2111,7 +2099,9 @@ Article to analyze: {content}"""
             },
             model=sentiment_payload["model"],
             messages=sentiment_payload["messages"],
-            max_tokens=sentiment_payload["max_tokens"]
+            max_tokens=sentiment_payload["max_tokens"],
+            temperature=sentiment_payload["temperature"],
+            timeout=30
         )
         
         try:
@@ -3253,7 +3243,7 @@ Original query: "{query}"
                 "HTTP-Referer": "https://trendwise.com",
                 "X-Title": "TrendWise Search Suggestions"
             },
-            model="deepseek/deepseek-chat-v3-0324:free",
+            model="anthropic/claude-3.7-sonnet",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=500,
             temperature=0.7,
