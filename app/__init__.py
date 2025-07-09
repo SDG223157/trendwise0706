@@ -150,22 +150,21 @@ def create_app(config_class=Config):
             logger.error(f"Error registering news blueprint: {str(e)}")
             raise
 
-        # Initialize automated news AI scheduler
+        # Initialize automated news AI scheduler (but don't auto-start)
         try:
             from app.utils.scheduler.news_scheduler import news_scheduler
             news_scheduler.init_app(app)
-            news_scheduler.start()
-            logger.info("🤖 Automated news AI processing scheduler started successfully!")
+            logger.info("📅 News AI Scheduler initialized (manual start required)")
         except Exception as e:
-            logger.error(f"Failed to start news AI scheduler: {str(e)}")
+            logger.error(f"Failed to initialize news AI scheduler: {str(e)}")
             # Don't break the app if scheduler fails
             pass
 
-        # Initialize automated news fetch scheduler
+        # Initialize automated news fetch scheduler (manual start required)
         try:
             from app.utils.scheduler.news_fetch_scheduler import news_fetch_scheduler
             news_fetch_scheduler.init_app(app)
-            logger.info("📡 Automated news fetch scheduler initialized successfully!")
+            logger.info("📡 News Fetch Scheduler initialized (manual start required)")
         except Exception as e:
             logger.error(f"Failed to initialize news fetch scheduler: {str(e)}")
             # Don't break the app if scheduler fails
