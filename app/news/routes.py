@@ -1284,7 +1284,7 @@ def update_ai_summaries():
                 
                 if not article.ai_summary:
                     summary_payload = {
-                        "model": "anthropic/claude-3.7-sonnet",  # Using DeepSeek V3 for AI processing
+                        "model": "anthropic/claude-3.5-sonnet",  # Using Claude Sonnet 3.5 for AI processing
                         "messages": [
                             {
                                 "role": "user",
@@ -1304,7 +1304,7 @@ def update_ai_summaries():
 Use proper line breaks between list items. Article: {article.content}"""
                             }
                         ],
-                        "max_tokens": 750  # Increased for DeepSeek V3's larger context
+                        "max_tokens": 500  # Standard limits for Claude Sonnet 3.5
                     }
                     
                     logger.debug(f"Sending summary request for article {article.id}")
@@ -1326,7 +1326,7 @@ Use proper line breaks between list items. Article: {article.content}"""
 
                 if not article.ai_insights:
                     insights_payload = {
-                        "model": "anthropic/claude-3.7-sonnet",
+                        "model": "anthropic/claude-3.5-sonnet",
                         "messages": [
                             {
                                 "role": "user",
@@ -1345,7 +1345,7 @@ Use proper line breaks between list items. Article: {article.content}"""
 Use proper line breaks between list items. Article: {article.content}"""
                             }
                         ],
-                        "max_tokens": 750  # Increased for DeepSeek V3's larger context
+                        "max_tokens": 500  # Standard limits for Claude Sonnet 3.5
                     }
                     
                     logger.debug(f"Sending insights request for article {article.id}")
@@ -1367,14 +1367,14 @@ Use proper line breaks between list items. Article: {article.content}"""
 
                 if article.ai_sentiment_rating is None:
                     sentiment_payload = {
-                        "model": "anthropic/claude-3.7-sonnet",
+                        "model": "anthropic/claude-3.5-sonnet",
                         "messages": [
                             {
                                 "role": "user",
                                 "content": f"Analyze the market sentiment of this article and provide a single number rating from -100 (extremely bearish) to 100 (extremely bullish). Only return the number: {article.content}"
                             }
                         ],
-                        "max_tokens": 750  # Increased for DeepSeek V3's larger context
+                        "max_tokens": 500  # Standard limits for Claude Sonnet 3.5
                     }
                     
                     logger.debug(f"Sending sentiment request for article {article.id}")
@@ -2012,7 +2012,7 @@ def reprocess_article(article_id):
         
         # Process summary
         summary_payload = {
-            "model": "anthropic/claude-3.7-sonnet",  # Using DeepSeek V3 for AI processing
+            "model": "anthropic/claude-3.5-sonnet",  # Using Claude Sonnet 3.5 for AI processing
             "messages": [
                 {
                     "role": "user",
@@ -2032,7 +2032,7 @@ def reprocess_article(article_id):
 Use proper line breaks between list items. Article: {article.content}"""
                 }
             ],
-            "max_tokens": 750  # Increased for DeepSeek V3's larger context
+            "max_tokens": 500  # Standard limits for Claude Sonnet 3.5
         }
         completion = client.chat.completions.create(
             extra_headers={
@@ -2047,7 +2047,7 @@ Use proper line breaks between list items. Article: {article.content}"""
         
         # Process insights
         insights_payload = {
-            "model": "anthropic/claude-3.7-sonnet",
+            "model": "anthropic/claude-3.5-sonnet",
             "messages": [
                 {
                     "role": "user",
@@ -2066,7 +2066,7 @@ Use proper line breaks between list items. Article: {article.content}"""
 Use proper line breaks between list items. Article: {article.content}"""
                 }
             ],
-            "max_tokens": 750  # Increased for DeepSeek V3's larger context
+            "max_tokens": 500  # Standard limits for Claude Sonnet 3.5
         }
         completion = client.chat.completions.create(
             extra_headers={
@@ -2083,14 +2083,14 @@ Use proper line breaks between list items. Article: {article.content}"""
         
         # Process sentiment
         sentiment_payload = {
-            "model": "anthropic/claude-3.7-sonnet",
+            "model": "anthropic/claude-3.5-sonnet",
             "messages": [
                 {
                     "role": "user",
                     "content": f"Analyze the market sentiment of this article and provide a single number rating from -100 (extremely bearish) to 100 (extremely bullish). Only return the number: {article.content}"
                 }
             ],
-            "max_tokens": 750  # Increased for DeepSeek V3's larger context
+            "max_tokens": 500  # Standard limits for Claude Sonnet 3.5
         }
         completion = client.chat.completions.create(
             extra_headers={
@@ -3243,7 +3243,7 @@ Original query: "{query}"
                 "HTTP-Referer": "https://trendwise.com",
                 "X-Title": "TrendWise Search Suggestions"
             },
-            model="anthropic/claude-3.7-sonnet",
+            model="anthropic/claude-3.5-sonnet",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=500,
             temperature=0.7,

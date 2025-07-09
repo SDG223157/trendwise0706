@@ -51,7 +51,7 @@ class NewsAIScheduler:
         self.engine = None
         self.Session = None
         self.max_articles_per_run = 10
-        self.content_truncate_limit = 10000  # Increased for DeepSeek V3's 16,384 token context
+        self.content_truncate_limit = 4000  # Standard context for Claude Sonnet 3.5
         
     def init_app(self, app):
         """Initialize with Flask app context"""
@@ -903,7 +903,7 @@ Content: {content}"""
             logger.error(f"Error generating AI sentiment: {str(e)}")
             return None
             
-    def call_openrouter_api(self, prompt, max_tokens=500):  # Increased for DeepSeek V3's larger context
+    def call_openrouter_api(self, prompt, max_tokens=500):  # Standard limits for Claude Sonnet 3.5
         """Call OpenRouter API for AI generation using OpenAI client"""
         try:
             api_key = os.getenv('OPENROUTER_API_KEY')
@@ -922,7 +922,7 @@ Content: {content}"""
                     "HTTP-Referer": "https://trendwise.com",  # Optional. Site URL for rankings on openrouter.ai.
                     "X-Title": "TrendWise News AI Scheduler"  # Optional. Site title for rankings on openrouter.ai.
                 },
-                model="anthropic/claude-3.7-sonnet",
+                model="anthropic/claude-3.5-sonnet",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
                 temperature=0.3,
