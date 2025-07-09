@@ -75,8 +75,8 @@ class NewsAIScheduler:
         # Clear any existing scheduled jobs
         schedule.clear()
         
-        # Schedule the job to run every 3 minutes with proper context
-        schedule.every(3).minutes.do(self._run_scheduled_job)
+        # Schedule the job to run every 10 minutes with proper context
+        schedule.every(10).minutes.do(self._run_scheduled_job)
         
         # Optional: Also run daily at midnight for maintenance
         schedule.every().day.at("00:00").do(self._run_scheduled_job)
@@ -86,7 +86,7 @@ class NewsAIScheduler:
         self.scheduler_thread.start()
         
         logger.info("🤖 Automated news AI processing scheduler started successfully!")
-        logger.info("⏰ Will process articles every 3 minutes automatically")
+        logger.info("⏰ Will process articles every 10 minutes automatically")
         
         # Run immediately when scheduler starts
         logger.info("⚡ Running initial AI processing job immediately...")
@@ -130,7 +130,7 @@ class NewsAIScheduler:
     def _run_scheduled_job(self):
         """Run the scheduled AI processing job with proper Flask app context"""
         try:
-            logger.info("⏰ Scheduled AI processing job triggered (every 3 minutes)")
+            logger.info("⏰ Scheduled AI processing job triggered (every 10 minutes)")
             
             # Ensure we have proper Flask app context
             if hasattr(self, 'flask_app') and self.flask_app:
