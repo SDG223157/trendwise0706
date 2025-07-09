@@ -1028,19 +1028,24 @@ input[type="submit"]:active {
 @media (max-width: 768px) {
   .header-container {
     flex-direction: column;
-    gap: var(--tw-space-3);
+    gap: var(--tw-space-2);
     text-align: center;
     padding: var(--tw-space-3) var(--tw-space-4);
+    position: relative;
   }
   
   .top-nav {
     justify-content: center;
     flex-wrap: wrap;
     gap: var(--tw-space-2);
+    margin-top: var(--tw-space-2);
+    position: relative;
   }
   
   .user-dropdown {
     margin: 0 var(--tw-space-1);
+    position: relative;
+    z-index: 9500;
   }
   
   .dropdown-button {
@@ -1049,16 +1054,27 @@ input[type="submit"]:active {
     min-width: auto;
   }
   
+  /* Prevent dropdown overlap on tablets */
+  .dropdown-content {
+    top: calc(100% + 4px) !important;
+    z-index: 10001 !important;
+  }
+  
   /* Make title smaller on mobile */
   h1 {
-    font-size: 1.5rem !important;
-    margin: var(--tw-space-2) 0;
+    font-size: 1.75rem !important;
+    margin: var(--tw-space-1) 0;
+    padding: var(--tw-space-2) 0;
   }
   
   /* Theme toggle smaller on mobile */
   .theme-toggle {
     width: 36px;
     height: 36px;
+    position: absolute;
+    top: var(--tw-space-2);
+    right: var(--tw-space-2);
+    z-index: 10002;
   }
 }
   
@@ -1083,70 +1099,86 @@ input[type="submit"]:active {
   .header-container {
     padding: var(--tw-space-2);
     flex-direction: column !important;
+    position: relative;
+    min-height: auto;
   }
   
   /* Force vertical stacking of all header elements */
   .top-nav {
     width: 100% !important;
-    flex-direction: column !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
     align-items: center !important;
-    gap: var(--tw-space-2) !important;
+    justify-content: center !important;
+    gap: var(--tw-space-1) !important;
     order: 2;
+    margin-top: 8px !important;
+    padding: 4px 0 !important;
   }
   
-  /* Put title first and center it - move up for spacing */
+  /* Put title first and center it - improve spacing */
   h1 {
-    font-size: 1rem !important;
-    margin: -4px 0 8px 0 !important;
+    font-size: 1.125rem !important;
+    margin: 0 !important;
+    padding: 4px 0 !important;
     order: 1;
     width: 100%;
     text-align: center;
     font-weight: 700 !important;
     letter-spacing: -0.01em;
     position: relative;
-    top: -6px;
+    z-index: 1;
   }
   
-  /* Force dropdown menus down with spacing */
-  .top-nav {
-    width: 100% !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: var(--tw-space-1) !important;
-    order: 2;
-    margin-top: 12px !important;
-    padding-top: 8px !important;
-  }
-  
-  /* Make dropdown buttons smaller */
+  /* Make dropdown buttons smaller and prevent overlap */
   .dropdown-button {
-    padding: 3px 6px !important;
-    font-size: 0.6rem !important;
+    padding: 4px 8px !important;
+    font-size: 0.65rem !important;
     font-weight: 500 !important;
     min-width: auto !important;
     white-space: nowrap;
-    margin: 1px 0 !important;
+    margin: 2px 1px !important;
+    border-radius: 6px !important;
   }
   
-  /* Individual dropdown styling with more spacing */
+  /* Individual dropdown styling with proper spacing */
   .user-dropdown {
-    margin: 3px 2px !important;
+    margin: 2px 1px !important;
     width: auto !important;
+    position: relative !important;
+    z-index: 9500 !important;
   }
   
-  /* Theme toggle positioning */
+  /* Prevent dropdown content from overlapping with title */
+  .dropdown-content {
+    top: calc(100% + 6px) !important;
+    margin-top: 0 !important;
+    z-index: 10001 !important;
+    min-width: 150px !important;
+    max-width: 200px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  
+  .user-dropdown.open .dropdown-content {
+    transform: translateX(-50%) translateY(0) !important;
+  }
+  
+  /* Theme toggle positioning - avoid overlap */
   .theme-toggle {
     width: 28px !important;
     height: 28px !important;
-    position: absolute;
-    top: 8px;
-    right: 8px;
+    position: absolute !important;
+    top: 4px !important;
+    right: 4px !important;
+    z-index: 10002 !important;
   }
   
   .form-container {
     width: 98%;
     padding: var(--tw-space-4);
     border-radius: 16px;
+    margin-top: var(--tw-space-4) !important;
   }
   
   .chart-container {

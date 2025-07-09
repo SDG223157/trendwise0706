@@ -26,6 +26,22 @@
         {% endif %}
     }
     
+    /* Mobile spacing improvements */
+    @media (max-width: 768px) {
+        .form-container {
+            margin: 1rem auto;
+            padding: 1rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .form-container {
+            margin: 0.5rem auto;
+            padding: 0.75rem;
+            width: 98%;
+        }
+    }
+    
     /* Dark mode form container */
     [data-theme="dark"] .form-container {
         background: rgba(15, 23, 42, 0.6);
@@ -47,6 +63,24 @@
         font-size: 0.9rem;
     }
     
+    /* Mobile login message optimizations */
+    @media (max-width: 768px) {
+        .login-message {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .login-message {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+            border-radius: 6px;
+        }
+    }
+    
     /* Update form-fields layout */
     .form-fields {
         display: grid;
@@ -55,6 +89,25 @@
         {% if not current_user.is_authenticated %}
         max-width: 600px;  /* Increased width for better suggestion visibility */
         {% endif %}
+    }
+    
+    /* Mobile form fields optimizations */
+    @media (max-width: 768px) {
+        .form-fields {
+            gap: 8px;
+            {% if not current_user.is_authenticated %}
+            max-width: 100%;
+            {% endif %}
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .form-fields {
+            gap: 6px;
+            {% if not current_user.is_authenticated %}
+            max-width: 100%;
+            {% endif %}
+        }
     }
     
     /* Mobile-first: stack vertically */
@@ -444,6 +497,29 @@
         {% if not current_user.is_authenticated %}
         max-width: 600px;  /* Match form fields width */
         {% endif %}
+    }
+    
+    /* Mobile button container optimizations */
+    @media (max-width: 768px) {
+        .button-container {
+            margin-top: 8px;
+            gap: 8px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .button-container {
+            margin-top: 6px;
+            gap: 6px;
+            flex-direction: column;
+        }
+        
+        .analyze-button,
+        .news-button {
+            width: 100%;
+            max-width: none;
+            min-width: auto;
+        }
     }
 
     .button-container.has-news {
