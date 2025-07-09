@@ -322,6 +322,52 @@ textarea,
   overflow: hidden;
 }
 
+/* Mobile input consistency - ensure all inputs same size */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="search"],
+  select,
+  .form-input,
+  .search-input {
+    height: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="search"],
+  select,
+  .form-input,
+  .search-input {
+    height: 42px;
+    padding: 10px 14px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+  
+  /* Specific date input fixes for iPhone */
+  input[type="date"] {
+    height: 42px !important;
+    padding: 10px 14px !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+  }
+}
+
 /* Enhanced focus states with premium styling */
 input[type="text"]:focus,
 input[type="email"]:focus,
@@ -757,6 +803,37 @@ input[type="submit"]:active {
   transition: all var(--tw-transition-normal);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  height: 52px;
+  box-sizing: border-box;
+}
+
+/* Mobile input group consistency */
+@media (max-width: 768px) {
+  .input-group input,
+  .input-group select {
+    height: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .input-group input,
+  .input-group select {
+    height: 42px;
+    padding: 10px 14px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+  
+  .input-group input[type="date"] {
+    height: 42px !important;
+    padding: 10px 14px !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+  }
 }
 
 .input-group input:focus,
