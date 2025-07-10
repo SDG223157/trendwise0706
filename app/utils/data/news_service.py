@@ -12,6 +12,14 @@ class NewsService:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        # Initialize duplicate prevention service
+        try:
+            from .enhanced_duplicate_prevention import DuplicatePreventionService
+            self.dup_service = DuplicatePreventionService()
+            self.logger.info("✅ Enhanced duplicate prevention service initialized")
+        except ImportError:
+            self.dup_service = None
+            self.logger.warning("⚠️ Enhanced duplicate prevention service not available")
         
     def close(self):
         """Clean up resources"""
@@ -49,17 +57,49 @@ class NewsService:
 
 
     def save_article(self, article: Dict) -> int:
-        """Save article and related data to database"""
+        """Save article and related data to database with enhanced duplicate prevention"""
+        try:
+            # Use enhanced duplicate prevention service if available
+            if self.dup_service:
+                result = self.dup_service.safe_insert_with_duplicate_handling(article)
+                if result['success']:
+                    if result['action'] == 'inserted':
+                        self.logger.info(f"✅ New article saved: {result['article_id']}")
+                    elif result['action'] in ['skipped_duplicate', 'skipped_constraint_violation']:
+                        self.logger.info(f"⚠️ Duplicate skipped: {result['message']}")
+                    return result['article_id']
+                else:
+                    self.logger.error(f"❌ Failed to save article: {result['message']}")
+                    return None
+            else:
+                # Fallback to original implementation
+                return self._save_article_legacy(article)
+                
+        except Exception as e:
+            self.logger.error(f"Database error while saving article: {str(e)}")
+            db.session.rollback()
+            return None
+
+    def _save_article_legacy(self, article: Dict) -> int:
+        """Legacy save method - fallback when enhanced service is unavailable"""
         try:
             external_id = article.get('external_id')
             if not external_id:
                 self.logger.error("Article missing external ID")
                 return None
 
-            # Check for existing article
+            # Check for existing article in BOTH tables (buffer and permanent storage)
             existing_article = NewsArticle.query.filter_by(external_id=external_id).first()
             if existing_article:
+                self.logger.info(f"External ID {external_id} found in buffer table (news_articles)")
                 return existing_article.id
+            
+            # Check permanent storage (news_search_index) - don't store if already processed
+            from app.models import NewsSearchIndex
+            existing_in_search = NewsSearchIndex.query.filter_by(external_id=external_id).first()
+            if existing_in_search:
+                self.logger.info(f"External ID {external_id} found in permanent storage (news_search_index) - skipping buffer storage")
+                return existing_in_search.article_id or existing_in_search.id
 
             # Create new article
             new_article = NewsArticle(
@@ -453,3 +493,131 @@ class NewsService:
             "lowest_day": {"date": None, "value": 0},
             "total_articles": 0
         }
+
+    # Enhanced Duplicate Prevention Methods
+
+    def get_duplicate_report(self) -> Dict:
+        """Generate a comprehensive duplicate report"""
+        if self.dup_service:
+            return self.dup_service.generate_duplicate_report()
+        else:
+            return {
+                'error': 'Enhanced duplicate prevention service not available',
+                'timestamp': datetime.now().isoformat()
+            }
+
+    def cleanup_duplicates(self, table_name: str = 'news_search_index') -> Dict:
+        """Clean up duplicate external_ids in specified table"""
+        if self.dup_service:
+            return self.dup_service.cleanup_duplicate_external_ids(table_name)
+        else:
+            return {
+                'error': 'Enhanced duplicate prevention service not available',
+                'cleaned_count': 0,
+                'error_count': 0,
+                'duplicates_found': 0
+            }
+
+    def check_article_for_duplicates(self, article_data: Dict) -> Dict:
+        """Check if an article would be a duplicate before saving"""
+        if self.dup_service:
+            return self.dup_service.check_article_duplicate(article_data)
+        else:
+            # Fallback to basic external_id check
+            external_id = article_data.get('external_id')
+            if external_id:
+                existing = NewsArticle.query.filter_by(external_id=external_id).first()
+                if existing:
+                    return {
+                        'is_duplicate': True,
+                        'duplicate_type': 'external_id',
+                        'existing_id': existing.id,
+                        'duplicate_reason': f'External ID already exists: {external_id}',
+                        'existing_article': existing
+                    }
+            return {
+                'is_duplicate': False,
+                'duplicate_type': None,
+                'existing_id': None,
+                'duplicate_reason': None,
+                'existing_article': None
+            }
+
+    def check_batch_for_duplicates(self, external_ids: List[str]) -> Dict:
+        """Check a batch of external IDs for duplicates"""
+        if self.dup_service:
+            return self.dup_service.check_batch_duplicates(external_ids)
+        else:
+            # Fallback to basic database check
+            existing_in_db = db.session.query(NewsArticle.external_id).filter(
+                NewsArticle.external_id.in_(external_ids)
+            ).all()
+            
+            return {
+                'total_checked': len(external_ids),
+                'duplicates_found': 0,
+                'duplicate_ids': [],
+                'unique_ids': external_ids,
+                'existing_in_db': [row.external_id for row in existing_in_db],
+                'existing_in_search_index': [],
+                'note': 'Enhanced duplicate prevention service not available - basic check only'
+            }
+
+    def bulk_save_articles(self, articles_list: List[Dict]) -> Dict:
+        """Bulk save articles with duplicate prevention"""
+        results = {
+            'total_processed': len(articles_list),
+            'saved': 0,
+            'skipped_duplicates': 0,
+            'errors': 0,
+            'details': []
+        }
+
+        for i, article_data in enumerate(articles_list):
+            try:
+                article_id = self.save_article(article_data)
+                
+                if article_id:
+                    # Check if it was a duplicate (compare with existing)
+                    duplicate_check = self.check_article_for_duplicates(article_data)
+                    if duplicate_check['is_duplicate']:
+                        results['skipped_duplicates'] += 1
+                        results['details'].append({
+                            'index': i,
+                            'action': 'skipped_duplicate',
+                            'article_id': article_id,
+                            'external_id': article_data.get('external_id'),
+                            'title': article_data.get('title', '')[:50] + '...' if len(article_data.get('title', '')) > 50 else article_data.get('title', '')
+                        })
+                    else:
+                        results['saved'] += 1
+                        results['details'].append({
+                            'index': i,
+                            'action': 'saved',
+                            'article_id': article_id,
+                            'external_id': article_data.get('external_id'),
+                            'title': article_data.get('title', '')[:50] + '...' if len(article_data.get('title', '')) > 50 else article_data.get('title', '')
+                        })
+                else:
+                    results['errors'] += 1
+                    results['details'].append({
+                        'index': i,
+                        'action': 'error',
+                        'article_id': None,
+                        'external_id': article_data.get('external_id'),
+                        'title': article_data.get('title', '')[:50] + '...' if len(article_data.get('title', '')) > 50 else article_data.get('title', ''),
+                        'error': 'Failed to save article'
+                    })
+                    
+            except Exception as e:
+                results['errors'] += 1
+                results['details'].append({
+                    'index': i,
+                    'action': 'error',
+                    'article_id': None,
+                    'external_id': article_data.get('external_id'),
+                    'title': article_data.get('title', '')[:50] + '...' if len(article_data.get('title', '')) > 50 else article_data.get('title', ''),
+                    'error': str(e)
+                })
+
+        return results
