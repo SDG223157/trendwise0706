@@ -466,30 +466,90 @@ class NewsFetchScheduler:
         except Exception as e:
             logger.error(f"❌ Error in {session_name} fetch job: {str(e)}", exc_info=True)
     
+    def _determine_current_market_session(self) -> str:
+        """Intelligently determine which market session to run based on current UTC time"""
+        current_time = datetime.now()
+        current_hour = current_time.hour
+        current_minute = current_time.minute
+        current_time_str = current_time.strftime('%H:%M UTC')
+        
+        # Define market session windows (30 minutes before and after each scheduled time)
+        china_hk_windows = [
+            (0, 30, 2, 0),    # 00:30-02:00 for 01:00 session
+            (4, 0, 5, 30),    # 04:00-05:30 for 04:30 session  
+            (8, 0, 9, 30),    # 08:00-09:30 for 08:30 session
+        ]
+        
+        us_windows = [
+            (13, 30, 15, 0),  # 13:30-15:00 for 14:00 session
+            (17, 0, 18, 30),  # 17:00-18:30 for 17:30 session
+            (21, 0, 22, 30),  # 21:00-22:30 for 21:30 session
+        ]
+        
+        # Check if current time falls within any China/HK window
+        for start_hour, start_min, end_hour, end_min in china_hk_windows:
+            if (current_hour > start_hour or (current_hour == start_hour and current_minute >= start_min)) and \
+               (current_hour < end_hour or (current_hour == end_hour and current_minute <= end_min)):
+                logger.info(f"🇨🇳 {current_time_str} falls within China/HK session window")
+                return "CHINA_HK"
+        
+        # Check if current time falls within any US window
+        for start_hour, start_min, end_hour, end_min in us_windows:
+            if (current_hour > start_hour or (current_hour == start_hour and current_minute >= start_min)) and \
+               (current_hour < end_hour or (current_hour == end_hour and current_minute <= end_min)):
+                logger.info(f"🇺🇸 {current_time_str} falls within US session window")
+                return "US"
+        
+        # If not in any active window, determine next upcoming session
+        if current_hour < 1:
+            logger.info(f"🌅 {current_time_str} - Next session: China/HK Market Open (01:00)")
+            return "CHINA_HK"
+        elif current_hour < 4:
+            logger.info(f"🌅 {current_time_str} - Next session: China/HK Mid-Session (04:30)")
+            return "CHINA_HK"
+        elif current_hour < 8:
+            logger.info(f"🌅 {current_time_str} - Next session: China/HK Market Close (08:30)")
+            return "CHINA_HK"
+        elif current_hour < 14:
+            logger.info(f"🌅 {current_time_str} - Next session: US Pre-Market (14:00)")
+            return "US"
+        elif current_hour < 17:
+            logger.info(f"🌅 {current_time_str} - Next session: US Mid-Session (17:30)")
+            return "US"
+        elif current_hour < 21:
+            logger.info(f"🌅 {current_time_str} - Next session: US After-Hours (21:30)")
+            return "US"
+        else:
+            logger.info(f"🌙 {current_time_str} - Next session: China/HK Market Open (01:00 tomorrow)")
+            return "CHINA_HK"
+
     def _run_initial_job(self):
-        """Run the initial fetch job when scheduler starts"""
+        """Run the initial fetch job when scheduler starts with intelligent market session selection"""
         try:
-            logger.info("⚡ Initial news fetch job triggered (scheduler start)")
+            # Intelligent market session selection based on current UTC time
+            current_market_session = self._determine_current_market_session()
             
-            # For initial job, run a US session as it has the most symbols
+            logger.info(f"⚡ Initial news fetch job triggered (scheduler start)")
+            logger.info(f"🎯 Current time: {datetime.now().strftime('%H:%M UTC')} - Selected market session: {current_market_session}")
+            
             # Ensure we have proper Flask app context
             if hasattr(self, 'app') and self.app:
                 with self.app.app_context():
-                    result = self.run_fetch_job(market_session="US")
-                    logger.info(f"⚡ Initial job completed: {result}")
+                    result = self.run_fetch_job(market_session=current_market_session)
+                    logger.info(f"⚡ Initial {current_market_session} job completed: {result}")
             else:
                 # Fallback: try to get or create app context
                 try:
                     from flask import current_app
-                    result = self.run_fetch_job(market_session="US")
-                    logger.info(f"⚡ Initial job completed: {result}")
+                    result = self.run_fetch_job(market_session=current_market_session)
+                    logger.info(f"⚡ Initial {current_market_session} job completed: {result}")
                 except RuntimeError:
                     # No app context available, create one
                     from app import create_app
                     app = create_app()
                     with app.app_context():
-                        result = self.run_fetch_job(market_session="US")
-                        logger.info(f"⚡ Initial job completed: {result}")
+                        result = self.run_fetch_job(market_session=current_market_session)
+                        logger.info(f"⚡ Initial {current_market_session} job completed: {result}")
                         
         except Exception as e:
             logger.error(f"❌ Error in initial fetch job: {str(e)}", exc_info=True)
@@ -876,10 +936,16 @@ class NewsFetchScheduler:
             
         return progress
     
-    def run_now(self, market_session: str = "US"):
+    def run_now(self, market_session: str = "auto"):
         """Manually trigger the news fetch job immediately for a specific market session"""
         try:
-            logger.info(f"🚀 Manual news fetch job triggered for {market_session} session")
+            # If market_session is "auto", use intelligent time-based selection
+            if market_session == "auto":
+                market_session = self._determine_current_market_session()
+                logger.info(f"🚀 Manual news fetch job triggered with intelligent time-based selection")
+                logger.info(f"🎯 Selected market session: {market_session} based on current time")
+            else:
+                logger.info(f"🚀 Manual news fetch job triggered for {market_session} session")
             
             # Validate market session
             if market_session not in self.market_config:
@@ -910,9 +976,10 @@ class NewsFetchScheduler:
             
             return {
                 'success': True,
-                'message': f'Manual {market_session} news fetch job started',
+                'message': f'Manual {market_session} news fetch job started (time-based selection)' if market_session == self._determine_current_market_session() else f'Manual {market_session} news fetch job started',
                 'market_session': market_session,
-                'total_symbols': symbol_count
+                'total_symbols': symbol_count,
+                'time_based_selection': market_session == self._determine_current_market_session()
             }
             
         except Exception as e:
@@ -926,6 +993,10 @@ class NewsFetchScheduler:
         """Get current scheduler status with market-specific information"""
         next_run = None
         jobs_count = len(schedule.jobs)
+        
+        # Get current intelligent market session selection
+        current_market_session = self._determine_current_market_session()
+        current_time_str = datetime.now().strftime('%H:%M UTC')
         
         # Get next scheduled run time and details
         next_run_details = None
@@ -968,6 +1039,12 @@ class NewsFetchScheduler:
             "next_run_details": next_run_details,
             "jobs_count": jobs_count,
             "fetch_schedule": "Market-specific (6 times daily)",
+            "intelligent_selection": {
+                "current_time": current_time_str,
+                "recommended_session": current_market_session,
+                "enabled": True,
+                "description": f"Based on current time ({current_time_str}), {current_market_session} session is recommended"
+            },
             "schedule_sessions": [
                 {
                     "session": "China/Hong Kong",

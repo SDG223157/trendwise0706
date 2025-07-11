@@ -2492,45 +2492,31 @@ def get_fetch_scheduler_status():
 @login_required
 @admin_required
 def run_fetch_scheduler_now():
-    """Manually trigger the news fetch job immediately with progress tracking"""
+    """Manually trigger the news fetch job immediately with intelligent time-based market selection"""
     try:
         from app.utils.scheduler.news_fetch_scheduler import news_fetch_scheduler
         
-        # Get the symbols that will be processed
-        symbols = news_fetch_scheduler.get_symbols()
-        total_symbols = len(symbols)
+        # Get market session from request or use intelligent auto-selection
+        data = request.get_json() or {}
+        market_session = data.get('market_session', 'auto')  # Default to intelligent selection
         
-        def run_job():
-            try:
-                logger.info(f"Manual fetch scheduler run started with {total_symbols} symbols")
-                
-                # Use the actual scheduler's fetch job logic
-                result = news_fetch_scheduler.run_fetch_job()
-                
-                if result['status'] == 'success':
-                    logger.info(f"Manual fetch scheduler run completed successfully: "
-                              f"{result['symbols_processed']} processed, "
-                              f"{result['symbols_failed']} failed, "
-                              f"{result['articles_fetched']} articles fetched")
-                else:
-                    logger.error(f"Manual fetch scheduler run failed: {result.get('message', 'Unknown error')}")
-                
-            except Exception as e:
-                logger.error(f"Error in manual fetch scheduler run: {str(e)}", exc_info=True)
+        # Run the job with intelligent market session selection
+        result = news_fetch_scheduler.run_now(market_session=market_session)
         
-        # Run in background thread - CHANGED: daemon=False to ensure completion
-        import threading
-        thread = threading.Thread(target=run_job, daemon=False, name="ManualNewsFetch")
-        thread.start()
-        
-        logger.info(f"Manual fetch job thread started: {thread.name}, daemon={thread.daemon}")
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'News fetch job started in background',
-            'total_symbols': total_symbols,
-            'estimated_duration': f"{total_symbols * 1.5:.0f} seconds"
-        })
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'message': result['message'],
+                'market_session': result['market_session'],
+                'total_symbols': result['total_symbols'],
+                'time_based_selection': result.get('time_based_selection', False),
+                'estimated_duration': f"{result['total_symbols'] * 1.5:.0f} seconds"
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'error': result['error']
+            }), 500
         
     except Exception as e:
         logger.error(f"Error manually running fetch scheduler: {str(e)}", exc_info=True)
