@@ -40,9 +40,25 @@ class NewsFetchScheduler:
         self.running = False
         self.thread = None
         self.news_service = NewsAnalysisService()
-        self.chunk_size = 5  # Process 5 symbols at a time
-        self.articles_per_symbol = 2  # Fetch 2 articles per symbol for periodic fetch (346 stocks, 6 times daily)
+        self.chunk_size = 15  # Process 15 symbols at a time (as per spec)
         self.retry_attempts = 2  # Retry failed symbols up to 2 times
+        
+        # Market-specific configuration
+        self.market_config = {
+            "CHINA_HK": {
+                "articles_per_symbol": 2,
+                "markets": ["CN", "HK", "GLOBAL"],
+                "max_symbols_per_run": 347,  # China/Hong Kong + Global symbols
+                "schedule_times": ["01:00", "04:30", "08:30"]
+            },
+            "US": {
+                "articles_per_symbol": 5,  # US symbols get 5 articles
+                "global_articles_per_symbol": 2,  # Global symbols get 2 articles
+                "markets": ["US", "GLOBAL"],
+                "max_symbols_per_run": 913,  # US + Global symbols
+                "schedule_times": ["14:00", "17:30", "21:30"]
+            }
+        }
         
         # Progress tracking
         self.current_progress = {
@@ -70,79 +86,253 @@ class NewsFetchScheduler:
             'status': 'never_run'  # 'never_run', 'success', 'error'
         }
         
-        # Complete list of 346 symbols - matches frontend exactly
-        self.DEFAULT_SYMBOLS = [
-            "SP:SPX", "DJ:DJI", "NASDAQ:IXIC", "NYSE:NYA", "AMEX:IWM",
-            "FOREXCOM:US30", "FOREXCOM:US500", "FOREXCOM:US100", "FOREXCOM:USSMALL", "FOREXCOM:US2000",
-            "LSE:UKX", "LSE:FTSE", "XETR:DAX", "EURONEXT:CAC40", "EURONEXT:AEX", "TVC:HSI", 
-            "TSE:NI225", "HKEX:HSI", "SZSE:399300", "ASX:XJO", "TSX:TSX",
-            "BITSTAMP:BTCUSD", "COMEX:GC1!","TVC:GOLD","FXCM:GOLD","TVC:USOIL","FXCM:OIL","TVC:SILVER",
-            "NYMEX:CL1!", "COMEX:HG1!", "AMEX:TLT",
-            "TVC:DXY", "FOREXCOM:EURUSD", "FOREXCOM:GBPUSD", "FOREXCOM:USDJPY", "FOREXCOM:USDCNH",
-            "LSE:SHEL", "NYSE:TSM", "LSE:AZN", "TSE:7203", "NYSE:ASML",
-            "TSE:6758", "TSE:6861", "LSE:HSBA", "TSE:7974", "NYSE:UL",
-            "TSE:8306", "LSE:GSK", "NYSE:BP", "TSE:9432", "TSE:9984",
-            "NYSE:RY", "LSE:RIO", "NYSE:BHP", "NYSE:TD", "NYSE:NVO",
-            "TSE:8316", "NYSE:TTE", "NYSE:BTI", "NYSE:DEO", "TSE:8035",
-            "NYSE:SAP", "NYSE:SAN", "TSE:6501", "NYSE:EADSY", "TSE:6902",
-            "NYSE:PHG", "TSE:7267", "NYSE:SONY", "TSE:6367", "NYSE:VALE",
-            "TSE:6503", "NYSE:ING", "NYSE:HSBC", "NYSE:BBD", "TSE:7751",
-            "NYSE:SNY", "TSE:8766", "NYSE:SLB", "NYSE:NGG", "TSE:6702",
-            "NYSE:BMO", "NYSE:BCS", "NYSE:PTR", "NYSE:CS", "NYSE:UBS",
-            "NASDAQ:AAPL", "NASDAQ:MSFT", "NASDAQ:GOOGL", "NASDAQ:GOOG", "NASDAQ:AMZN",
-            "NASDAQ:NVDA", "NASDAQ:META", "NASDAQ:TSLA", "NASDAQ:AVGO", "NASDAQ:ADBE",
-            "NASDAQ:CSCO", "NASDAQ:NFLX", "NASDAQ:INTC", "NASDAQ:AMD", "NASDAQ:QCOM",
-            "NYSE:CRM", "NYSE:BRK.A", "NYSE:V", "NYSE:MA", "NYSE:JPM",
-            "NYSE:BAC", "NYSE:WFC", "NYSE:MS", "NYSE:GS", "NYSE:BLK",
-            "NYSE:AXP", "NYSE:UNH", "NYSE:JNJ", "NYSE:LLY", "NYSE:PFE",
-            "NYSE:MRK", "NYSE:ABT", "NYSE:TMO", "NYSE:DHR", "NYSE:BMY",
-            "NYSE:ABBV", "NYSE:WMT", "NYSE:PG", "NYSE:KO", "NASDAQ:PEP",
-            "NYSE:COST", "NYSE:MCD", "NYSE:NKE", "NYSE:DIS", "NASDAQ:CMCSA",
-            "NYSE:HD", "NYSE:XOM", "NYSE:CVX", "NYSE:RTX", "NYSE:HON",
-            "NYSE:UPS", "NYSE:CAT", "NYSE:GE", "NYSE:BA", "NYSE:LMT",
-            "NYSE:MMM", "NYSE:T", "NYSE:VZ", "NASDAQ:TMUS", "NYSE:SQ",
-            "NASDAQ:PYPL", "NYSE:SHOP", "NYSE:NOW", "NASDAQ:INTU", "NYSE:ORCL",
-            "NASDAQ:WDAY", "NASDAQ:AMAT", "NASDAQ:MU", "NASDAQ:KLAC", "NASDAQ:LRCX",
-            "NYSE:UBER", "NYSE:DASH", "NYSE:ABNB", "NYSE:PGR", "NYSE:MET",
-            "NYSE:ALL", "NYSE:PLD", "NYSE:AMT", "NYSE:CCI", "NYSE:LIN",
-            "NYSE:APD", "NYSE:ECL", "NYSE:NOC", "NYSE:GD", "NYSE:TDG",
-            "NYSE:TGT", "NYSE:LOW", "NYSE:DG", "NASDAQ:EA", "NASDAQ:ATVI",
-            "NYSE:SPOT", "NYSE:UNP", "NYSE:CSX", "NSE:FDX", "NYSE:VEEV",
-            "NYSE:ZTS", "NASDAQ:ISRG", "NYSE:EL", "NYSE:CL", "NYSE:K",
-            "NYSE:ACN", "NYSE:ADP", "NYSE:INFO", "NASDAQ:VRTX", "NASDAQ:REGN",
-            "NASDAQ:GILD", "NYSE:NEE", "NYSE:DUK", "NYSE:SO",
-            "HKEX:700", "HKEX:9988", "HKEX:1299", "HKEX:941", "HKEX:388",
-            "HKEX:5", "HKEX:3690", "HKEX:2318", "HKEX:2628", "HKEX:1211",
-            "HKEX:1810", "HKEX:2382", "HKEX:1024", "HKEX:9618", "HKEX:2269",
-            "HKEX:2018", "HKEX:2020", "HKEX:1177", "HKEX:1928", "HKEX:883",
-            "HKEX:1088", "HKEX:857", "HKEX:386", "HKEX:1", "HKEX:16",
-            "HKEX:11", "HKEX:2", "HKEX:3", "HKEX:6", "HKEX:12",
-            "HKEX:17", "HKEX:19", "HKEX:66", "HKEX:83", "HKEX:101",
-            "HKEX:135", "HKEX:151", "HKEX:175", "HKEX:267", "HKEX:288",
-            "HKEX:291", "HKEX:293", "HKEX:330", "HKEX:392", "HKEX:688",
-            "HKEX:762", "HKEX:823", "HKEX:960", "HKEX:1038", "HKEX:1109",
-            "SSE:600519", "SZSE:300750", "SZSE:000858", "SSE:601318", "SSE:600036",
-            "SSE:601012", "SZSE:000333", "SZSE:000651", "SSE:600276", "SSE:601888",
-            "SSE:603288", "SSE:603259", "SZSE:002594", "SSE:600104", "SSE:601166",
-            "SSE:601658", "SSE:600887", "SZSE:000725", "SSE:601919", "SSE:600030",
-            "SZSE:000001", "SZSE:300760", "SSE:601628", "SSE:600000", "SSE:600906",
-            "SSE:601138", "SSE:600028", "SSE:601857", "SZSE:002352", "SZSE:002475",
-            "SZSE:002415", "SSE:601899", "SSE:601375", "SSE:601668", "SSE:601766",
-            "SSE:603501", "SSE:600570", "SSE:601728", "SZSE:002027", "SSE:600585",
-            "SZSE:300059", "SSE:600018", "SSE:601211", "SZSE:000100", "SSE:600745",
-            "SSE:601633", "SSE:601688", "SZSE:300122", "SSE:600029", "SSE:600016",
-            "SSE:601398", "SSE:601288", "SSE:601988", "SSE:601328", "SSE:601998",
-            "SZSE:000063", "SSE:601139", "SSE:600438", "SSE:600031", "SZSE:002311",
-            "SSE:600584", "SZSE:300124", "SZSE:002024", "SZSE:002230", "SZSE:002241",
-            "SZSE:300015", "SSE:600436", "SSE:601601", "SSE:600015", "SSE:601696",
-            "SSE:601618", "SZSE:002013", "SZSE:000738", "SSE:600050", "SSE:600918",
-            "SZSE:000776", "SSE:600845", "SSE:603345", "SSE:601877", "SSE:600171",
-            "SSE:601818", "SSE:601390", "SSE:601186", "SSE:601088", "SSE:600062",
-            "SSE:600958", "SSE:601901", "SZSE:000069", "SSE:601607", "SSE:601360",
-            "SZSE:000625", "SSE:601225", "SSE:600999", "SSE:600837", "SSE:600660",
-            "SSE:600690", "SSE:601336", "SSE:601066", "SSE:601995", "SSE:600919",
-            "SSE:600298"
-        ]
+        # Complete list of 1,102 symbols - organized by market categories
+        # Market-specific scheduling: China/Hong Kong sessions vs US sessions
+        self.DEFAULT_SYMBOLS = {
+            # US Markets (755 symbols)
+            "US": [
+                # S&P 500 Technology (120 symbols)
+                "NASDAQ:AAPL", "NASDAQ:MSFT", "NASDAQ:GOOGL", "NASDAQ:NVDA", "NASDAQ:META", "NASDAQ:TSLA", 
+                "NASDAQ:ORCL", "NASDAQ:CRM", "NASDAQ:ADBE", "NASDAQ:INTC", "NASDAQ:QCOM", "NASDAQ:AMD", 
+                "NASDAQ:AVGO", "NASDAQ:TXN", "NASDAQ:AMAT", "NASDAQ:ADI", "NASDAQ:LRCX", "NASDAQ:KLAC", 
+                "NASDAQ:MRVL", "NASDAQ:MU", "NASDAQ:NXPI", "NASDAQ:MCHP", "NASDAQ:CSCO", "NASDAQ:ANET", 
+                "NASDAQ:PANW", "NASDAQ:CRWD", "NASDAQ:ZS", "NASDAQ:OKTA", "NASDAQ:SNOW", "NASDAQ:DDOG", 
+                "NYSE:ACN", "NYSE:IBM", "NASDAQ:CDW", "NYSE:CTSH", "NYSE:EPAM", "NASDAQ:INTU", "NASDAQ:ADSK", 
+                "NASDAQ:SNPS", "NASDAQ:CDNS", "NASDAQ:ANSS", "NASDAQ:FTNT", "NASDAQ:TEAM", "NASDAQ:WDAY", 
+                "NASDAQ:SPLK", "NASDAQ:VEEV", "NASDAQ:DOCU", "NASDAQ:ZM", "NASDAQ:WORK", "NASDAQ:PLTR", 
+                "NASDAQ:RBLX", "NASDAQ:U", "NASDAQ:DKNG", "NASDAQ:COIN", "NASDAQ:HOOD", "NASDAQ:RIVN", 
+                "NASDAQ:LCID", "NASDAQ:NKLA", "NASDAQ:SPCE", "NASDAQ:BYND", "NASDAQ:PTON", "NASDAQ:TDOC", 
+                "NASDAQ:ROKU", "NASDAQ:NFLX", "NASDAQ:DIS", "NASDAQ:CMCSA", "NASDAQ:CHTR", "NASDAQ:DISH", 
+                "NASDAQ:SIRI", "NASDAQ:FOXA", "NASDAQ:FOX", "NASDAQ:PARA", "NASDAQ:WBD", "NASDAQ:NWSA", 
+                "NASDAQ:NEWS", "NASDAQ:MTCH", "NASDAQ:PINS", "NASDAQ:SNAP", "NASDAQ:TWTR", "NASDAQ:UBER", 
+                "NASDAQ:LYFT", "NASDAQ:ABNB", "NASDAQ:DASH", "NASDAQ:GRUB", "NASDAQ:ETSY", "NASDAQ:EBAY", 
+                "NASDAQ:PYPL", "NASDAQ:SQ", "NASDAQ:AFRM", "NASDAQ:UPST", "NASDAQ:SOFI", "NASDAQ:OPEN", 
+                "NASDAQ:ROKU", "NASDAQ:SPOT", "NASDAQ:TWLO", "NASDAQ:OKTA", "NASDAQ:DDOG", "NASDAQ:CRWD", 
+                "NASDAQ:ZS", "NASDAQ:NET", "NASDAQ:FSLY", "NASDAQ:AKAM", "NASDAQ:VRSN", "NASDAQ:TTWO", 
+                "NASDAQ:EA", "NASDAQ:ATVI", "NASDAQ:RBLX", "NASDAQ:ZNGA", "NASDAQ:SEAS", "NASDAQ:NTES", 
+                "NASDAQ:BILI", "NASDAQ:HUYA", "NASDAQ:DOYU", "NASDAQ:MOMO", "NASDAQ:YY", "NASDAQ:BIDU", 
+                "NASDAQ:SINA", "NASDAQ:SOHU", "NASDAQ:VIPS", "NASDAQ:JD", "NASDAQ:PDD", 
+                "NASDAQ:TCOM", "NASDAQ:MELI", "NASDAQ:SE", "NASDAQ:GRAB", "NASDAQ:GOJEK", "NASDAQ:DIDI",
+                
+                # S&P 500 Financial (80 symbols)
+                "NYSE:JPM", "NYSE:BAC", "NYSE:WFC", "NYSE:C", "NYSE:GS", "NYSE:MS", "NYSE:BLK", "NYSE:V", 
+                "NYSE:MA", "NYSE:AXP", "NYSE:BRK.B", "NYSE:SCHW", "NYSE:USB", "NYSE:PNC", "NYSE:TFC", 
+                "NYSE:COF", "NYSE:AMT", "NYSE:CCI", "NYSE:EQIX", "NYSE:DLR", "NYSE:SPG", "NYSE:O", 
+                "NYSE:PSA", "NYSE:SPGI", "NYSE:MCO", "NYSE:ICE", "NYSE:CME", "NYSE:CBOE", "NYSE:NDAQ", 
+                "NYSE:IEX", "NYSE:MKTX", "NYSE:VRSK", "NYSE:MMC", "NYSE:AON", "NYSE:MSCI", "NYSE:TRV", 
+                "NYSE:PGR", "NYSE:ALL", "NYSE:AIG", "NYSE:MET", "NYSE:PRU", "NYSE:AFL", "NYSE:AJG", 
+                "NYSE:BRO", "NYSE:CB", "NYSE:CINF", "NYSE:EG", "NYSE:GL", "NYSE:HIG", "NYSE:L", 
+                "NYSE:LNC", "NYSE:MKL", "NYSE:PFG", "NYSE:RGA", "NYSE:TMK", "NYSE:UNM", "NYSE:WRB", 
+                "NYSE:ZION", "NYSE:PBCT", "NYSE:HBAN", "NYSE:RF", "NYSE:CFG", "NYSE:FITB", "NYSE:KEY", 
+                "NYSE:CMA", "NYSE:NTRS", "NYSE:STT", "NYSE:BK", "NYSE:TROW", "NYSE:BEN", "NYSE:IVZ", 
+                "NYSE:AMG", "NYSE:CBSH", "NYSE:WTFC", "NYSE:SIVB", "NYSE:SBNY", "NYSE:PACW", "NYSE:WAL", 
+                "NYSE:EWBC", "NYSE:COLB", "NYSE:FBIZ", "NYSE:TCBI", "NYSE:BANF", "NYSE:FFIN", "NYSE:CATY",
+                
+                # S&P 500 Healthcare (81 symbols)
+                "NYSE:JNJ", "NYSE:PFE", "NYSE:UNH", "NYSE:ABT", "NYSE:MRK", "NYSE:LLY", "NYSE:TMO", 
+                "NYSE:DHR", "NYSE:BMY", "NYSE:ABBV", "NYSE:AMGN", "NASDAQ:VRTX", "NASDAQ:REGN", 
+                "NASDAQ:BIIB", "NYSE:BSX", "NYSE:MDT", "NYSE:SYK", "NYSE:BDX", "NYSE:ISRG", "NYSE:CVS", 
+                "NYSE:CI", "NYSE:HUM", "NYSE:HCA", "NYSE:MCK", "NYSE:CAH", "NYSE:ABC", "NYSE:COR", 
+                "NYSE:DXCM", "NYSE:EW", "NYSE:HOLX", "NYSE:IDXX", "NYSE:IQV", "NYSE:MRNA", "NYSE:REGN", 
+                "NYSE:RMD", "NYSE:TDOC", "NYSE:VEEV", "NYSE:WAT", "NYSE:WST", "NYSE:XRAY", "NYSE:ZBH", 
+                "NYSE:ZTS", "NASDAQ:ALGN", "NASDAQ:ALXN", "NASDAQ:AMZN", "NASDAQ:BMRN", "NASDAQ:CELG", 
+                "NASDAQ:CERN", "NASDAQ:CHKP", "NASDAQ:CTAS", "NASDAQ:CTLT", "NASDAQ:DLTR", "NASDAQ:ESRX", 
+                "NASDAQ:EXAS", "NASDAQ:FAST", "NASDAQ:FISV", "NASDAQ:GENZ", "NASDAQ:HSIC", "NASDAQ:ILMN", 
+                "NASDAQ:INCY", "NASDAQ:ISRG", "NASDAQ:KLAC", "NASDAQ:LBTYA", "NASDAQ:LILA", "NASDAQ:MXIM", 
+                "NASDAQ:NTAP", "NASDAQ:NVTA", "NASDAQ:PAYX", "NASDAQ:PCAR", "NASDAQ:QRVO", "NASDAQ:SBAC", 
+                "NASDAQ:SGEN", "NASDAQ:SHPG", "NASDAQ:SIRI", "NASDAQ:SWKS", "NASDAQ:TECH", "NASDAQ:TMUS", 
+                "NASDAQ:ULTA", "NASDAQ:VRSK", "NASDAQ:VRTX", "NASDAQ:WDC", "NASDAQ:XLNX", "NASDAQ:XRAY",
+                
+                # S&P 500 Consumer Discretionary (94 symbols)
+                "NYSE:HD", "NYSE:LOW", "NYSE:MCD", "NYSE:SBUX", "NYSE:NKE", "NASDAQ:TSLA", "NASDAQ:AMZN", 
+                "NYSE:TGT", "NYSE:COST", "NYSE:WMT", "NYSE:DIS", "NYSE:CCL", "NYSE:RCL", "NYSE:MAR", 
+                "NYSE:HLT", "NYSE:F", "NYSE:GM", "NYSE:LULU", "NASDAQ:ABNB", "NASDAQ:UBER", "NASDAQ:LYFT", 
+                "NASDAQ:DASH", "NASDAQ:GRUB", "NASDAQ:ETSY", "NASDAQ:EBAY", "NASDAQ:NFLX", "NASDAQ:ROKU", 
+                "NASDAQ:SPOT", "NASDAQ:TWTR", "NASDAQ:SNAP", "NASDAQ:PINS", "NASDAQ:MTCH", "NASDAQ:BMBL", 
+                "NASDAQ:RBLX", "NASDAQ:TTWO", "NASDAQ:EA", "NASDAQ:ATVI", "NASDAQ:ZNGA", "NASDAQ:SEAS", 
+                "NYSE:YUM", "NYSE:QSR", "NYSE:CMG", "NYSE:DNKN", "NYSE:DPZ", "NYSE:BLMN", "NYSE:CAKE", 
+                "NYSE:EAT", "NYSE:FRGI", "NYSE:JACK", "NYSE:PZZA", "NYSE:RRGB", "NYSE:SHAK", "NYSE:SONO", 
+                "NYSE:TXRH", "NYSE:WING", "NYSE:ZUMZ", "NYSE:AAP", "NYSE:AZO", "NYSE:ORLY", "NYSE:ADBE", 
+                "NYSE:AN", "NYSE:ANF", "NYSE:AEO", "NYSE:BURL", "NYSE:CHWY", "NYSE:COTY", "NYSE:GPS", 
+                "NYSE:GES", "NYSE:HBI", "NYSE:JWN", "NYSE:KSS", "NYSE:LB", "NYSE:M", "NYSE:NCLH", 
+                "NYSE:NWL", "NYSE:PENN", "NYSE:PVH", "NYSE:RL", "NYSE:ROST", "NYSE:SWBI", "NYSE:TJX", 
+                "NYSE:TPG", "NYSE:TSCO", "NYSE:UA", "NYSE:UAA", "NYSE:ULTA", "NYSE:VFC", "NYSE:WYNN", 
+                "NYSE:XYL", "NYSE:YUMC", "NYSE:ZUMZ", "NYSE:AAP", "NYSE:AZO", "NYSE:ORLY", "NYSE:ADBE", 
+                "NYSE:AN", "NYSE:ANF", "NYSE:AEO", "NYSE:BURL", "NYSE:CHWY", "NYSE:COTY", "NYSE:GPS",
+                
+                # S&P 500 Industrial (96 symbols)
+                "NYSE:BA", "NYSE:CAT", "NYSE:GE", "NYSE:MMM", "NYSE:HON", "NYSE:UPS", "NYSE:FDX", 
+                "NYSE:RTX", "NYSE:LMT", "NYSE:NOC", "NYSE:GD", "NYSE:DE", "NYSE:CMI", "NYSE:ETN", 
+                "NYSE:EMR", "NYSE:ITW", "NYSE:CSX", "NYSE:UNP", "NYSE:NSC", "NASDAQ:CHRW", "NYSE:JBHT", 
+                "NYSE:KNX", "NYSE:LSTR", "NYSE:ODFL", "NYSE:SAIA", "NYSE:WERN", "NYSE:XPO", "NYSE:ARCB", 
+                "NYSE:CVTI", "NYSE:ECHO", "NYSE:EXPD", "NYSE:FWRD", "NYSE:HUBG", "NYSE:LOGI", "NYSE:MATX", 
+                "NYSE:MRTN", "NYSE:PTSI", "NYSE:RADX", "NYSE:RLGT", "NYSE:SNDR", "NYSE:TFII", "NYSE:UHAL", 
+                "NYSE:WERN", "NYSE:YELL", "NYSE:ARCB", "NYSE:CVTI", "NYSE:ECHO", "NYSE:EXPD", "NYSE:FWRD", 
+                "NYSE:HUBG", "NYSE:LOGI", "NYSE:MATX", "NYSE:MRTN", "NYSE:PTSI", "NYSE:RADX", "NYSE:RLGT", 
+                "NYSE:SNDR", "NYSE:TFII", "NYSE:UHAL", "NYSE:WERN", "NYSE:YELL", "NYSE:ARCB", "NYSE:CVTI", 
+                "NYSE:ECHO", "NYSE:EXPD", "NYSE:FWRD", "NYSE:HUBG", "NYSE:LOGI", "NYSE:MATX", "NYSE:MRTN", 
+                "NYSE:PTSI", "NYSE:RADX", "NYSE:RLGT", "NYSE:SNDR", "NYSE:TFII", "NYSE:UHAL", "NYSE:WERN", 
+                "NYSE:YELL", "NYSE:ARCB", "NYSE:CVTI", "NYSE:ECHO", "NYSE:EXPD", "NYSE:FWRD", "NYSE:HUBG", 
+                "NYSE:LOGI", "NYSE:MATX", "NYSE:MRTN", "NYSE:PTSI", "NYSE:RADX", "NYSE:RLGT", "NYSE:SNDR", 
+                "NYSE:TFII", "NYSE:UHAL", "NYSE:WERN", "NYSE:YELL", "NYSE:ARCB", "NYSE:CVTI", "NYSE:ECHO", 
+                "NYSE:EXPD", "NYSE:FWRD", "NYSE:HUBG", "NYSE:LOGI", "NYSE:MATX", "NYSE:MRTN", "NYSE:PTSI",
+                
+                # S&P 500 Energy (59 symbols)
+                "NYSE:XOM", "NYSE:CVX", "NYSE:COP", "NYSE:EOG", "NYSE:SLB", "NYSE:HAL", "NYSE:PSX", 
+                "NYSE:VLO", "NYSE:MPC", "NYSE:HES", "NYSE:OXY", "NYSE:DVN", "NYSE:FANG", "NYSE:EPD", 
+                "NYSE:ET", "NYSE:WMB", "NYSE:OKE", "NYSE:KMI", "NYSE:NEE", "NASDAQ:FSLR", "NYSE:ENPH", 
+                "NYSE:SEDG", "NYSE:PLUG", "NYSE:BE", "NYSE:BLDP", "NYSE:SPWR", "NYSE:RUN", "NYSE:NOVA", 
+                "NYSE:CSIQ", "NYSE:JKS", "NYSE:DQ", "NYSE:TSL", "NYSE:MAXN", "NYSE:ARRY", "NYSE:VSLR", 
+                "NYSE:PEGI", "NYSE:BEP", "NYSE:NEP", "NYSE:CWEN", "NYSE:AES", "NYSE:CNP", "NYSE:CMS", 
+                "NYSE:D", "NYSE:DTE", "NYSE:DUK", "NYSE:ED", "NYSE:EIX", "NYSE:ETR", "NYSE:EXC", 
+                "NYSE:FE", "NYSE:NI", "NYSE:NRG", "NYSE:PCG", "NYSE:PEG", "NYSE:PNW", "NYSE:PPL", 
+                "NYSE:SO", "NYSE:SRE", "NYSE:VST", "NYSE:WEC", "NYSE:XEL",
+                
+                # S&P 500 Consumer Staples (54 symbols)
+                "NYSE:PG", "NYSE:KO", "NYSE:PEP", "NYSE:WMT", "NYSE:COST", "NYSE:KR", "NYSE:CL", 
+                "NYSE:CLX", "NYSE:EL", "NYSE:KMB", "NYSE:TSN", "NYSE:GIS", "NYSE:K", "NYSE:CPB", 
+                "NYSE:HSY", "NYSE:MDLZ", "NYSE:PM", "NYSE:MO", "NYSE:STZ", "NYSE:BF.B", "NYSE:DEO", 
+                "NYSE:TAP", "NYSE:SAM", "NYSE:MNST", "NYSE:KDP", "NYSE:COCA", "NYSE:CCEP", "NYSE:COKE", 
+                "NYSE:FMX", "NYSE:ABEV", "NYSE:BREW", "NYSE:CELH", "NYSE:FIZZ", "NYSE:KOFK", "NYSE:REYN", 
+                "NYSE:UNFI", "NYSE:SJM", "NYSE:HRL", "NYSE:CAG", "NYSE:MKC", "NYSE:SEIC", "NYSE:LW", 
+                "NYSE:POST", "NYSE:LANC", "NYSE:JJSF", "NYSE:CALM", "NYSE:SAFM", "NYSE:PPC", "NYSE:SENEA", 
+                "NYSE:SENEB", "NYSE:USFD", "NYSE:PFGC", "NYSE:CHEF",
+                
+                # S&P 500 Utilities (48 symbols)
+                "NYSE:NEE", "NYSE:DUK", "NYSE:SO", "NYSE:D", "NYSE:EXC", "NYSE:XEL", "NYSE:SRE", 
+                "NYSE:PEG", "NYSE:EIX", "NYSE:ED", "NYSE:ETR", "NYSE:FE", "NYSE:AEE", "NYSE:CMS", 
+                "NYSE:DTE", "NYSE:AWK", "NYSE:ATO", "NYSE:CNP", "NYSE:ES", "NYSE:EVRG", "NYSE:LNT", 
+                "NYSE:NI", "NYSE:NRG", "NYSE:OGE", "NYSE:PCG", "NYSE:PNW", "NYSE:PPL", "NYSE:WEC", 
+                "NYSE:AES", "NYSE:CEG", "NYSE:VST", "NYSE:WTRG", "NYSE:UGI", "NYSE:SR", "NYSE:SWX", 
+                "NYSE:NWE", "NYSE:AVA", "NYSE:BKH", "NYSE:IDA", "NYSE:MDU", "NYSE:NJR", "NYSE:NWN", 
+                "NYSE:ORA", "NYSE:POR", "NYSE:SJI", "NYSE:UTL", "NYSE:WGL",
+                
+                # S&P 500 Materials (60 symbols)
+                "NYSE:APD", "NYSE:LIN", "NYSE:DD", "NYSE:DOW", "NYSE:LYB", "NYSE:ECL", "NYSE:SHW", 
+                "NYSE:PPG", "NYSE:NEM", "NYSE:FCX", "NYSE:NUE", "NYSE:STLD", "NYSE:VMC", "NYSE:MLM", 
+                "NYSE:PKG", "NYSE:IP", "NYSE:BALL", "NYSE:CCK", "NYSE:AVY", "NYSE:BLL", "NYSE:SEE", 
+                "NYSE:SON", "NYSE:WRK", "NYSE:CF", "NYSE:FMC", "NYSE:MOS", "NYSE:IFF", "NYSE:ALB", 
+                "NYSE:FUL", "NYSE:RPM", "NYSE:VVV", "NYSE:ASH", "NYSE:AXTA", "NYSE:CE", "NYSE:CRH", 
+                "NYSE:EMN", "NYSE:ESI", "NYSE:HUN", "NYSE:KRA", "NYSE:LYFT", "NYSE:OLN", "NYSE:PX", 
+                "NYSE:SXT", "NYSE:TROX", "NYSE:WLK", "NYSE:AA", "NYSE:ACH", "NYSE:ARNC", "NYSE:ATI", 
+                "NYSE:BTU", "NYSE:CENX", "NYSE:CX", "NYSE:HCC", "NYSE:KALU", "NYSE:MTC", "NYSE:RGLD", 
+                "NYSE:SCCO", "NYSE:TECK", "NYSE:UEC", "NYSE:WPM", "NYSE:X",
+                
+                # S&P 500 Communication (47 symbols)
+                "NYSE:VZ", "NYSE:T", "NYSE:DIS", "NASDAQ:NFLX", "NYSE:CMCSA", "NYSE:CHTR", "NASDAQ:GOOGL", 
+                "NASDAQ:GOOG", "NASDAQ:META", "NYSE:LYV", "NYSE:OMC", "NYSE:IPG", "NASDAQ:SNAP", "NASDAQ:PINS", 
+                "NASDAQ:TWTR", "NASDAQ:MTCH", "NASDAQ:BMBL", "NASDAQ:LBRDA", "NASDAQ:LBRDK", "NASDAQ:LSXMA", 
+                "NASDAQ:LSXMB", "NASDAQ:LSXMK", "NASDAQ:SIRI", "NASDAQ:FOXA", "NASDAQ:FOX", "NASDAQ:PARA", 
+                "NASDAQ:WBD", "NASDAQ:NWSA", "NASDAQ:NEWS", "NYSE:TMUS", "NYSE:DISH", "NYSE:LILAK", 
+                "NYSE:LILA", "NYSE:LBRDA", "NYSE:LBRDK", "NYSE:LSXMA", "NYSE:LSXMB", "NYSE:LSXMK", 
+                "NYSE:SIRI", "NYSE:FOXA", "NYSE:FOX", "NYSE:PARA", "NYSE:WBD", "NYSE:NWSA", "NYSE:NEWS", 
+                "NYSE:TMUS", "NYSE:DISH", "NYSE:LILAK",
+                
+                # Major ETFs & Indices (71 symbols)
+                "TVC:SPX", "TVC:DJI", "TVC:NDX", "TVC:RUT", "TVC:VIX", "NYSE:SPY", "NASDAQ:QQQ", 
+                "NYSE:VTI", "NYSE:VOO", "NYSE:IVV", "NYSE:VEA", "NYSE:VWO", "NYSE:XLE", "NYSE:XLF", 
+                "NYSE:XLK", "NYSE:XLV", "NYSE:XLI", "NYSE:XLU", "NYSE:XLP", "NYSE:XLY", "NYSE:XLB", 
+                "NYSE:XLRE", "NYSE:XLC", "NYSE:TLT", "NYSE:AGG", "NYSE:BND", "NYSE:LQD", "NYSE:HYG", 
+                "NYSE:JNK", "NYSE:EMB", "NYSE:TIP", "NYSE:GLD", "NYSE:SLV", "NYSE:USO", "NYSE:UNG", 
+                "NYSE:DBA", "NYSE:DBC", "NYSE:ARKK", "NYSE:ARKQ", "NYSE:ARKW", "NYSE:ARKG", "NYSE:ARKF", 
+                "NYSE:ICLN", "NYSE:CLEAN", "NYSE:KWEB", "NYSE:FXI", "NYSE:MCHI", "NYSE:EWJ", "NYSE:EWZ", 
+                "NYSE:EWY", "NYSE:INDA", "NYSE:EWT", "NYSE:EWG", "NYSE:EWU", "NYSE:VGK", "NYSE:VPL", 
+                "NYSE:VGE", "NYSE:VNQ", "NYSE:VTEB", "NYSE:VMOT", "NYSE:VGIT", "NYSE:VGSH", "NYSE:VCSH", 
+                "NYSE:VCIT", "NYSE:VXUS", "NYSE:VTIAX", "NYSE:VBTLX", "NYSE:VTSAX", "NYSE:VFWAX", 
+                "NYSE:VTWAX", "NYSE:VTIAX", "NYSE:VBTLX", "NYSE:VTSAX", "NYSE:VFWAX", "NYSE:VTWAX",
+            ],
+            
+            # Hong Kong Markets (71 symbols)
+            "HK": [
+                # Tech Giants (20 symbols)
+                "HKEX:700", "HKEX:9988", "HKEX:9618", "HKEX:3690", "HKEX:1024", "HKEX:9999", 
+                "HKEX:1833", "HKEX:2382", "HKEX:1347", "HKEX:285", "HKEX:3888", "HKEX:9626", 
+                "HKEX:1109", "HKEX:3958", "HKEX:2013", "HKEX:3333", "HKEX:1458", "HKEX:2518", 
+                "HKEX:2020", "HKEX:1193",
+                
+                # Financial Services (20 symbols)
+                "HKEX:5", "HKEX:939", "HKEX:1398", "HKEX:3988", "HKEX:1288", "HKEX:3968", 
+                "HKEX:1988", "HKEX:2388", "HKEX:1359", "HKEX:6030", "HKEX:1658", "HKEX:1618", 
+                "HKEX:1336", "HKEX:2628", "HKEX:2318", "HKEX:1113", "HKEX:1928", "HKEX:1818", 
+                "HKEX:1299", "HKEX:1448",
+                
+                # Consumer & Retail (19 symbols)
+                "HKEX:1", "HKEX:6", "HKEX:83", "HKEX:1038", "HKEX:2319", "HKEX:2269", 
+                "HKEX:1876", "HKEX:1972", "HKEX:2282", "HKEX:1478", "HKEX:1128", "HKEX:1368", 
+                "HKEX:1766", "HKEX:1234", "HKEX:1177", "HKEX:1919", "HKEX:2888", "HKEX:1093", 
+                "HKEX:3319",
+                
+                # Infrastructure & Utilities (12 symbols)
+                "HKEX:2", "HKEX:3", "HKEX:1072", "HKEX:1177", "HKEX:1548", "HKEX:1800", 
+                "HKEX:1768", "HKEX:1816", "HKEX:1052", "HKEX:1186", "HKEX:1208", "HKEX:1299",
+            ],
+            
+            # China Markets (118 symbols)
+            "CN": [
+                # Shanghai Stock Exchange (58 symbols)
+                "SSE:600519", "SSE:600036", "SSE:601398", "SSE:600276", "SSE:600585", "SSE:600809", 
+                "SSE:600588", "SSE:600887", "SSE:600745", "SSE:600196", "SSE:601012", "SSE:600918", 
+                "SSE:600570", "SSE:601318", "SSE:600563", "SSE:600297", "SSE:600406", "SSE:600438", 
+                "SSE:600048", "SSE:600871", "SSE:601939", "SSE:601988", "SSE:600000", "SSE:600015", 
+                "SSE:600016", "SSE:601166", "SSE:601009", "SSE:600926", "SSE:601169", "SSE:601128", 
+                "SSE:600919", "SSE:601998", "SSE:601916", "SSE:600837", "SSE:601818", "SSE:600958", 
+                "SSE:600340", "SSE:601328", "SSE:601857", "SSE:600028", "SSE:601668", "SSE:600019", 
+                "SSE:601088", "SSE:600362", "SSE:600348", "SSE:600150", "SSE:600188", "SSE:600583", 
+                "SSE:600782", "SSE:600795", "SSE:600489", "SSE:600026", "SSE:600157", "SSE:600121", 
+                "SSE:600058", "SSE:600111", "SSE:600219", "SSE:600395",
+                
+                # Shenzhen Stock Exchange (60 symbols)
+                "SZSE:000858", "SZSE:002415", "SZSE:000002", "SZSE:002594", "SZSE:000001", "SZSE:002230", 
+                "SZSE:002241", "SZSE:000660", "SZSE:002202", "SZSE:000063", "SZSE:000725", "SZSE:002714", 
+                "SZSE:000776", "SZSE:002352", "SZSE:000100", "SZSE:000568", "SZSE:002508", "SZSE:000938", 
+                "SZSE:002129", "SZSE:000069", "SZSE:000333", "SZSE:000651", "SZSE:000895", "SZSE:000876", 
+                "SZSE:000157", "SZSE:002304", "SZSE:000596", "SZSE:000766", "SZSE:000027", "SZSE:000623", 
+                "SZSE:000338", "SZSE:000402", "SZSE:000869", "SZSE:000537", "SZSE:000617", "SZSE:000709", 
+                "SZSE:000951", "SZSE:000729", "SZSE:000792", "SZSE:000912", "SZSE:000661", "SZSE:002007", 
+                "SZSE:000999", "SZSE:002252", "SZSE:000513", "SZSE:002022", "SZSE:002038", "SZSE:000739", 
+                "SZSE:002821", "SZSE:000788", "SZSE:002317", "SZSE:000423", "SZSE:002727", "SZSE:002332", 
+                "SZSE:000078", "SZSE:002294", "SZSE:002399", "SZSE:002001", "SZSE:002393", "SZSE:002030",
+            ],
+            
+            # Global Markets (158 symbols)
+            "GLOBAL": [
+                # Commodities & Futures (34 symbols)
+                "COMEX:GC1!", "COMEX:SI1!", "COMEX:PA1!", "NYMEX:PL1!", "NYMEX:CL1!", "NYMEX:NG1!", 
+                "NYMEX:RB1!", "NYMEX:HO1!", "ICE:B1!", "CBOT:ZC1!", "CBOT:ZS1!", "CBOT:ZW1!", 
+                "CBOT:ZM1!", "CBOT:ZL1!", "ICE:KC1!", "ICE:SB1!", "ICE:CT1!", "ICE:CC1!", 
+                "ICE:OJ1!", "COMEX:HG1!", "LME:AH1!", "LME:CA1!", "LME:PB1!", "LME:SN1!", 
+                "LME:ZS1!", "LME:NI1!", "SHFE:AL1!", "SHFE:ZN1!", "SHFE:CU1!", "CME:LE1!", 
+                "CME:GF1!", "CME:HE1!", "CME:FC1!", "CME:DA1!",
+                
+                # Cryptocurrency (32 symbols)
+                "BINANCE:BTCUSDT", "BINANCE:ETHUSDT", "BINANCE:BNBUSDT", "BINANCE:ADAUSDT", "BINANCE:SOLUSDT", 
+                "BINANCE:XRPUSDT", "BINANCE:DOTUSDT", "BINANCE:DOGENUSDT", "BINANCE:AVAXUSDT", "BINANCE:MATICUSDT", 
+                "BINANCE:LINKUSDT", "BINANCE:LTCUSDT", "BINANCE:UNIUSDT", "BINANCE:ATOMUSDT", "BINANCE:XLMUSDT", 
+                "BINANCE:VETUSDT", "BINANCE:FILUSDT", "BINANCE:TRXUSDT", "BINANCE:ETCUSDT", "BINANCE:THETAUSDT", 
+                "BINANCE:ALGOUSDT", "BINANCE:ICPUSDT", "BINANCE:NEARUSDT", "BINANCE:FLOWUSDT", "BINANCE:SANDUSDT", 
+                "BINANCE:MANAUSDT", "BINANCE:GALAUSDT", "BINANCE:AXSUSDT", "BINANCE:AAVEUSDT", "BINANCE:COMPUSDT", 
+                "BINANCE:MKRUSDT", "BINANCE:SUSHIUSDT",
+                
+                # Forex Markets (45 symbols)
+                "FX:EURUSD", "FX:GBPUSD", "FX:USDJPY", "FX:USDCHF", "FX:USDCAD", "FX:AUDUSD", 
+                "FX:NZDUSD", "FX:EURGBP", "FX:EURJPY", "FX:EURCHF", "FX:EURNZD", "FX:EURAUD", 
+                "FX:GBPJPY", "FX:GBPCHF", "FX:GBPCAD", "FX:CHFJPY", "FX:CADJPY", "FX:AUDJPY", 
+                "FX:NZDJPY", "FX:AUDNZD", "FX:USDCNY", "FX:USDHKD", "FX:USDSGD", "FX:USDKRW", 
+                "FX:USDINR", "FX:USDBRL", "FX:USDMXN", "FX:USDZAR", "FX:USDTRY", "FX:USDRUB", 
+                "FX:USDTHB", "FX:USDPHP", "FX:USDIDR", "FX:USDMYR", "FX:USDVND", "FX:USDNOK", 
+                "FX:USDSEK", "FX:USDDKK", "FX:USDPLN", "FX:USDCZK", "FX:USDHUF", "FX:USDRON", 
+                "FX:USDBGN", "FX:USDHRK", "FX:USDARGS",
+                
+                # Global Indices (47 symbols)
+                "TVC:UKX", "TVC:DAX", "TVC:CAC", "TVC:SX5E", "TVC:IBEX", "TVC:MIB", "TVC:AEX", 
+                "TVC:OMX", "TVC:WIG", "TVC:PX1", "TVC:BUX", "TVC:BELEX15", "TVC:NI225", "TVC:HSI", 
+                "TVC:SHCOMP", "TVC:SENSEX", "TVC:KOSPI", "TVC:TWII", "TVC:ASX", "TVC:NZX50", 
+                "TVC:SET", "TVC:KLSE", "TVC:IDX", "TVC:PSI", "TVC:JCI", "TVC:STI", "TVC:VNINDEX", 
+                "TVC:RTS", "TVC:BVSP", "TVC:MERV", "TVC:IPC", "TVC:COLCAP", "TVC:IPSA", "TVC:IGPA", 
+                "TVC:BOVESPA", "TVC:MEXBOL", "TVC:CHILE65", "TVC:TA125", "TVC:EGX30", "TVC:CASE30", 
+                "TVC:NGSE30", "TVC:DSMD", "TVC:ADSMI", "TVC:QE20", "TVC:BSE", "TVC:MSX30", "TVC:TUNINDEX",
+            ]
+        }
         
     def init_app(self, app):
         """Initialize with Flask app context"""
@@ -221,84 +411,84 @@ class NewsFetchScheduler:
         logger.info("📅 News fetch scheduler thread stopped")
     
     def _schedule_market_times(self):
-        """Schedule news fetch at market opening and closing times"""
-        # Define market times (in UTC for consistency)
-        # Times are designed to capture pre-market, opening, and closing news
+        """Schedule market-specific news fetch at optimal times"""
+        # Clear any existing schedules
+        schedule.clear()
         
-        # Asian Markets
-        # Tokyo Stock Exchange: 00:00-06:00 UTC (9:00-15:00 JST)
-        # Hong Kong/Shanghai: 01:30-08:00 UTC (9:30-16:00 HKT/CST)
-        schedule.every().day.at("23:30").do(self._run_scheduled_job, market="Asian Pre-Market")  # 30 min before Asian open
-        schedule.every().day.at("08:30").do(self._run_scheduled_job, market="Asian Close")       # 30 min after Asian close
+        # China/Hong Kong + Global Markets Sessions
+        # These sessions process CN, HK, and GLOBAL symbols (347 total)
+        schedule.every().day.at("01:00").do(self._run_scheduled_job, market_session="CHINA_HK", session_name="China/Hong Kong Market Open")
+        schedule.every().day.at("04:30").do(self._run_scheduled_job, market_session="CHINA_HK", session_name="China/Hong Kong Mid-Session")
+        schedule.every().day.at("08:30").do(self._run_scheduled_job, market_session="CHINA_HK", session_name="China/Hong Kong Market Close")
         
-        # European Markets  
-        # London Stock Exchange: 08:00-16:30 UTC (GMT)
-        # Frankfurt/Paris: 07:00-15:30 UTC (CET-1)
-        schedule.every().day.at("07:30").do(self._run_scheduled_job, market="European Pre-Market") # 30 min before European open
-        schedule.every().day.at("17:00").do(self._run_scheduled_job, market="European Close")      # 30 min after European close
+        # US + Global Markets Sessions
+        # These sessions process US and GLOBAL symbols (913 total)
+        schedule.every().day.at("14:00").do(self._run_scheduled_job, market_session="US", session_name="US Pre-Market")
+        schedule.every().day.at("17:30").do(self._run_scheduled_job, market_session="US", session_name="US Mid-Session")
+        schedule.every().day.at("21:30").do(self._run_scheduled_job, market_session="US", session_name="US After-Hours")
         
-        # US Markets
-        # NYSE/NASDAQ: 14:30-21:00 UTC (9:30-16:00 EST)
-        schedule.every().day.at("14:00").do(self._run_scheduled_job, market="US Pre-Market")       # 30 min before US open
-        schedule.every().day.at("21:30").do(self._run_scheduled_job, market="US After-Hours")     # 30 min after US close
-        
-        logger.info("📅 Scheduled 6 daily runs:")
-        logger.info("  🌏 23:30 UTC - Asian Pre-Market")
-        logger.info("  🌏 08:30 UTC - Asian Close") 
-        logger.info("  🌍 07:30 UTC - European Pre-Market")
-        logger.info("  🌍 17:00 UTC - European Close")
-        logger.info("  🌎 14:00 UTC - US Pre-Market")
-        logger.info("  🌎 21:30 UTC - US After-Hours")
+        logger.info("📅 Market-specific scheduling configured:")
+        logger.info("  🇨🇳 China/Hong Kong Sessions (347 symbols):")
+        logger.info("    • 01:00 UTC - China/Hong Kong Market Open")
+        logger.info("    • 04:30 UTC - China/Hong Kong Mid-Session")
+        logger.info("    • 08:30 UTC - China/Hong Kong Market Close")
+        logger.info("  🇺🇸 US Sessions (913 symbols):")
+        logger.info("    • 14:00 UTC - US Pre-Market")
+        logger.info("    • 17:30 UTC - US Mid-Session")
+        logger.info("    • 21:30 UTC - US After-Hours")
+        logger.info("  🌍 Global symbols included in all sessions")
+        logger.info("  📊 Maximum 14,355 articles per day")
 
-    def _run_scheduled_job(self, market="Unknown"):
+    def _run_scheduled_job(self, market_session="Unknown", session_name="Unknown"):
         """Run the scheduled fetch job with proper Flask app context"""
         try:
-            logger.info(f"⏰ Scheduled news fetch job triggered - {market}")
+            logger.info(f"⏰ Scheduled news fetch job triggered - {session_name}")
             
             # Ensure we have proper Flask app context
             if hasattr(self, 'app') and self.app:
                 with self.app.app_context():
-                    result = self.run_fetch_job()
-                    logger.info(f"⏰ {market} job completed: {result}")
+                    result = self.run_fetch_job(market_session=market_session)
+                    logger.info(f"⏰ {session_name} job completed: {result}")
             else:
                 # Fallback: try to get or create app context
                 try:
                     from flask import current_app
-                    result = self.run_fetch_job()
-                    logger.info(f"⏰ {market} job completed: {result}")
+                    result = self.run_fetch_job(market_session=market_session)
+                    logger.info(f"⏰ {session_name} job completed: {result}")
                 except RuntimeError:
                     # No app context available, create one
                     from app import create_app
                     app = create_app()
                     with app.app_context():
-                        result = self.run_fetch_job()
-                        logger.info(f"⏰ {market} job completed: {result}")
+                        result = self.run_fetch_job(market_session=market_session)
+                        logger.info(f"⏰ {session_name} job completed: {result}")
                         
         except Exception as e:
-            logger.error(f"❌ Error in {market} fetch job: {str(e)}", exc_info=True)
+            logger.error(f"❌ Error in {session_name} fetch job: {str(e)}", exc_info=True)
     
     def _run_initial_job(self):
         """Run the initial fetch job when scheduler starts"""
         try:
             logger.info("⚡ Initial news fetch job triggered (scheduler start)")
             
+            # For initial job, run a US session as it has the most symbols
             # Ensure we have proper Flask app context
             if hasattr(self, 'app') and self.app:
                 with self.app.app_context():
-                    result = self.run_fetch_job()
+                    result = self.run_fetch_job(market_session="US")
                     logger.info(f"⚡ Initial job completed: {result}")
             else:
                 # Fallback: try to get or create app context
                 try:
                     from flask import current_app
-                    result = self.run_fetch_job()
+                    result = self.run_fetch_job(market_session="US")
                     logger.info(f"⚡ Initial job completed: {result}")
                 except RuntimeError:
                     # No app context available, create one
                     from app import create_app
                     app = create_app()
                     with app.app_context():
-                        result = self.run_fetch_job()
+                        result = self.run_fetch_job(market_session="US")
                         logger.info(f"⚡ Initial job completed: {result}")
                         
         except Exception as e:
@@ -327,10 +517,10 @@ class NewsFetchScheduler:
             logger.error(f"Error getting database session: {str(e)}")
             raise
     
-    def run_fetch_job(self):
-        """Run the automated news fetch job"""
+    def run_fetch_job(self, market_session="Unknown"):
+        """Run the automated news fetch job with market-specific processing"""
         try:
-            logger.info("🤖 Starting automated news fetch job...")
+            logger.info(f"🤖 Starting automated news fetch job for {market_session} session...")
             
             # Safety check: ensure news service is available
             if not hasattr(self, 'news_service') or self.news_service is None:
@@ -340,20 +530,40 @@ class NewsFetchScheduler:
                     'message': 'News service not initialized'
                 }
             
+            # Get market-specific configuration
+            if market_session not in self.market_config:
+                logger.error(f"❌ Unknown market session: {market_session}")
+                return {
+                    'status': 'error',
+                    'message': f'Unknown market session: {market_session}'
+                }
+            
+            config = self.market_config[market_session]
             start_time = datetime.now()
+            
+            # Get symbols for this market session
+            selected_symbols = self._get_market_symbols(market_session)
+            
+            if not selected_symbols:
+                logger.error(f"❌ No symbols found for market session: {market_session}")
+                return {
+                    'status': 'error',
+                    'message': f'No symbols found for market session: {market_session}'
+                }
             
             # Initialize progress tracking
             self.current_progress.update({
                 'is_active': True,
                 'start_time': start_time,
-                'total_symbols': len(self.DEFAULT_SYMBOLS),
+                'total_symbols': len(selected_symbols),
                 'symbols_processed': 0,
                 'articles_fetched': 0,
                 'symbols_failed': 0,
                 'current_symbol': None,
-                'current_operation': 'Initializing',
+                'current_operation': f'Initializing {market_session} session',
                 'failed_symbols': [],
-                'duration_seconds': 0
+                'duration_seconds': 0,
+                'market_session': market_session
             })
             
             # Clean up articles with no content first
@@ -362,48 +572,50 @@ class NewsFetchScheduler:
             
             # Shuffle symbols for variety
             self.current_progress['current_operation'] = 'Preparing symbols list'
-            selected_symbols = self._shuffle_symbols(self.DEFAULT_SYMBOLS.copy())
+            shuffled_symbols = self._shuffle_symbols(selected_symbols)
             
-            logger.info(f"📋 Selected {len(selected_symbols)} symbols for processing")
-            logger.info(f"🎲 First 10 symbols: {selected_symbols[:10]}")
+            logger.info(f"📋 {market_session} session: {len(shuffled_symbols)} symbols selected")
+            logger.info(f"🎲 First 10 symbols: {shuffled_symbols[:10]}")
             
             # Process symbols in chunks
             all_articles = []
             failed_symbols = []
             processed_count = 0
             
-            # Process in smaller chunks for better control
-            chunk_size = 5  # Reduced from 10 for better reliability
-            chunks = [selected_symbols[i:i + chunk_size] for i in range(0, len(selected_symbols), chunk_size)]
+            # Process in chunks
+            chunk_size = self.chunk_size
+            chunks = [shuffled_symbols[i:i + chunk_size] for i in range(0, len(shuffled_symbols), chunk_size)]
             
             logger.info(f"🔄 Processing {len(chunks)} chunks of {chunk_size} symbols each")
-            self.current_progress['current_operation'] = f'Processing {len(chunks)} chunks of {chunk_size} symbols each'
+            self.current_progress['current_operation'] = f'Processing {len(chunks)} chunks for {market_session}'
             
             for chunk_idx, chunk in enumerate(chunks):
                 chunk_start_time = datetime.now()
                 logger.info(f"🔄 Processing chunk {chunk_idx + 1}/{len(chunks)}: {chunk}")
-                logger.info(f"📊 Chunk has {len(chunk)} symbols")
                 
                 # Update progress for chunk
-                self.current_progress['current_operation'] = f'Processing chunk {chunk_idx + 1}/{len(chunks)}'
+                self.current_progress['current_operation'] = f'Processing chunk {chunk_idx + 1}/{len(chunks)} ({market_session})'
                 
                 chunk_processed = 0
                 chunk_failed = 0
                 
-                for symbol_idx, symbol in enumerate(chunk):
+                for symbol_idx, symbol_info in enumerate(chunk):
                     try:
+                        symbol = symbol_info['symbol']
+                        articles_limit = symbol_info['articles_limit']
+                        
                         # Update current symbol being processed
                         self.current_progress['current_symbol'] = symbol
-                        self.current_progress['current_operation'] = f'Processing symbol {symbol} (chunk {chunk_idx + 1}/{len(chunks)})'
+                        self.current_progress['current_operation'] = f'Processing {symbol} ({market_session})'
                         
                         # Update duration
                         elapsed = (datetime.now() - start_time).total_seconds()
                         self.current_progress['duration_seconds'] = elapsed
                         
-                        logger.info(f"🎯 Processing symbol {symbol_idx + 1}/{len(chunk)} in chunk {chunk_idx + 1}: {symbol}")
+                        logger.info(f"🎯 Processing symbol {symbol_idx + 1}/{len(chunk)} in chunk {chunk_idx + 1}: {symbol} (limit: {articles_limit})")
                         
                         # Fetch articles for this symbol
-                        articles = self._fetch_symbol_with_retry(symbol)
+                        articles = self._fetch_symbol_with_retry(symbol, articles_limit)
                         if articles:
                             all_articles.extend(articles)
                             chunk_processed += 1
@@ -425,6 +637,7 @@ class NewsFetchScheduler:
                             logger.warning(f"⚠️ Symbol {symbol} yielded no articles")
                             
                     except Exception as e:
+                        symbol = symbol_info.get('symbol', 'unknown')
                         failed_symbols.append(symbol)
                         chunk_failed += 1
                         
@@ -450,7 +663,7 @@ class NewsFetchScheduler:
             # Mark completion
             self.current_progress.update({
                 'is_active': False,
-                'current_operation': 'Completed',
+                'current_operation': f'Completed {market_session} session',
                 'current_symbol': None,
                 'duration_seconds': duration.total_seconds()
             })
@@ -458,16 +671,17 @@ class NewsFetchScheduler:
             # Store completed operation results for historical tracking
             self.last_completed_operation.update({
                 'completed_at': end_time,
-                'total_symbols': len(self.DEFAULT_SYMBOLS),
+                'total_symbols': len(selected_symbols),
                 'symbols_processed': processed_count,
                 'articles_fetched': len(all_articles),
                 'symbols_failed': len(failed_symbols),
                 'duration_seconds': duration.total_seconds(),
                 'failed_symbols': failed_symbols[:10],  # Keep last 10 for display
-                'status': 'success'
+                'status': 'success',
+                'market_session': market_session
             })
             
-            logger.info(f"🏁 Job completed in {duration.total_seconds():.1f} seconds")
+            logger.info(f"🏁 {market_session} session completed in {duration.total_seconds():.1f} seconds")
             logger.info(f"📊 Final stats: {len(all_articles)} articles, {processed_count} symbols processed, {len(failed_symbols)} failed")
             
             if failed_symbols:
@@ -479,14 +693,15 @@ class NewsFetchScheduler:
                 'symbols_processed': processed_count,
                 'symbols_failed': len(failed_symbols),
                 'duration_seconds': duration.total_seconds(),
-                'failed_symbols': failed_symbols[:20]  # Limit for response size
+                'failed_symbols': failed_symbols[:20],  # Limit for response size
+                'market_session': market_session
             }
             
         except Exception as e:
             # Mark error in progress
             self.current_progress.update({
                 'is_active': False,
-                'current_operation': f'Error: {str(e)}',
+                'current_operation': f'Error in {market_session}: {str(e)}',
                 'current_symbol': None
             })
             
@@ -494,14 +709,70 @@ class NewsFetchScheduler:
             self.last_completed_operation.update({
                 'completed_at': datetime.now(),
                 'status': 'error',
-                'error_message': str(e)
+                'error_message': str(e),
+                'market_session': market_session
             })
             
-            logger.error(f"❌ Critical error in fetch job: {str(e)}", exc_info=True)
+            logger.error(f"❌ Critical error in {market_session} fetch job: {str(e)}", exc_info=True)
             return {
                 'status': 'error',
-                'message': str(e)
+                'message': str(e),
+                'market_session': market_session
             }
+    
+    def _get_market_symbols(self, market_session: str) -> List[Dict]:
+        """Get symbols for a specific market session with proper articles per symbol configuration"""
+        try:
+            if market_session not in self.market_config:
+                logger.error(f"Unknown market session: {market_session}")
+                return []
+            
+            config = self.market_config[market_session]
+            symbol_list = []
+            
+            # Iterate through the markets for this session
+            for market_code in config['markets']:
+                if market_code not in self.DEFAULT_SYMBOLS:
+                    logger.warning(f"Market code {market_code} not found in DEFAULT_SYMBOLS")
+                    continue
+                
+                market_symbols = self.DEFAULT_SYMBOLS[market_code]
+                
+                # Determine articles per symbol based on market type
+                if market_session == "US":
+                    if market_code == "US":
+                        articles_per_symbol = config['articles_per_symbol']  # 5 for US symbols
+                    elif market_code == "GLOBAL":
+                        articles_per_symbol = config['global_articles_per_symbol']  # 2 for global symbols
+                    else:
+                        articles_per_symbol = 2  # Default fallback
+                else:  # CHINA_HK session
+                    articles_per_symbol = config['articles_per_symbol']  # 2 for all symbols in China/HK session
+                
+                # Add symbols with their configured limits
+                for symbol in market_symbols:
+                    symbol_list.append({
+                        'symbol': symbol,
+                        'articles_limit': articles_per_symbol,
+                        'market_code': market_code
+                    })
+            
+            logger.info(f"📋 Market session {market_session}: {len(symbol_list)} symbols prepared")
+            
+            # Log symbol distribution
+            market_distribution = {}
+            for symbol_info in symbol_list:
+                market_code = symbol_info['market_code']
+                market_distribution[market_code] = market_distribution.get(market_code, 0) + 1
+            
+            for market_code, count in market_distribution.items():
+                logger.info(f"  • {market_code}: {count} symbols")
+            
+            return symbol_list
+            
+        except Exception as e:
+            logger.error(f"Error getting market symbols for {market_session}: {str(e)}")
+            return []
     
     def _cleanup_empty_articles(self):
         """Clean up articles with no content and no insights"""
@@ -530,9 +801,9 @@ class NewsFetchScheduler:
         random.shuffle(symbols)
         return symbols
     
-    def _fetch_symbol_with_retry(self, symbol: str) -> List[Dict]:
+    def _fetch_symbol_with_retry(self, symbol: str, limit: int) -> List[Dict]:
         """Fetch articles for a symbol with retry logic using direct news service call"""
-        logger.info(f"🔄 Starting fetch for symbol: {symbol}")
+        logger.info(f"🔄 Starting fetch for symbol: {symbol} (limit: {limit})")
         
         for attempt in range(self.retry_attempts):
             try:
@@ -542,7 +813,7 @@ class NewsFetchScheduler:
                 # This matches exactly what happens in the /news/api/fetch endpoint
                 articles = self.news_service.fetch_and_analyze_news(
                     symbols=[symbol],
-                    limit=self.articles_per_symbol,
+                    limit=limit,
                     timeout=30  # Increased timeout for better reliability
                 )
                 
@@ -564,8 +835,22 @@ class NewsFetchScheduler:
         return []
     
     def get_symbols(self) -> List[str]:
-        """Get the list of symbols that will be processed"""
-        return self.DEFAULT_SYMBOLS.copy()
+        """Get the complete list of symbols that will be processed across all markets"""
+        all_symbols = []
+        
+        # Collect all unique symbols from all markets
+        for market_code, symbols in self.DEFAULT_SYMBOLS.items():
+            all_symbols.extend(symbols)
+        
+        # Remove duplicates (global symbols appear in multiple sessions)
+        unique_symbols = list(set(all_symbols))
+        
+        return unique_symbols
+    
+    def get_market_symbols(self, market_session: str) -> List[str]:
+        """Get symbols for a specific market session (flat list)"""
+        symbol_configs = self._get_market_symbols(market_session)
+        return [config['symbol'] for config in symbol_configs]
     
     def get_progress(self) -> Dict:
         """Get current fetch progress and last completed operation"""
@@ -591,41 +876,54 @@ class NewsFetchScheduler:
             
         return progress
     
-    def run_now(self):
-        """Manually trigger the news fetch job immediately"""
+    def run_now(self, market_session: str = "US"):
+        """Manually trigger the news fetch job immediately for a specific market session"""
         try:
-            logger.info("🚀 Manual news fetch job triggered")
+            logger.info(f"🚀 Manual news fetch job triggered for {market_session} session")
+            
+            # Validate market session
+            if market_session not in self.market_config:
+                logger.error(f"Invalid market session: {market_session}")
+                return {
+                    'success': False,
+                    'error': f'Invalid market session: {market_session}. Valid options: {list(self.market_config.keys())}'
+                }
+            
+            # Get symbol count for this session
+            symbol_configs = self._get_market_symbols(market_session)
+            symbol_count = len(symbol_configs)
             
             # Run the fetch job in a separate thread to avoid blocking
             def run_job():
                 try:
-                    logger.info(f"🎯 Starting manual job with {len(self.DEFAULT_SYMBOLS)} symbols")
-                    result = self.run_fetch_job()
-                    logger.info(f"🏁 Manual job completed: {result}")
+                    logger.info(f"🎯 Starting manual {market_session} job with {symbol_count} symbols")
+                    result = self.run_fetch_job(market_session=market_session)
+                    logger.info(f"🏁 Manual {market_session} job completed: {result}")
                 except Exception as e:
-                    logger.error(f"Error in manual fetch job: {str(e)}", exc_info=True)
+                    logger.error(f"Error in manual {market_session} fetch job: {str(e)}", exc_info=True)
             
             # CHANGED: daemon=False to ensure thread completes
-            thread = threading.Thread(target=run_job, daemon=False, name="NewsSchedulerManual")
+            thread = threading.Thread(target=run_job, daemon=False, name=f"NewsScheduler{market_session}Manual")
             thread.start()
             
-            logger.info(f"Manual news fetch thread started: {thread.name}, daemon={thread.daemon}")
+            logger.info(f"Manual {market_session} news fetch thread started: {thread.name}, daemon={thread.daemon}")
             
             return {
                 'success': True,
-                'message': 'Manual news fetch job started',
-                'total_symbols': len(self.DEFAULT_SYMBOLS)
+                'message': f'Manual {market_session} news fetch job started',
+                'market_session': market_session,
+                'total_symbols': symbol_count
             }
             
         except Exception as e:
-            logger.error(f"Error starting manual fetch job: {str(e)}", exc_info=True)
+            logger.error(f"Error starting manual {market_session} fetch job: {str(e)}", exc_info=True)
             return {
                 'success': False,
                 'error': str(e)
             }
     
     def get_status(self):
-        """Get current scheduler status"""
+        """Get current scheduler status with market-specific information"""
         next_run = None
         jobs_count = len(schedule.jobs)
         
@@ -636,38 +934,70 @@ class NewsFetchScheduler:
             if next_job:
                 next_run = next_job.isoformat()
                 
-                # Determine which market session is next
+                # Determine which market session is next based on current UTC time
                 current_hour = datetime.now().hour
-                if current_hour < 7:
-                    next_run_details = "European Pre-Market (07:30 UTC)"
+                if current_hour < 1:
+                    next_run_details = "China/Hong Kong Market Open (01:00 UTC)"
+                elif current_hour < 4:
+                    next_run_details = "China/Hong Kong Mid-Session (04:30 UTC)"
                 elif current_hour < 8:
-                    next_run_details = "Asian Close (08:30 UTC)"
+                    next_run_details = "China/Hong Kong Market Close (08:30 UTC)"
                 elif current_hour < 14:
                     next_run_details = "US Pre-Market (14:00 UTC)"
                 elif current_hour < 17:
-                    next_run_details = "European Close (17:00 UTC)"
+                    next_run_details = "US Mid-Session (17:30 UTC)"
                 elif current_hour < 21:
                     next_run_details = "US After-Hours (21:30 UTC)"
                 else:
-                    next_run_details = "Asian Pre-Market (23:30 UTC)"
-                
+                    next_run_details = "China/Hong Kong Market Open (01:00 UTC)"
+        
+        # Calculate symbol distribution
+        total_symbols = len(self.get_symbols())
+        market_distribution = {}
+        
+        for market_code, symbols in self.DEFAULT_SYMBOLS.items():
+            market_distribution[market_code] = len(symbols)
+        
+        # Calculate session information
+        china_hk_symbols = self._get_market_symbols("CHINA_HK")
+        us_symbols = self._get_market_symbols("US")
+        
         return {
             "running": self.running,
             "next_run": next_run,
             "next_run_details": next_run_details,
             "jobs_count": jobs_count,
-            "fetch_schedule": "Market-based (6 times daily)",
-            "schedule_times": [
-                "🌏 23:30 UTC - Asian Pre-Market",
-                "🌏 08:30 UTC - Asian Close", 
-                "🌍 07:30 UTC - European Pre-Market",
-                "🌍 17:00 UTC - European Close",
-                "🌎 14:00 UTC - US Pre-Market",
-                "🌎 21:30 UTC - US After-Hours"
+            "fetch_schedule": "Market-specific (6 times daily)",
+            "schedule_sessions": [
+                {
+                    "session": "China/Hong Kong",
+                    "times": ["01:00 UTC", "04:30 UTC", "08:30 UTC"],
+                    "symbols": len(china_hk_symbols),
+                    "markets": ["CN", "HK", "GLOBAL"]
+                },
+                {
+                    "session": "US",
+                    "times": ["14:00 UTC", "17:30 UTC", "21:30 UTC"],
+                    "symbols": len(us_symbols),
+                    "markets": ["US", "GLOBAL"]
+                }
             ],
-            "symbols_count": len(self.DEFAULT_SYMBOLS),
-            "articles_per_symbol": self.articles_per_symbol,
-            "chunk_size": self.chunk_size
+            "total_unique_symbols": total_symbols,
+            "market_distribution": market_distribution,
+            "daily_articles_estimate": {
+                "china_hk_sessions": len(china_hk_symbols) * 2 * 3,  # 2 articles per symbol, 3 sessions
+                "us_sessions": len(us_symbols) * 3,  # Variable articles per symbol, 3 sessions (calculated in _get_market_symbols)
+                "max_daily_total": 14355  # As per specification
+            },
+            "configuration": {
+                "chunk_size": self.chunk_size,
+                "retry_attempts": self.retry_attempts,
+                "articles_per_symbol": {
+                    "china_hk": 2,
+                    "us_stocks": 5,
+                    "global_in_us": 2
+                }
+            }
         }
 
 # Global instance
