@@ -193,6 +193,18 @@ class OptimizedNewsSearch:
             NewsSearchIndex.ai_insights != ''
         )
         
+        # 🧠 HANDLE FORCE LATEST FILTER FIRST (before keyword processing)
+        if force_latest_filter:
+            # For "latest" search, show AI-processed articles from last 3 days ONLY
+            from datetime import datetime, timedelta
+            three_days_ago = datetime.now() - timedelta(days=3)
+            query = query.filter(
+                NewsSearchIndex.published_at >= three_days_ago
+            )
+            # Override sort_order to ensure latest first
+            sort_order = 'LATEST'
+            logger.debug(f"🕐 Force latest filter enabled - filtering to last 3 days with AI-only articles")
+
         # 🧠 AI-FIRST KEYWORD SEARCH: Search AI summaries and insights primarily
         if keywords:
             keyword_conditions = []
@@ -211,10 +223,10 @@ class OptimizedNewsSearch:
                         sort_order = 'LOWEST'
                         logger.debug(f"🔻 Detected 'lowest' keyword - sorting by lowest AI sentiment rating")
             
-            # Special handling for "latest" keyword with strict AI filtering
-            has_latest_keyword = any(kw.lower() == 'latest' for kw in keywords) or force_latest_filter
+            # Special handling for "latest" keyword with strict AI filtering (when not using force_latest_filter)
+            has_latest_keyword = any(kw.lower() == 'latest' for kw in keywords)
             
-            if has_latest_keyword:
+            if has_latest_keyword and not force_latest_filter:
                 # For "latest" keyword, show AI-processed articles from last 3 days ONLY
                 from datetime import datetime, timedelta
                 three_days_ago = datetime.now() - timedelta(days=3)
@@ -223,7 +235,7 @@ class OptimizedNewsSearch:
                 )
                 # Override sort_order to ensure latest first
                 sort_order = 'LATEST'
-                logger.debug(f"🕐 'Latest' keyword detected (force_latest_filter={force_latest_filter}) - filtering to last 3 days with AI-only articles")
+                logger.debug(f"🕐 'Latest' keyword detected in keywords - filtering to last 3 days with AI-only articles")
             elif has_special_keyword:
                 # For other special keywords (news, breaking, etc.), use relaxed AI filtering
                 query = query.filter(
