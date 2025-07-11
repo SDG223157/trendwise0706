@@ -2250,7 +2250,7 @@ def start_scheduler():
         fetch_success = news_fetch_scheduler.start()
         
         messages = ['All news fetching activities enabled globally.']
-        messages.append('AI processing scheduler started! Initial processing job is running now, then scheduled every 5 minutes.')
+        messages.append('AI processing scheduler started! Initial processing job is running now, then scheduled every 3 minutes.')
         
         if fetch_success:
             messages.append('News fetch scheduler started! Initial fetch job is running now, then scheduled every 6 hours.')
@@ -2367,7 +2367,7 @@ def start_ai_scheduler_only():
         
         return jsonify({
             'success': True,
-            'message': 'AI processing scheduler started! Initial processing job is running now, then scheduled every 5 minutes.',
+            'message': 'AI processing scheduler started! Initial processing job is running now, then scheduled every 3 minutes.',
             'initial_run': True,
             'ai_scheduler_started': True,
             'news_fetching_enabled': True
