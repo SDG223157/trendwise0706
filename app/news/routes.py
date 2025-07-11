@@ -305,18 +305,15 @@ def search():
 
             # Choose search method based on search type
             if search_params.get('search_type') == 'keyword':
-                # Set flag for "latest" keyword detection
-                if search_params.get('has_latest'):
-                    optimized_search._has_latest_keyword = True
-                    
-                # Use keyword search
+                # Use keyword search with latest filter if detected
                 articles, total_count, has_more = optimized_search.search_by_keywords(
                     keywords=search_params.get('keywords', []),
                     sentiment_filter=search_params.get('sentiment_filter'),
                     sort_order=search_params.get('sort_order', 'LATEST'),
                     date_filter=search_params.get('date_filter'),
                     page=request.args.get('page', 1, type=int),
-                    per_page=1
+                    per_page=1,
+                    force_latest_filter=search_params.get('has_latest', False)
                 )
             elif search_params.get('search_type') == 'mixed':
                 # Use hybrid search - alternate between symbol and keyword results
@@ -2858,13 +2855,16 @@ def api_search():
         # ⚡ STANDALONE AI SEARCH: All data available without joins
         if search_type == 'keyword':
             search_keywords = keywords or search_query.split()
+            # Check if "latest" keyword was used for 3-day filtering
+            has_latest = any(kw.lower() == 'latest' for kw in search_keywords)
             articles, total_count, has_more = optimized_search.search_by_keywords(
                 keywords=search_keywords,
                 sentiment_filter=request.args.get('sentiment'),
                 sort_order=request.args.get('sort', 'LATEST'),
                 date_filter=request.args.get('date'),
                 page=page,
-                per_page=per_page
+                per_page=per_page,
+                force_latest_filter=has_latest
             )
             
         elif search_type == 'symbol':
