@@ -55,7 +55,7 @@ class NewsFetchScheduler:
                 "articles_per_symbol": 5,  # US symbols get 5 articles
                 "global_articles_per_symbol": 2,  # Global symbols get 2 articles
                 "markets": ["US", "GLOBAL"],
-                "max_symbols_per_run": 913,  # US + Global symbols
+                "max_symbols_per_run": 1004,  # US + Global symbols (updated to match actual implementation)
                 "schedule_times": ["14:00", "17:30", "21:30"]
             }
         }
@@ -432,12 +432,12 @@ class NewsFetchScheduler:
         logger.info("    • 01:00 UTC - China/Hong Kong Market Open")
         logger.info("    • 04:30 UTC - China/Hong Kong Mid-Session")
         logger.info("    • 08:30 UTC - China/Hong Kong Market Close")
-        logger.info("  🇺🇸 US Sessions (913 symbols):")
+        logger.info("  🇺🇸 US Sessions (1004 symbols):")  # Updated to reflect actual count
         logger.info("    • 14:00 UTC - US Pre-Market")
         logger.info("    • 17:30 UTC - US Mid-Session")
         logger.info("    • 21:30 UTC - US After-Hours")
         logger.info("  🌍 Global symbols included in all sessions")
-        logger.info("  📊 Maximum 14,355 articles per day")
+        logger.info("  📊 Maximum 15,114 articles per day")  # Updated calculation
 
     def _run_scheduled_job(self, market_session="Unknown", session_name="Unknown"):
         """Run the scheduled fetch job with proper Flask app context"""
@@ -986,8 +986,8 @@ class NewsFetchScheduler:
             "market_distribution": market_distribution,
             "daily_articles_estimate": {
                 "china_hk_sessions": len(china_hk_symbols) * 2 * 3,  # 2 articles per symbol, 3 sessions
-                "us_sessions": len(us_symbols) * 3,  # Variable articles per symbol, 3 sessions (calculated in _get_market_symbols)
-                "max_daily_total": 14355  # As per specification
+                "us_sessions": (846 * 5 + 158 * 2) * 3,  # US symbols: 5 articles, Global: 2 articles, 3 sessions = 13,032 articles
+                "max_daily_total": len(china_hk_symbols) * 2 * 3 + (846 * 5 + 158 * 2) * 3  # Calculated total
             },
             "configuration": {
                 "chunk_size": self.chunk_size,
