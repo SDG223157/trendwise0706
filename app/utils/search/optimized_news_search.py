@@ -247,6 +247,11 @@ class OptimizedNewsSearch:
                 if keyword.lower() in sentiment_sort_keywords:
                     logger.debug(f"🔄 Skipping sentiment sort keyword '{keyword}' from content search")
                     continue
+                
+                # Skip time-based special keywords from content search (they're handled as filters)
+                if keyword.lower() == 'latest':
+                    logger.debug(f"🕐 Skipping time-based keyword '{keyword}' from content search - using as filter only")
+                    continue
                     
                 if '"' in keyword:  # Exact phrase match
                     phrase = keyword.replace('"', '')
@@ -258,8 +263,8 @@ class OptimizedNewsSearch:
                         )
                     )
                 else:  # Individual word match
-                    # For special keywords like "latest", search mainly in title
-                    if keyword.lower() in special_keywords:
+                    # For non-time special keywords like "news", "breaking", search mainly in title
+                    if keyword.lower() in special_keywords and keyword.lower() != 'latest':
                         keyword_conditions.append(
                             or_(
                                 NewsSearchIndex.title.like(f'%{keyword}%'),
