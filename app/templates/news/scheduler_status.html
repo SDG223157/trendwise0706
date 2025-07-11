@@ -86,17 +86,35 @@
             </div>
             
             <div class="space-y-4">
-                <div class="flex space-x-4">
+                <!-- Primary Controls Row -->
+                <div class="flex flex-wrap gap-3">
                     <button id="start-btn" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        Start Both Schedulers
+                        ▶️ Start Both Schedulers
                     </button>
                     <button id="stop-btn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        Stop Both Schedulers
-                    </button>
-                    <button id="run-now-btn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        Process Articles Now
+                        ⏹️ Stop Both Schedulers
                     </button>
                 </div>
+                
+                <!-- AI Processing Controls Row -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-purple-900 mb-3">🧠 AI Processing Controls</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <button id="start-ai-only-btn" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            🧠 Start AI Processing Only
+                        </button>
+                        <button id="stop-ai-only-btn" class="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            🛑 Stop AI Processing Only
+                        </button>
+                        <button id="run-now-btn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            ⚡ Process Articles Now
+                        </button>
+                    </div>
+                    <p class="text-sm text-purple-700 mt-2">
+                        💡 Use these controls to manage only the AI processing scheduler independently from news fetching.
+                    </p>
+                </div>
+            </div>
                 
                 <div id="control-status" class="hidden">
                     <!-- Status messages will appear here -->
@@ -110,12 +128,13 @@
             <div class="space-y-4 text-gray-700">
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h3 class="font-semibold text-blue-900 mb-2">🔄 Manual Scheduler Control (App1099_db_v11 Style)</h3>
-                    <p>When you click "Start Both Schedulers", it manually starts:</p>
+                    <p>You now have multiple control options:</p>
                     <ul class="list-disc ml-6 mt-2">
-                        <li><strong>AI Processing</strong>: Runs immediately, then every 3 minutes</li>
-                        <li><strong>News Fetching</strong>: Runs immediately, then 6 times daily (market-based)</li>
+                        <li><strong>Start Both Schedulers</strong>: Starts AI processing + news fetching together</li>
+                        <li><strong>Start AI Processing Only</strong>: Starts only AI processing (every 5 minutes)</li>
+                        <li><strong>Process Articles Now</strong>: Manually processes articles once immediately</li>
                     </ul>
-                    <p class="mt-2 text-sm">⚠️ Both schedulers require manual activation and will NOT auto-start on app launch!</p>
+                    <p class="mt-2 text-sm">⚠️ All schedulers require manual activation and will NOT auto-start on app launch!</p>
                 </div>
                 
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -144,8 +163,19 @@
                 </div>
                 
                 <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h3 class="font-semibold text-purple-900 mb-2">🎯 Manual Control (App1099_db_v11 Style)</h3>
-                    <p>Both schedulers require manual activation but then run automatically in the background. Stop both when not needed to save resources!</p>
+                    <h3 class="font-semibold text-purple-900 mb-2">🧠 AI Processing Controls</h3>
+                    <p>New granular control over AI processing:</p>
+                    <ul class="list-disc ml-6 mt-2">
+                        <li><strong>Start AI Processing Only</strong>: Activate just the AI scheduler without news fetching</li>
+                        <li><strong>Stop AI Processing Only</strong>: Stop just the AI scheduler, leave news fetch running</li>
+                        <li><strong>Process Articles Now</strong>: Manual one-time processing of pending articles</li>
+                    </ul>
+                    <p class="mt-2 text-sm">💡 Perfect for when you only need AI processing without automatic news fetching.</p>
+                </div>
+                
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-gray-900 mb-2">🎯 Manual Control (App1099_db_v11 Style)</h3>
+                    <p>All schedulers require manual activation but then run automatically in the background. Stop when not needed to save resources!</p>
                     <p class="mt-2 text-sm">💡 Use <code>python3 start_schedulers.py</code> for command-line control or <code>python3 start_schedulers.py stop</code> to stop both.</p>
                 </div>
             </div>
@@ -317,15 +347,21 @@
             const startBtn = document.getElementById('start-btn');
             const stopBtn = document.getElementById('stop-btn');
             const runNowBtn = document.getElementById('run-now-btn');
+            const startAiOnlyBtn = document.getElementById('start-ai-only-btn');
+            const stopAiOnlyBtn = document.getElementById('stop-ai-only-btn');
             
             if (status.running) {
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
                 runNowBtn.disabled = false;
+                startAiOnlyBtn.disabled = true;
+                stopAiOnlyBtn.disabled = false;
             } else {
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
                 runNowBtn.disabled = true;
+                startAiOnlyBtn.disabled = false;
+                stopAiOnlyBtn.disabled = true;
             }
         }
         
@@ -428,10 +464,60 @@
             }
         }
         
+        // AI-only scheduler control functions
+        async function startAiOnly() {
+            try {
+                showControlStatus('🧠 Starting AI processing scheduler only...', 'info');
+                const response = await fetch('/news/api/scheduler/start-ai-only', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.initial_run) {
+                        showControlStatus('✅ AI processing scheduler started! Initial processing job is running now, then scheduled every 5 minutes.', 'success');
+                        
+                        setTimeout(() => {
+                            showControlStatus('🤖 Initial AI processing is running in background. Check logs for progress...', 'info');
+                        }, 2000);
+                        
+                        // Reload status multiple times to show progress
+                        setTimeout(loadStatus, 1000);
+                        setTimeout(loadStatus, 5000);
+                        setTimeout(loadStatus, 10000);
+                    } else {
+                        showControlStatus('✅ AI processing scheduler started successfully!', 'success');
+                        setTimeout(loadStatus, 1000);
+                    }
+                } else {
+                    showControlStatus('❌ Failed to start AI processing scheduler: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showControlStatus('❌ Error starting AI processing scheduler: ' + error.message, 'error');
+            }
+        }
+        
+        async function stopAiOnly() {
+            try {
+                showControlStatus('🛑 Stopping AI processing scheduler only...', 'info');
+                const response = await fetch('/news/api/scheduler/stop-ai-only', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showControlStatus('✅ AI processing scheduler stopped successfully!', 'success');
+                    setTimeout(loadStatus, 1000);
+                } else {
+                    showControlStatus('❌ Failed to stop AI processing scheduler: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showControlStatus('❌ Error stopping AI processing scheduler: ' + error.message, 'error');
+            }
+        }
+        
         // Event listeners
         document.getElementById('start-btn').addEventListener('click', startScheduler);
         document.getElementById('stop-btn').addEventListener('click', stopScheduler);
         document.getElementById('run-now-btn').addEventListener('click', runNow);
+        document.getElementById('start-ai-only-btn').addEventListener('click', startAiOnly);
+        document.getElementById('stop-ai-only-btn').addEventListener('click', stopAiOnly);
         
         // Initial load with countdown
         loadStatus();

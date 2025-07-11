@@ -2353,6 +2353,60 @@ def run_scheduler_now():
             'error': str(e)
         }), 500
 
+@bp.route('/api/scheduler/start-ai-only', methods=['POST'])
+@login_required
+@admin_required
+def start_ai_scheduler_only():
+    """Start only the AI processing scheduler (not news fetch)"""
+    try:
+        from app.utils.scheduler.news_scheduler import news_scheduler
+        from app.utils.analysis.stock_news_service import StockNewsService
+        
+        # Enable news fetching globally (required for AI processing to work)
+        StockNewsService.enable_news_fetching()
+        
+        # Start only AI processing scheduler
+        news_scheduler.start()
+        
+        return jsonify({
+            'success': True,
+            'message': 'AI processing scheduler started! Initial processing job is running now, then scheduled every 5 minutes.',
+            'initial_run': True,
+            'ai_scheduler_started': True,
+            'news_fetching_enabled': True
+        })
+        
+    except Exception as e:
+        logger.error(f"Error starting AI scheduler only: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@bp.route('/api/scheduler/stop-ai-only', methods=['POST'])
+@login_required
+@admin_required
+def stop_ai_scheduler_only():
+    """Stop only the AI processing scheduler (leave news fetch running if active)"""
+    try:
+        from app.utils.scheduler.news_scheduler import news_scheduler
+        
+        # Stop only AI processing scheduler
+        news_scheduler.stop()
+        
+        return jsonify({
+            'success': True,
+            'message': 'AI processing scheduler stopped successfully. News fetch scheduler remains unchanged.',
+            'ai_scheduler_stopped': True
+        })
+        
+    except Exception as e:
+        logger.error(f"Error stopping AI scheduler only: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 # ===== NEWS FETCH SCHEDULER ROUTES =====
 
 @bp.route('/fetch-scheduler')
