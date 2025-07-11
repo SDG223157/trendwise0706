@@ -211,36 +211,32 @@ class OptimizedNewsSearch:
                         sort_order = 'LOWEST'
                         logger.debug(f"🔻 Detected 'lowest' keyword - sorting by lowest AI sentiment rating")
             
-            # Special handling for "latest" and similar keywords OR forced latest filter
-            if has_special_keyword or force_latest_filter:
-                # Check if "latest" keyword is specifically used (or forced by search route)
-                has_latest_keyword = any(kw.lower() == 'latest' for kw in keywords) or force_latest_filter
-                
-                if has_latest_keyword:
-                    # For "latest" keyword, show articles from last 3 days
-                    from datetime import datetime, timedelta
-                    three_days_ago = datetime.now() - timedelta(days=3)
-                    query = query.filter(
-                        NewsSearchIndex.published_at >= three_days_ago
+            # Special handling for "latest" keyword with strict AI filtering
+            has_latest_keyword = any(kw.lower() == 'latest' for kw in keywords) or force_latest_filter
+            
+            if has_latest_keyword:
+                # For "latest" keyword, show AI-processed articles from last 3 days ONLY
+                from datetime import datetime, timedelta
+                three_days_ago = datetime.now() - timedelta(days=3)
+                query = query.filter(
+                    NewsSearchIndex.published_at >= three_days_ago
+                )
+                # Override sort_order to ensure latest first
+                sort_order = 'LATEST'
+                logger.debug(f"🕐 'Latest' keyword detected (force_latest_filter={force_latest_filter}) - filtering to last 3 days with AI-only articles")
+            elif has_special_keyword:
+                # For other special keywords (news, breaking, etc.), use relaxed AI filtering
+                query = query.filter(
+                    or_(
+                        and_(
+                            NewsSearchIndex.ai_summary.isnot(None),
+                            NewsSearchIndex.ai_summary != ''
+                        ),
+                        NewsSearchIndex.title.isnot(None)  # Allow articles with just title
                     )
-                    # Override sort_order to ensure latest first
-                    sort_order = 'LATEST'
-                    logger.debug(f"🕐 'Latest' keyword detected (force_latest_filter={force_latest_filter}) - filtering to last 3 days and sorting by date")
-                else:
-                    # For other special keywords, use relaxed AI filtering
-                    query = query.filter(
-                        or_(
-                            and_(
-                                NewsSearchIndex.ai_summary.isnot(None),
-                                NewsSearchIndex.ai_summary != ''
-                            ),
-                            NewsSearchIndex.title.isnot(None)  # Allow articles with just title
-                        )
-                    )
-                    logger.debug(f"🕐 Special keyword detected, using relaxed AI filtering")
-            else:
-                # Normal AI-only filtering for other keywords
-                pass  # Keep existing AI filtering
+                )
+                logger.debug(f"🕐 Other special keyword detected, using relaxed AI filtering")
+            # else: Normal AI-only filtering maintained (no changes needed)
             
             for keyword in keywords:
                 # Skip sentiment sorting keywords from content search
