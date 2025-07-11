@@ -467,11 +467,19 @@ class NewsFetchScheduler:
             logger.error(f"❌ Error in {session_name} fetch job: {str(e)}", exc_info=True)
     
     def _determine_current_market_session(self) -> str:
-        """Intelligently determine which market session to run based on current UTC time"""
+        """Intelligently determine which market session to run based on nearest scheduled time"""
         current_time = datetime.now()
-        current_hour = current_time.hour
-        current_minute = current_time.minute
         current_time_str = current_time.strftime('%H:%M UTC')
+        
+        # Define all scheduled times with their session types
+        scheduled_times = [
+            (1, 0, "CHINA_HK", "China/HK Market Open"),
+            (4, 30, "CHINA_HK", "China/HK Mid-Session"),
+            (8, 30, "CHINA_HK", "China/HK Market Close"),
+            (14, 0, "US", "US Pre-Market"),
+            (17, 30, "US", "US Mid-Session"),
+            (21, 30, "US", "US After-Hours"),
+        ]
         
         # Define market session windows (30 minutes before and after each scheduled time)
         china_hk_windows = [
@@ -488,40 +496,63 @@ class NewsFetchScheduler:
         
         # Check if current time falls within any China/HK window
         for start_hour, start_min, end_hour, end_min in china_hk_windows:
-            if (current_hour > start_hour or (current_hour == start_hour and current_minute >= start_min)) and \
-               (current_hour < end_hour or (current_hour == end_hour and current_minute <= end_min)):
+            if (current_time.hour > start_hour or (current_time.hour == start_hour and current_time.minute >= start_min)) and \
+               (current_time.hour < end_hour or (current_time.hour == end_hour and current_time.minute <= end_min)):
                 logger.info(f"🇨🇳 {current_time_str} falls within China/HK session window")
                 return "CHINA_HK"
         
         # Check if current time falls within any US window
         for start_hour, start_min, end_hour, end_min in us_windows:
-            if (current_hour > start_hour or (current_hour == start_hour and current_minute >= start_min)) and \
-               (current_hour < end_hour or (current_hour == end_hour and current_minute <= end_min)):
+            if (current_time.hour > start_hour or (current_time.hour == start_hour and current_time.minute >= start_min)) and \
+               (current_time.hour < end_hour or (current_time.hour == end_hour and current_time.minute <= end_min)):
                 logger.info(f"🇺🇸 {current_time_str} falls within US session window")
                 return "US"
         
-        # If not in any active window, determine next upcoming session
-        if current_hour < 1:
-            logger.info(f"🌅 {current_time_str} - Next session: China/HK Market Open (01:00)")
-            return "CHINA_HK"
-        elif current_hour < 4:
-            logger.info(f"🌅 {current_time_str} - Next session: China/HK Mid-Session (04:30)")
-            return "CHINA_HK"
-        elif current_hour < 8:
-            logger.info(f"🌅 {current_time_str} - Next session: China/HK Market Close (08:30)")
-            return "CHINA_HK"
-        elif current_hour < 14:
-            logger.info(f"🌅 {current_time_str} - Next session: US Pre-Market (14:00)")
-            return "US"
-        elif current_hour < 17:
-            logger.info(f"🌅 {current_time_str} - Next session: US Mid-Session (17:30)")
-            return "US"
-        elif current_hour < 21:
-            logger.info(f"🌅 {current_time_str} - Next session: US After-Hours (21:30)")
-            return "US"
+        # If not in any active window, find the nearest scheduled time
+        min_diff = float('inf')
+        nearest_session = None
+        nearest_session_name = None
+        
+        for hour, minute, session_type, session_name in scheduled_times:
+            # Create datetime for this scheduled time today
+            scheduled_today = current_time.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            
+            # Calculate time difference (can be positive or negative)
+            diff = (scheduled_today - current_time).total_seconds()
+            
+            # If the scheduled time is in the past today, also consider tomorrow
+            if diff < 0:
+                scheduled_tomorrow = scheduled_today + timedelta(days=1)
+                diff_tomorrow = (scheduled_tomorrow - current_time).total_seconds()
+                
+                # Choose the smaller absolute difference
+                if abs(diff_tomorrow) < abs(diff):
+                    diff = diff_tomorrow
+                    scheduled_time = scheduled_tomorrow
+                else:
+                    scheduled_time = scheduled_today
+            else:
+                scheduled_time = scheduled_today
+            
+            # Check if this is the nearest time
+            if abs(diff) < min_diff:
+                min_diff = abs(diff)
+                nearest_session = session_type
+                nearest_session_name = session_name
+                nearest_time = scheduled_time
+        
+        # Format the time difference for logging
+        hours = int(min_diff // 3600)
+        minutes = int((min_diff % 3600) // 60)
+        
+        if nearest_time < current_time:
+            time_desc = f"{hours}h {minutes}m ago"
+            logger.info(f"🕐 {current_time_str} - Nearest session: {nearest_session_name} ({time_desc})")
         else:
-            logger.info(f"🌙 {current_time_str} - Next session: China/HK Market Open (01:00 tomorrow)")
-            return "CHINA_HK"
+            time_desc = f"{hours}h {minutes}m ahead"
+            logger.info(f"🕐 {current_time_str} - Nearest session: {nearest_session_name} ({time_desc})")
+        
+        return nearest_session
 
     def _run_initial_job(self):
         """Run the initial fetch job when scheduler starts with intelligent market session selection"""
