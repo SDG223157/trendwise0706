@@ -804,7 +804,10 @@
         <div class="flex justify-between items-center">
             <div class="flex space-x-2">
                 {% if pagination.has_prev %}
-                <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q, 
+                <a href="{{ url_for('news.search', page=pagination.prev_num, 
+                        q=search_params.q if search_params.q else '',
+                        symbol=search_params.symbol if search_params.symbol else '',
+                        keywords=search_params.keywords if search_params.keywords else '',
                         sort_order=search_params.get('sort_order'), 
                         region_filter=search_params.get('region_filter'),
                         date_filter=search_params.get('date_filter'),
@@ -820,7 +823,10 @@
                 {% endif %}
                 
                 {% if pagination.has_next %}
-                <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q,
+                <a href="{{ url_for('news.search', page=pagination.next_num, 
+                        q=search_params.q if search_params.q else '',
+                        symbol=search_params.symbol if search_params.symbol else '',
+                        keywords=search_params.keywords if search_params.keywords else '',
                         sort_order=search_params.get('sort_order'), 
                         region_filter=search_params.get('region_filter'),
                         date_filter=search_params.get('date_filter'),
@@ -974,7 +980,10 @@
             <div class="pagination-container">
                 <div class="flex justify-center space-x-2 flex-wrap">
                     {% if pagination.has_prev %}
-                    <a href="{{ url_for('news.search', page=pagination.prev_num, q=search_params.q,
+                    <a href="{{ url_for('news.search', page=pagination.prev_num, 
+                            q=search_params.q if search_params.q else '',
+                            symbol=search_params.symbol if search_params.symbol else '',
+                            keywords=search_params.keywords if search_params.keywords else '',
                             sort_order=search_params.get('sort_order'),
                             region_filter=search_params.get('region_filter'),
                             date_filter=search_params.get('date_filter'),
@@ -990,7 +999,10 @@
                                 {{ page_num }}
                             </span>
                             {% else %}
-                            <a href="{{ url_for('news.search', page=page_num, q=search_params.q,
+                            <a href="{{ url_for('news.search', page=page_num, 
+                                    q=search_params.q if search_params.q else '',
+                                    symbol=search_params.symbol if search_params.symbol else '',
+                                    keywords=search_params.keywords if search_params.keywords else '',
                                     sort_order=search_params.get('sort_order'),
                                     region_filter=search_params.get('region_filter'),
                                     date_filter=search_params.get('date_filter'),
@@ -1006,7 +1018,10 @@
                     {% endfor %}
 
                     {% if pagination.has_next %}
-                    <a href="{{ url_for('news.search', page=pagination.next_num, q=search_params.q,
+                    <a href="{{ url_for('news.search', page=pagination.next_num, 
+                            q=search_params.q if search_params.q else '',
+                            symbol=search_params.symbol if search_params.symbol else '',
+                            keywords=search_params.keywords if search_params.keywords else '',
                             sort_order=search_params.get('sort_order'),
                             region_filter=search_params.get('region_filter'),
                             date_filter=search_params.get('date_filter'),
