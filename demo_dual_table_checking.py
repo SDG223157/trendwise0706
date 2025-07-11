@@ -49,34 +49,48 @@ def demonstrate_dual_table_checking():
         print("-" * 40)
         
         # Get some sample external IDs from both tables
-        sample_from_buffer = db.session.execute(
-            db.text("SELECT external_id, title FROM news_articles LIMIT 2")
-        ).fetchall()
-        
-        sample_from_permanent = db.session.execute(
-            db.text("SELECT external_id, title FROM news_search_index LIMIT 2")
-        ).fetchall()
-        
         test_cases = []
-        if sample_from_buffer:
-            test_cases.extend([(row.external_id, row.title, "buffer") for row in sample_from_buffer])
-        if sample_from_permanent:
-            test_cases.extend([(row.external_id, row.title, "permanent") for row in sample_from_permanent])
         
-        for i, (external_id, title, source_table) in enumerate(test_cases, 1):
-            print(f"\nTest Case {i}: {external_id} (from {source_table})")
-            print(f"Title: {title[:50]}...")
+        try:
+            sample_from_buffer = db.session.execute(
+                db.text("SELECT external_id, title FROM news_articles LIMIT 2")
+            ).fetchall()
             
-            # Use comprehensive checking
-            check_result = dup_service.check_external_id_in_both_tables(external_id)
+            if sample_from_buffer:
+                test_cases.extend([(row.external_id, row.title, "buffer") for row in sample_from_buffer])
+                
+        except Exception as e:
+            print(f"Note: Could not get buffer samples: {str(e)}")
+        
+        try:
+            sample_from_permanent = db.session.execute(
+                db.text("SELECT external_id, title FROM news_search_index LIMIT 2")
+            ).fetchall()
             
-            print(f"✅ Results:")
-            print(f"   Exists: {check_result['exists']}")
-            print(f"   Location: {check_result['location']}")
-            print(f"   In Buffer: {check_result['in_buffer']}")
-            print(f"   In Permanent: {check_result['in_permanent']}")
-            print(f"   Article ID: {check_result['article_id']}")
-            print(f"   Message: {check_result['message']}")
+            if sample_from_permanent:
+                test_cases.extend([(row.external_id, row.title, "permanent") for row in sample_from_permanent])
+                
+        except Exception as e:
+            print(f"Note: Could not get permanent samples: {str(e)}")
+        
+        if test_cases:
+            for i, (external_id, title, source_table) in enumerate(test_cases, 1):
+                print(f"\nTest Case {i}: {external_id} (from {source_table})")
+                title_display = title[:50] + "..." if len(title) > 50 else title
+                print(f"Title: {title_display}")
+                
+                # Use comprehensive checking
+                check_result = dup_service.check_external_id_in_both_tables(external_id)
+                
+                print(f"✅ Results:")
+                print(f"   Exists: {check_result['exists']}")
+                print(f"   Location: {check_result['location']}")
+                print(f"   In Buffer: {check_result['in_buffer']}")
+                print(f"   In Permanent: {check_result['in_permanent']}")
+                print(f"   Article ID: {check_result['article_id']}")
+                print(f"   Message: {check_result['message']}")
+        else:
+            print("No test cases available - both tables appear to be empty or inaccessible")
         
         # Demo 3: Test article saving with dual-table prevention
         print(f"\n💾 DEMO 3: Article Saving with Dual-Table Prevention")

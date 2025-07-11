@@ -44,50 +44,71 @@ def test_duplicate_prevention():
         print("\n🔍 STEP 2: Test Dual-Table External ID Checking")
         print("-" * 40)
         
-        # Get some sample external IDs for testing
-        sample_external_ids = db.session.execute(
-            db.text("SELECT external_id FROM news_articles LIMIT 3 UNION SELECT external_id FROM news_search_index LIMIT 3")
-        ).fetchall()
-        
-        for i, row in enumerate(sample_external_ids[:3], 1):
-            external_id = row.external_id
-            comprehensive_check = dup_service.check_external_id_in_both_tables(external_id)
+        # Get some sample external IDs for testing - handle empty tables gracefully
+        try:
+            # Try to get samples from both tables
+            buffer_samples = db.session.execute(
+                db.text("SELECT external_id FROM news_articles LIMIT 2")
+            ).fetchall()
             
-            print(f"  {i}. External ID: {external_id}")
-            print(f"     Exists: {comprehensive_check['exists']}")
-            print(f"     Location: {comprehensive_check['location']}")
-            print(f"     In Buffer: {comprehensive_check['in_buffer']}")
-            print(f"     In Permanent: {comprehensive_check['in_permanent']}")
-            print(f"     Message: {comprehensive_check['message']}")
-            print()
+            permanent_samples = db.session.execute(
+                db.text("SELECT external_id FROM news_search_index LIMIT 2")
+            ).fetchall()
+            
+            sample_external_ids = []
+            sample_external_ids.extend([(row.external_id, "buffer") for row in buffer_samples])
+            sample_external_ids.extend([(row.external_id, "permanent") for row in permanent_samples])
+            
+        except Exception as e:
+            print(f"Error getting sample data: {str(e)}")
+            sample_external_ids = []
+        
+        if sample_external_ids:
+            for i, (external_id, source) in enumerate(sample_external_ids[:3], 1):
+                comprehensive_check = dup_service.check_external_id_in_both_tables(external_id)
+                
+                print(f"  {i}. External ID: {external_id} (from {source})")
+                print(f"     Exists: {comprehensive_check['exists']}")
+                print(f"     Location: {comprehensive_check['location']}")
+                print(f"     In Buffer: {comprehensive_check['in_buffer']}")
+                print(f"     In Permanent: {comprehensive_check['in_permanent']}")
+                print(f"     Message: {comprehensive_check['message']}")
+                print()
+        else:
+            print("  No sample external IDs available for testing")
 
         # Test 3: Check for duplicates in a sample of articles
         print("\n🔍 STEP 3: Check Sample Articles for Duplicates")
         print("-" * 40)
         
-        sample_articles = db.session.query(
-            db.select([
-                db.column('external_id'),
-                db.column('title'),
-                db.column('url'),
-                db.column('published_at')
-            ]).select_from(db.table('news_articles'))
-        ).limit(5).all()
-        
-        for i, article in enumerate(sample_articles, 1):
-            article_data = {
-                'external_id': article.external_id,
-                'title': article.title,
-                'url': article.url,
-                'published_at': article.published_at
-            }
+        try:
+            # Get sample articles for duplicate checking
+            sample_articles = db.session.execute(
+                db.text("SELECT external_id, title, url, published_at FROM news_articles LIMIT 3")
+            ).fetchall()
             
-            dup_check = dup_service.check_article_duplicate(article_data)
-            status = "DUPLICATE" if dup_check['is_duplicate'] else "UNIQUE"
-            print(f"  {i}. {article.title[:50]}... - {status}")
-            
-            if dup_check['is_duplicate']:
-                print(f"     Reason: {dup_check['duplicate_reason']}")
+            if sample_articles:
+                for i, article in enumerate(sample_articles, 1):
+                    article_data = {
+                        'external_id': article.external_id,
+                        'title': article.title,
+                        'url': article.url,
+                        'published_at': article.published_at
+                    }
+                    
+                    dup_check = dup_service.check_article_duplicate(article_data)
+                    status = "DUPLICATE" if dup_check['is_duplicate'] else "UNIQUE"
+                    title_display = article.title[:50] + "..." if len(article.title) > 50 else article.title
+                    print(f"  {i}. {title_display} - {status}")
+                    
+                    if dup_check['is_duplicate']:
+                        print(f"     Reason: {dup_check['duplicate_reason']}")
+            else:
+                print("  No sample articles available for testing")
+                
+        except Exception as e:
+            print(f"  Error getting sample articles: {str(e)}")
+            sample_articles = []
         
         # Test 4: Test symbol deduplication
         print("\n🔄 STEP 4: Test Symbol Deduplication")
@@ -106,10 +127,18 @@ def test_duplicate_prevention():
         print("-" * 40)
         
         # Get some external IDs for testing
-        external_ids = [row.external_id for row in sample_articles]
+        try:
+            sample_ids = db.session.execute(
+                db.text("SELECT external_id FROM news_articles LIMIT 2")
+            ).fetchall()
+            external_ids = [row.external_id for row in sample_ids]
+        except:
+            external_ids = []
         
         # Add some duplicates for testing
-        test_external_ids = external_ids + ["TEST_ID_1", "TEST_ID_2", external_ids[0] if external_ids else "TEST_ID_3"]
+        test_external_ids = external_ids + ["TEST_ID_1", "TEST_ID_2"]
+        if external_ids:
+            test_external_ids.append(external_ids[0])  # Add duplicate
         
         batch_results = dup_service.check_batch_duplicates(test_external_ids)
         print(f"Batch Analysis Results:")
@@ -125,30 +154,39 @@ def test_duplicate_prevention():
         print("-" * 40)
         
         # Test with existing article (should be skipped)
-        if sample_articles:
-            existing_article = sample_articles[0]
-            test_article_data = {
-                'external_id': existing_article.external_id,
-                'title': f"DUPLICATE TEST: {existing_article.title}",
-                'content': "This is a test article for duplicate prevention",
-                'url': existing_article.url,
-                'published_at': existing_article.published_at,
-                'source': 'TEST_SOURCE',
-                'sentiment': {'overall_sentiment': 'neutral'},
-                'summary': {'brief': 'Test summary'},
-                'symbols': ['TEST_SYMBOL']
-            }
+        try:
+            existing_article_data = db.session.execute(
+                db.text("SELECT external_id, title, url, published_at FROM news_articles LIMIT 1")
+            ).fetchone()
             
-            insert_result = dup_service.safe_insert_with_duplicate_handling(test_article_data)
-            print(f"Insert Test Result:")
-            print(f"  Success: {insert_result['success']}")
-            print(f"  Action: {insert_result['action']}")
-            print(f"  Message: {insert_result['message']}")
-            if insert_result.get('duplicate_info'):
-                dup_info = insert_result['duplicate_info']
-                print(f"  Duplicate Location: {dup_info.get('location', 'unknown')}")
-                print(f"  In Buffer: {dup_info.get('in_buffer', False)}")
-                print(f"  In Permanent: {dup_info.get('in_permanent', False)}")
+            if existing_article_data:
+                test_article_data = {
+                    'external_id': existing_article_data.external_id,
+                    'title': f"DUPLICATE TEST: {existing_article_data.title}",
+                    'content': "This is a test article for duplicate prevention",
+                    'url': existing_article_data.url,
+                    'published_at': existing_article_data.published_at,
+                    'source': 'TEST_SOURCE',
+                    'sentiment': {'overall_sentiment': 'neutral'},
+                    'summary': {'brief': 'Test summary'},
+                    'symbols': ['TEST_SYMBOL']
+                }
+                
+                insert_result = dup_service.safe_insert_with_duplicate_handling(test_article_data)
+                print(f"Insert Test Result:")
+                print(f"  Success: {insert_result['success']}")
+                print(f"  Action: {insert_result['action']}")
+                print(f"  Message: {insert_result['message']}")
+                if insert_result.get('duplicate_info'):
+                    dup_info = insert_result['duplicate_info']
+                    print(f"  Duplicate Location: {dup_info.get('location', 'unknown')}")
+                    print(f"  In Buffer: {dup_info.get('in_buffer', False)}")
+                    print(f"  In Permanent: {dup_info.get('in_permanent', False)}")
+            else:
+                print("  No existing articles available for duplicate test")
+                
+        except Exception as e:
+            print(f"  Error testing safe insert: {str(e)}")
         
         # Test 7: Test cleanup functionality (dry run)
         print("\n🧹 STEP 7: Test Cleanup Functionality")
