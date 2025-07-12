@@ -250,8 +250,8 @@ class NewsFetchScheduler:
                 "HKEX:1109", "HKEX:3958", "HKEX:2013", "HKEX:3333", "HKEX:1458", "HKEX:2518", 
                 "HKEX:2020", "HKEX:1193",
                 
-                # Financial Services (20 symbols)
-                "HKEX:5", "HKEX:939", "HKEX:1398", "HKEX:3988", "HKEX:1288", "HKEX:3968", 
+                # Financial Services (19 symbols)
+                "HKEX:939", "HKEX:1398", "HKEX:3988", "HKEX:1288", "HKEX:3968", 
                 "HKEX:1988", "HKEX:2388", "HKEX:1359", "HKEX:6030", "HKEX:1658", "HKEX:1618", 
                 "HKEX:1336", "HKEX:2628", "HKEX:2318", "HKEX:1113", "HKEX:1928", "HKEX:1818", 
                 "HKEX:1299", "HKEX:1448",
