@@ -3880,20 +3880,34 @@ def _generate_ai_search_suggestions(query):
         
         prompt = f"""The user searched for "{query}" in a financial news database but got no results. 
 
-Generate 5-8 alternative search terms that are more likely to find relevant financial news articles. Consider:
+Generate 5-8 alternative search terms that are more likely to find relevant financial news articles. The system uses TradingView symbol formats, so consider:
+
+**Symbol Formats to Suggest:**
+- TradingView format: NASDAQ:AAPL, NYSE:TSLA, HKEX:700, LSE:HSBA, SSE:600519, SZSE:000858
+- Company names instead of symbols: Apple instead of AAPL
+- Alternative symbol formats: AAPL vs NASDAQ:AAPL vs Apple Inc
+- Related companies in same sector
+
+**Financial Context:**
 - Synonyms and related financial terms
-- Company symbols vs company names
-- Industry sectors and categories
+- Industry sectors and categories  
 - Financial events and terminology
+- Market regions: US, China, Hong Kong, UK, Japan
 - Broader or more specific terms
+
+**Popular TradingView Symbols:**
+US: NASDAQ:AAPL, NASDAQ:MSFT, NASDAQ:GOOGL, NYSE:TSLA, NYSE:JPM
+China: SSE:600519, SZSE:000858, SSE:601318
+Hong Kong: HKEX:700, HKEX:9988, HKEX:1398
+Global: LSE:HSBA, TSE:7203, COMEX:GC1!, TVC:GOLD
 
 Return ONLY a JSON array of suggestions with this format:
 [
     {{"term": "alternative search term", "type": "synonym", "reason": "brief explanation"}},
-    {{"term": "another term", "type": "symbol", "reason": "brief explanation"}}
+    {{"term": "NASDAQ:AAPL", "type": "symbol", "reason": "TradingView format symbol"}}
 ]
 
-Types should be: "synonym", "symbol", "industry", "broader", "specific", "related"
+Types should be: "synonym", "symbol", "industry", "broader", "specific", "related", "company", "tradingview"
 
 Original query: "{query}"
 """
@@ -3946,58 +3960,112 @@ Original query: "{query}"
         return _get_fallback_suggestions(query)
 
 def _get_fallback_suggestions(query):
-    """Generate fallback search suggestions using rule-based logic"""
+    """Generate fallback search suggestions using rule-based logic with TradingView focus"""
     suggestions = []
     query_lower = query.lower()
     
-    # Financial term mappings
+    # Enhanced financial term mappings with TradingView symbols
     financial_mappings = {
-        'ai': ['artificial intelligence', 'machine learning', 'technology', 'NVDA', 'GOOGL'],
-        'artificial intelligence': ['ai', 'machine learning', 'tech stocks', 'automation'],
-        'electric vehicle': ['EV', 'TSLA', 'automotive', 'clean energy'], 
-        'ev': ['electric vehicle', 'TSLA', 'automotive', 'battery'],
-        'crypto': ['cryptocurrency', 'bitcoin', 'blockchain', 'MSTR'],
-        'bitcoin': ['cryptocurrency', 'crypto', 'digital currency', 'BTC'],
+        'ai': ['artificial intelligence', 'machine learning', 'NASDAQ:NVDA', 'NASDAQ:GOOGL', 'NASDAQ:MSFT', 'technology'],
+        'artificial intelligence': ['ai', 'machine learning', 'NASDAQ:NVDA', 'NASDAQ:GOOGL', 'automation'],
+        'electric vehicle': ['EV', 'NASDAQ:TSLA', 'automotive', 'clean energy', 'Tesla'], 
+        'ev': ['electric vehicle', 'NASDAQ:TSLA', 'automotive', 'battery', 'Tesla'],
+        'crypto': ['cryptocurrency', 'bitcoin', 'blockchain', 'BITSTAMP:BTCUSD', 'NASDAQ:MSTR'],
+        'bitcoin': ['cryptocurrency', 'crypto', 'BITSTAMP:BTCUSD', 'digital currency'],
         'earnings': ['quarterly results', 'financial results', 'profit', 'revenue'],
         'merger': ['acquisition', 'M&A', 'takeover', 'deal'],
         'ipo': ['initial public offering', 'new listing', 'public offering'],
         'dividend': ['yield', 'payout', 'distribution', 'income'],
-        'oil': ['energy', 'petroleum', 'crude', 'XOM', 'CVX'],
-        'gold': ['precious metals', 'commodities', 'GLD', 'mining'],
-        'china': ['chinese stocks', 'asia', 'emerging markets', 'BABA'],
+        'oil': ['energy', 'petroleum', 'NYSE:XOM', 'NYSE:CVX', 'TVC:USOIL', 'crude'],
+        'gold': ['precious metals', 'COMEX:GC1!', 'TVC:GOLD', 'commodities', 'mining'],
+        'china': ['SSE:600519', 'SZSE:000858', 'chinese stocks', 'asia', 'emerging markets'],
+        'hong kong': ['HKEX:700', 'HKEX:9988', 'HKEX:1398', 'hong kong stocks'],
+        'hsbc': ['LSE:HSBA', 'HKEX:5', 'banking', 'financial services'],
         'fed': ['federal reserve', 'interest rates', 'monetary policy', 'FOMC'],
-        'inflation': ['CPI', 'price increase', 'economic data', 'monetary policy']
+        'inflation': ['CPI', 'price increase', 'economic data', 'monetary policy'],
+        'apple': ['NASDAQ:AAPL', 'AAPL', 'technology', 'smartphone'],
+        'microsoft': ['NASDAQ:MSFT', 'MSFT', 'technology', 'cloud computing'],
+        'tesla': ['NASDAQ:TSLA', 'TSLA', 'electric vehicle', 'automotive'],
+        'google': ['NASDAQ:GOOGL', 'NASDAQ:GOOG', 'GOOGL', 'technology', 'search'],
+        'amazon': ['NASDAQ:AMZN', 'AMZN', 'e-commerce', 'cloud computing'],
+        'netflix': ['NASDAQ:NFLX', 'NFLX', 'streaming', 'entertainment'],
+        'banking': ['NYSE:JPM', 'NYSE:BAC', 'LSE:HSBA', 'financial services'],
+        'energy': ['NYSE:XOM', 'NYSE:CVX', 'TVC:USOIL', 'oil', 'gas']
     }
     
     # Check for direct mappings
     for key, alternatives in financial_mappings.items():
         if key in query_lower:
             for alt in alternatives:
+                # Determine suggestion type based on format
+                if ':' in alt and alt.count(':') == 1:
+                    sug_type = 'tradingview'
+                    reason = f'TradingView symbol for {key}'
+                elif alt.isupper() and len(alt) <= 5:
+                    sug_type = 'symbol'
+                    reason = f'Stock symbol related to {key}'
+                else:
+                    sug_type = 'related'
+                    reason = f'Related to {key}'
+                    
                 suggestions.append({
                     'term': alt,
-                    'type': 'related',
-                    'reason': f'Related to {key}'
+                    'type': sug_type,
+                    'reason': reason
                 })
             break
     
+    # Add TradingView format symbols for popular stocks
+    popular_tradingview_symbols = [
+        ('NASDAQ:AAPL', 'Apple Inc - Popular tech stock'),
+        ('NASDAQ:MSFT', 'Microsoft - Popular tech stock'),
+        ('NASDAQ:GOOGL', 'Google/Alphabet - Popular tech stock'),
+        ('NASDAQ:TSLA', 'Tesla - Popular EV stock'),
+        ('NYSE:JPM', 'JP Morgan - Popular banking stock'),
+        ('HKEX:700', 'Tencent - Popular Chinese tech stock'),
+        ('LSE:HSBA', 'HSBC - Popular banking stock'),
+        ('COMEX:GC1!', 'Gold futures - Popular commodity'),
+        ('TVC:GOLD', 'Gold index - Popular commodity'),
+        ('BITSTAMP:BTCUSD', 'Bitcoin - Popular cryptocurrency')
+    ]
+    
+    # Add popular TradingView symbols if query might be looking for symbols
+    if len(query.split()) <= 3 and not any(char.isdigit() for char in query):
+        for symbol, description in popular_tradingview_symbols[:4]:
+            suggestions.append({
+                'term': symbol,
+                'type': 'tradingview',
+                'reason': description
+            })
+    
     # Add broader search suggestions
-    broader_terms = ['earnings', 'market news', 'financial results', 'stock analysis']
-    for term in broader_terms:
+    broader_terms = [
+        ('earnings', 'Broader financial topic'),
+        ('market news', 'General market coverage'),
+        ('financial results', 'Company performance data'),
+        ('stock analysis', 'Investment research')
+    ]
+    
+    for term, reason in broader_terms:
         if term.lower() not in query_lower:
             suggestions.append({
                 'term': term,
                 'type': 'broader',
-                'reason': 'Broader financial topic'
+                'reason': reason
             })
     
-    # Add popular symbols if query might be a company name
-    if len(query.split()) <= 3 and not any(char.isdigit() for char in query):
-        popular_symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA']
-        for symbol in popular_symbols[:3]:
+    # Add market-specific suggestions based on query hints
+    if any(region in query_lower for region in ['asia', 'asian', 'china', 'chinese']):
+        asian_symbols = [
+            ('SSE:600519', 'Kweichow Moutai - Top Chinese stock'),
+            ('HKEX:700', 'Tencent - Popular Chinese tech'),
+            ('SZSE:000858', 'Wuliangye - Chinese consumer stock')
+        ]
+        for symbol, desc in asian_symbols[:2]:
             suggestions.append({
                 'term': symbol,
-                'type': 'symbol',
-                'reason': 'Popular stock symbol'
+                'type': 'tradingview',
+                'reason': desc
             })
     
-    return suggestions[:6]  # Limit to 6 suggestions
+    return suggestions[:8]  # Increased limit to 8 suggestions
