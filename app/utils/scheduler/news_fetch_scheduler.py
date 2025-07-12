@@ -411,33 +411,54 @@ class NewsFetchScheduler:
         logger.info("📅 News fetch scheduler thread stopped")
     
     def _schedule_market_times(self):
-        """Schedule market-specific news fetch at optimal times"""
+        """Schedule market-specific news fetch at optimal times using custom or default configuration"""
         # Clear any existing schedules
         schedule.clear()
         
-        # China/Hong Kong + Global Markets Sessions
-        # These sessions process CN, HK, and GLOBAL symbols (347 total)
-        schedule.every().day.at("01:00").do(self._run_scheduled_job, market_session="CHINA_HK", session_name="China/Hong Kong Market Open")
-        schedule.every().day.at("04:30").do(self._run_scheduled_job, market_session="CHINA_HK", session_name="China/Hong Kong Mid-Session")
-        schedule.every().day.at("08:30").do(self._run_scheduled_job, market_session="CHINA_HK", session_name="China/Hong Kong Market Close")
+        # Get schedule configuration
+        schedule_config = self.get_schedule_config()
         
-        # US + Global Markets Sessions
-        # These sessions process US and GLOBAL symbols (913 total)
-        schedule.every().day.at("14:00").do(self._run_scheduled_job, market_session="US", session_name="US Pre-Market")
-        schedule.every().day.at("17:30").do(self._run_scheduled_job, market_session="US", session_name="US Mid-Session")
-        schedule.every().day.at("21:30").do(self._run_scheduled_job, market_session="US", session_name="US After-Hours")
+        # Schedule jobs based on configuration
+        scheduled_times = []
+        for time_config in schedule_config['times']:
+            time_str = time_config['time']
+            session = time_config['session']
+            label = time_config['label']
+            
+            schedule.every().day.at(time_str).do(
+                self._run_scheduled_job, 
+                market_session=session, 
+                session_name=label
+            )
+            scheduled_times.append(f"{time_str} UTC - {label} ({session})")
         
-        logger.info("📅 Market-specific scheduling configured:")
-        logger.info("  🇨🇳 China/Hong Kong Sessions (347 symbols):")
-        logger.info("    • 01:00 UTC - China/Hong Kong Market Open")
-        logger.info("    • 04:30 UTC - China/Hong Kong Mid-Session")
-        logger.info("    • 08:30 UTC - China/Hong Kong Market Close")
-        logger.info("  🇺🇸 US Sessions (1004 symbols):")  # Updated to reflect actual count
-        logger.info("    • 14:00 UTC - US Pre-Market")
-        logger.info("    • 17:30 UTC - US Mid-Session")
-        logger.info("    • 21:30 UTC - US After-Hours")
+        # Log scheduled configuration
+        if schedule_config['customSchedule']:
+            logger.info("📅 Custom 6-time-point scheduling configured:")
+        else:
+            logger.info("📅 Default market-specific scheduling configured:")
+        
+        china_hk_count = sum(1 for t in schedule_config['times'] if t['session'] == 'CHINA_HK')
+        us_count = sum(1 for t in schedule_config['times'] if t['session'] == 'US')
+        
+        logger.info(f"  🇨🇳 China/Hong Kong Sessions ({china_hk_count} times):")
+        for time_config in schedule_config['times']:
+            if time_config['session'] == 'CHINA_HK':
+                logger.info(f"    • {time_config['time']} UTC - {time_config['label']}")
+        
+        logger.info(f"  🇺🇸 US Sessions ({us_count} times):")
+        for time_config in schedule_config['times']:
+            if time_config['session'] == 'US':
+                logger.info(f"    • {time_config['time']} UTC - {time_config['label']}")
+        
         logger.info("  🌍 Global symbols included in all sessions")
-        logger.info("  📊 Maximum 15,114 articles per day")  # Updated calculation
+        
+        # Calculate symbols per session type
+        china_hk_symbols = self._get_market_symbols("CHINA_HK")
+        us_symbols = self._get_market_symbols("US")
+        
+        daily_estimate = (len(china_hk_symbols) * 2 * china_hk_count) + (len(us_symbols) * 2 * us_count)
+        logger.info(f"  📊 Estimated {daily_estimate:,} articles per day with current configuration")
 
     def _run_scheduled_job(self, market_session="Unknown", session_name="Unknown"):
         """Run the scheduled fetch job with proper Flask app context and trading day check"""
@@ -1061,6 +1082,9 @@ class NewsFetchScheduler:
         current_market_session = self._determine_current_market_session()
         current_time_str = datetime.now().strftime('%H:%M UTC')
         
+        # Get schedule configuration
+        schedule_config = self.get_schedule_config()
+        
         # Get next scheduled run time and details
         next_run_details = None
         if jobs_count > 0:
@@ -1096,12 +1120,16 @@ class NewsFetchScheduler:
         china_hk_symbols = self._get_market_symbols("CHINA_HK")
         us_symbols = self._get_market_symbols("US")
         
+        # Get schedule times from configuration
+        schedule_times = [time_config['time'] + " UTC" for time_config in schedule_config['times']]
+        
         return {
             "running": self.running,
             "next_run": next_run,
             "next_run_details": next_run_details,
             "jobs_count": jobs_count,
-            "fetch_schedule": "Market-specific (6 times daily)",
+            "fetch_schedule": "Customizable 6-time-point schedule" if schedule_config['customSchedule'] else "Market-specific (6 times daily)",
+            "schedule_times": schedule_times,
             "intelligent_selection": {
                 "current_time": current_time_str,
                 "recommended_session": current_market_session,
@@ -1137,8 +1165,132 @@ class NewsFetchScheduler:
                     "us_stocks": 5,
                     "global_in_us": 2
                 }
-            }
+            },
+            "schedule_config": schedule_config
         }
+    
+    def get_schedule_config(self):
+        """Get current schedule configuration"""
+        # Check if custom schedule is saved
+        import json
+        import os
+        
+        config_file = os.path.join(os.path.dirname(__file__), '..', '..', 'instance', 'scheduler_config.json')
+        
+        default_config = {
+            "customSchedule": False,
+            "times": [
+                {"time": "01:00", "session": "CHINA_HK", "label": "China/HK Market Open"},
+                {"time": "04:30", "session": "CHINA_HK", "label": "China/HK Mid-Session"},
+                {"time": "08:30", "session": "CHINA_HK", "label": "China/HK Market Close"},
+                {"time": "14:00", "session": "US", "label": "US Pre-Market"},
+                {"time": "17:30", "session": "US", "label": "US Mid-Session"},
+                {"time": "21:30", "session": "US", "label": "US After-Hours"}
+            ]
+        }
+        
+        try:
+            if os.path.exists(config_file):
+                with open(config_file, 'r') as f:
+                    saved_config = json.load(f)
+                    # Validate saved config
+                    if self._validate_schedule_config(saved_config):
+                        return saved_config
+                    else:
+                        logger.warning("Invalid saved schedule config, using default")
+                        return default_config
+            else:
+                return default_config
+        except Exception as e:
+            logger.error(f"Error loading schedule config: {e}")
+            return default_config
+    
+    def save_schedule_config(self, config):
+        """Save custom schedule configuration"""
+        try:
+            # Validate configuration
+            if not self._validate_schedule_config(config):
+                logger.error("Invalid schedule configuration")
+                return False
+            
+            # Ensure instance directory exists
+            import os
+            instance_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'instance')
+            os.makedirs(instance_dir, exist_ok=True)
+            
+            # Save configuration
+            config_file = os.path.join(instance_dir, 'scheduler_config.json')
+            import json
+            with open(config_file, 'w') as f:
+                json.dump(config, f, indent=2)
+            
+            logger.info("Schedule configuration saved successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error saving schedule config: {e}")
+            return False
+    
+    def reset_schedule_config(self):
+        """Reset schedule configuration to default"""
+        try:
+            import os
+            config_file = os.path.join(os.path.dirname(__file__), '..', '..', 'instance', 'scheduler_config.json')
+            
+            # Remove custom config file if it exists
+            if os.path.exists(config_file):
+                os.remove(config_file)
+            
+            logger.info("Schedule configuration reset to default")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error resetting schedule config: {e}")
+            return False
+    
+    def _validate_schedule_config(self, config):
+        """Validate schedule configuration"""
+        try:
+            # Check if config has required fields
+            if not isinstance(config, dict):
+                return False
+            
+            if 'times' not in config or not isinstance(config['times'], list):
+                return False
+            
+            if len(config['times']) != 6:
+                return False
+            
+            # Validate each time point
+            for time_config in config['times']:
+                if not isinstance(time_config, dict):
+                    return False
+                
+                required_fields = ['time', 'session', 'label']
+                if not all(field in time_config for field in required_fields):
+                    return False
+                
+                # Validate session
+                if time_config['session'] not in ['CHINA_HK', 'US']:
+                    return False
+                
+                # Validate time format
+                try:
+                    time_parts = time_config['time'].split(':')
+                    if len(time_parts) != 2:
+                        return False
+                    hour = int(time_parts[0])
+                    minute = int(time_parts[1])
+                    if hour < 0 or hour > 23 or minute < 0 or minute > 59:
+                        return False
+                except (ValueError, AttributeError):
+                    return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error validating schedule config: {e}")
+            return False
 
 # Global instance
 news_fetch_scheduler = NewsFetchScheduler() 

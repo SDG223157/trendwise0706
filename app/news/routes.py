@@ -2597,6 +2597,132 @@ def get_fetch_scheduler_progress():
             'error': str(e)
         }), 500
 
+@bp.route('/api/fetch-scheduler/schedule-config', methods=['GET'])
+@login_required
+@admin_required
+def get_schedule_config():
+    """Get current schedule configuration"""
+    try:
+        from app.utils.scheduler.news_fetch_scheduler import news_fetch_scheduler
+        
+        # Get current schedule configuration from scheduler
+        config = news_fetch_scheduler.get_schedule_config()
+        
+        return jsonify({
+            'status': 'success',
+            'config': config
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting schedule config: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+@bp.route('/api/fetch-scheduler/schedule-config', methods=['POST'])
+@login_required
+@admin_required
+def save_schedule_config():
+    """Save custom schedule configuration"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No configuration data provided'
+            }), HTTPStatus.BAD_REQUEST
+        
+        # Validate the configuration
+        if not isinstance(data.get('times'), list) or len(data['times']) != 6:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid configuration: exactly 6 time points required'
+            }), HTTPStatus.BAD_REQUEST
+        
+        # Validate each time point
+        for i, time_config in enumerate(data['times']):
+            if not all(k in time_config for k in ['time', 'session', 'label']):
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Invalid time point {i + 1}: missing required fields'
+                }), HTTPStatus.BAD_REQUEST
+            
+            if time_config['session'] not in ['CHINA_HK', 'US']:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Invalid session type: {time_config["session"]}'
+                }), HTTPStatus.BAD_REQUEST
+            
+            # Validate time format (HH:MM)
+            try:
+                time_parts = time_config['time'].split(':')
+                if len(time_parts) != 2:
+                    raise ValueError("Invalid time format")
+                hour = int(time_parts[0])
+                minute = int(time_parts[1])
+                if hour < 0 or hour > 23 or minute < 0 or minute > 59:
+                    raise ValueError("Invalid time values")
+            except (ValueError, AttributeError):
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Invalid time format for time point {i + 1}: expected HH:MM'
+                }), HTTPStatus.BAD_REQUEST
+        
+        # Save configuration to scheduler
+        from app.utils.scheduler.news_fetch_scheduler import news_fetch_scheduler
+        success = news_fetch_scheduler.save_schedule_config(data)
+        
+        if success:
+            logger.info(f"Admin {current_user.username} saved custom schedule configuration")
+            return jsonify({
+                'status': 'success',
+                'message': 'Schedule configuration saved successfully',
+                'config': data
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to save schedule configuration'
+            }), HTTPStatus.INTERNAL_SERVER_ERROR
+        
+    except Exception as e:
+        logger.error(f"Error saving schedule config: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Error saving schedule config: {str(e)}'
+        }), HTTPStatus.INTERNAL_SERVER_ERROR
+
+@bp.route('/api/fetch-scheduler/schedule-config/reset', methods=['POST'])
+@login_required
+@admin_required
+def reset_schedule_config():
+    """Reset schedule configuration to default"""
+    try:
+        from app.utils.scheduler.news_fetch_scheduler import news_fetch_scheduler
+        
+        success = news_fetch_scheduler.reset_schedule_config()
+        
+        if success:
+            logger.info(f"Admin {current_user.username} reset schedule configuration to default")
+            return jsonify({
+                'status': 'success',
+                'message': 'Schedule configuration reset to default successfully',
+                'config': news_fetch_scheduler.get_schedule_config()
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to reset schedule configuration'
+            }), HTTPStatus.INTERNAL_SERVER_ERROR
+        
+    except Exception as e:
+        logger.error(f"Error resetting schedule config: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Error resetting schedule config: {str(e)}'
+        }), HTTPStatus.INTERNAL_SERVER_ERROR
+
 @bp.route('/api/optimization/status', methods=['GET'])
 @login_required
 def get_optimization_status():

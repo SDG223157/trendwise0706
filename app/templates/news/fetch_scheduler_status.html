@@ -42,6 +42,53 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+        
+        /* Schedule Configuration Form Styling */
+        .form-input {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-select {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            background-color: white;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid;
+        }
+        
+        .alert-warning {
+            background-color: #fffbeb;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -194,6 +241,116 @@
                 <div class="bg-gray-50 p-4 rounded-lg">
                     <h3 class="font-medium text-gray-900">Chunk Size</h3>
                     <p class="text-2xl font-bold text-orange-600" id="chunkSize">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6-Time-Point Configuration Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">⏰ 6-Time-Point Schedule Configuration</h2>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h3 class="text-lg font-semibold text-blue-900 mb-2">📅 Current Schedule</h3>
+                <p class="text-sm text-blue-700 mb-3">The scheduler runs 6 times daily at these UTC times for optimal market coverage:</p>
+                <div id="currentScheduleDisplay" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <!-- Current schedule will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">🛠️ Customize Schedule Times</h3>
+                    <button id="toggleScheduleEditor" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
+                        ✏️ Edit Schedule
+                    </button>
+                </div>
+                
+                <div id="scheduleEditor" class="hidden">
+                    <div class="alert alert-warning mb-4">
+                        <strong>⚠️ Important:</strong> 
+                        <ul class="list-disc ml-4 mt-2 text-sm">
+                            <li>Times are in UTC format (24-hour)</li>
+                            <li>Changes will apply after scheduler restart</li>
+                            <li>Default schedule optimized for global market coverage</li>
+                            <li>Minimum 1-hour gap between schedule times recommended</li>
+                        </ul>
+                    </div>
+                    
+                    <form id="scheduleForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-700">🇨🇳 China/HK Market Open</label>
+                                <input type="time" id="time1" class="form-input w-full" value="01:00">
+                                <select id="session1" class="form-select w-full text-sm">
+                                    <option value="CHINA_HK">China/HK Session</option>
+                                    <option value="US">US Session</option>
+                                </select>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-700">🇨🇳 China/HK Mid-Session</label>
+                                <input type="time" id="time2" class="form-input w-full" value="04:30">
+                                <select id="session2" class="form-select w-full text-sm">
+                                    <option value="CHINA_HK">China/HK Session</option>
+                                    <option value="US">US Session</option>
+                                </select>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-700">🇨🇳 China/HK Market Close</label>
+                                <input type="time" id="time3" class="form-input w-full" value="08:30">
+                                <select id="session3" class="form-select w-full text-sm">
+                                    <option value="CHINA_HK">China/HK Session</option>
+                                    <option value="US">US Session</option>
+                                </select>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-700">🇺🇸 US Pre-Market</label>
+                                <input type="time" id="time4" class="form-input w-full" value="14:00">
+                                <select id="session4" class="form-select w-full text-sm">
+                                    <option value="CHINA_HK">China/HK Session</option>
+                                    <option value="US">US Session</option>
+                                </select>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-700">🇺🇸 US Mid-Session</label>
+                                <input type="time" id="time5" class="form-input w-full" value="17:30">
+                                <select id="session5" class="form-select w-full text-sm">
+                                    <option value="CHINA_HK">China/HK Session</option>
+                                    <option value="US">US Session</option>
+                                </select>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-700">🇺🇸 US After-Hours</label>
+                                <input type="time" id="time6" class="form-input w-full" value="21:30">
+                                <select id="session6" class="form-select w-full text-sm">
+                                    <option value="CHINA_HK">China/HK Session</option>
+                                    <option value="US">US Session</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <div class="flex space-x-2">
+                                <button type="button" id="saveSchedule" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors">
+                                    💾 Save Schedule
+                                </button>
+                                <button type="button" id="resetSchedule" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition-colors">
+                                    🔄 Reset to Default
+                                </button>
+                                <button type="button" id="cancelScheduleEdit" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors">
+                                    ❌ Cancel
+                                </button>
+                            </div>
+                            
+                            <div class="text-sm text-gray-600">
+                                <span id="scheduleValidation"></span>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1017,6 +1174,285 @@
         function showError(message) {
             showMessage(message, 'error');
         }
+        
+        // ===== SCHEDULE CONFIGURATION FUNCTIONS =====
+        
+        // Schedule Configuration Variables
+        let currentScheduleConfig = {
+            customSchedule: false,
+            times: [
+                { time: "01:00", session: "CHINA_HK", label: "China/HK Market Open" },
+                { time: "04:30", session: "CHINA_HK", label: "China/HK Mid-Session" },
+                { time: "08:30", session: "CHINA_HK", label: "China/HK Market Close" },
+                { time: "14:00", session: "US", label: "US Pre-Market" },
+                { time: "17:30", session: "US", label: "US Mid-Session" },
+                { time: "21:30", session: "US", label: "US After-Hours" }
+            ]
+        };
+        
+        function loadScheduleConfig() {
+            // Load custom schedule from localStorage if exists
+            const savedConfig = localStorage.getItem('fetchSchedulerConfig');
+            if (savedConfig) {
+                try {
+                    currentScheduleConfig = JSON.parse(savedConfig);
+                    updateScheduleDisplay();
+                    updateScheduleForm();
+                } catch (e) {
+                    console.error('Error loading schedule config:', e);
+                }
+            }
+            updateScheduleDisplay();
+        }
+        
+        function saveScheduleConfig() {
+            localStorage.setItem('fetchSchedulerConfig', JSON.stringify(currentScheduleConfig));
+        }
+        
+        function updateScheduleDisplay() {
+            const displayContainer = document.getElementById('currentScheduleDisplay');
+            if (!displayContainer) return;
+            
+            displayContainer.innerHTML = '';
+            
+            currentScheduleConfig.times.forEach((timeConfig, index) => {
+                const sessionColor = timeConfig.session === 'CHINA_HK' ? 'bg-blue-100 border-blue-200' : 'bg-green-100 border-green-200';
+                const sessionFlag = timeConfig.session === 'CHINA_HK' ? '🇨🇳' : '🇺🇸';
+                const timeDiv = document.createElement('div');
+                timeDiv.className = `${sessionColor} p-3 rounded-lg border`;
+                timeDiv.innerHTML = `
+                    <div class="text-sm font-medium text-gray-800">${sessionFlag} ${timeConfig.time} UTC</div>
+                    <div class="text-xs text-gray-600">${timeConfig.label}</div>
+                    <div class="text-xs text-gray-500">${timeConfig.session} Session</div>
+                `;
+                displayContainer.appendChild(timeDiv);
+            });
+        }
+        
+        function updateScheduleForm() {
+            currentScheduleConfig.times.forEach((timeConfig, index) => {
+                const timeInput = document.getElementById(`time${index + 1}`);
+                const sessionSelect = document.getElementById(`session${index + 1}`);
+                
+                if (timeInput) timeInput.value = timeConfig.time;
+                if (sessionSelect) sessionSelect.value = timeConfig.session;
+            });
+        }
+        
+        function validateSchedule() {
+            const times = [];
+            let hasError = false;
+            let errorMessage = '';
+            
+            for (let i = 1; i <= 6; i++) {
+                const timeInput = document.getElementById(`time${i}`);
+                const sessionSelect = document.getElementById(`session${i}`);
+                
+                if (!timeInput || !sessionSelect) continue;
+                
+                const time = timeInput.value;
+                const session = sessionSelect.value;
+                
+                if (!time) {
+                    hasError = true;
+                    errorMessage = `Time ${i} is required`;
+                    break;
+                }
+                
+                // Check for duplicate times
+                if (times.includes(time)) {
+                    hasError = true;
+                    errorMessage = `Duplicate time: ${time}`;
+                    break;
+                }
+                
+                times.push(time);
+            }
+            
+            // Check minimum 1-hour gap
+            if (!hasError) {
+                times.sort();
+                for (let i = 1; i < times.length; i++) {
+                    const prevTime = times[i - 1];
+                    const currentTime = times[i];
+                    
+                    const prevMinutes = parseInt(prevTime.split(':')[0]) * 60 + parseInt(prevTime.split(':')[1]);
+                    const currentMinutes = parseInt(currentTime.split(':')[0]) * 60 + parseInt(currentTime.split(':')[1]);
+                    
+                    if (currentMinutes - prevMinutes < 60) {
+                        hasError = true;
+                        errorMessage = `Times too close: ${prevTime} and ${currentTime} (minimum 1-hour gap recommended)`;
+                        break;
+                    }
+                }
+            }
+            
+            const validationSpan = document.getElementById('scheduleValidation');
+            if (validationSpan) {
+                if (hasError) {
+                    validationSpan.innerHTML = `<span class="text-red-600">❌ ${errorMessage}</span>`;
+                } else {
+                    validationSpan.innerHTML = `<span class="text-green-600">✅ Schedule valid</span>`;
+                }
+            }
+            
+            return !hasError;
+        }
+        
+        function collectScheduleFormData() {
+            const newConfig = {
+                customSchedule: true,
+                times: []
+            };
+            
+            const labels = [
+                "China/HK Market Open", "China/HK Mid-Session", "China/HK Market Close",
+                "US Pre-Market", "US Mid-Session", "US After-Hours"
+            ];
+            
+            for (let i = 1; i <= 6; i++) {
+                const timeInput = document.getElementById(`time${i}`);
+                const sessionSelect = document.getElementById(`session${i}`);
+                
+                if (timeInput && sessionSelect) {
+                    newConfig.times.push({
+                        time: timeInput.value,
+                        session: sessionSelect.value,
+                        label: labels[i - 1]
+                    });
+                }
+            }
+            
+            return newConfig;
+        }
+        
+        function resetToDefaultSchedule() {
+            currentScheduleConfig = {
+                customSchedule: false,
+                times: [
+                    { time: "01:00", session: "CHINA_HK", label: "China/HK Market Open" },
+                    { time: "04:30", session: "CHINA_HK", label: "China/HK Mid-Session" },
+                    { time: "08:30", session: "CHINA_HK", label: "China/HK Market Close" },
+                    { time: "14:00", session: "US", label: "US Pre-Market" },
+                    { time: "17:30", session: "US", label: "US Mid-Session" },
+                    { time: "21:30", session: "US", label: "US After-Hours" }
+                ]
+            };
+            
+            updateScheduleForm();
+            updateScheduleDisplay();
+            const validation = document.getElementById('scheduleValidation');
+            if (validation) {
+                validation.innerHTML = '<span class="text-green-600">✅ Reset to default schedule</span>';
+            }
+        }
+        
+        function showScheduleMessage(message, type = 'info') {
+            const alertClass = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 
+                              type === 'error' ? 'bg-red-100 border-red-400 text-red-700' : 
+                              'bg-blue-100 border-blue-400 text-blue-700';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `border-l-4 p-4 mb-4 ${alertClass}`;
+            messageDiv.innerHTML = message;
+            
+            const scheduleEditor = document.getElementById('scheduleEditor');
+            if (scheduleEditor) {
+                scheduleEditor.insertBefore(messageDiv, scheduleEditor.firstChild);
+                
+                // Remove message after 5 seconds
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 5000);
+            }
+        }
+        
+        function initializeScheduleEditor() {
+            // Schedule editor elements
+            const toggleScheduleEditor = document.getElementById('toggleScheduleEditor');
+            const scheduleEditor = document.getElementById('scheduleEditor');
+            const saveScheduleBtn = document.getElementById('saveSchedule');
+            const resetScheduleBtn = document.getElementById('resetSchedule');
+            const cancelScheduleEditBtn = document.getElementById('cancelScheduleEdit');
+            
+            if (!toggleScheduleEditor) return;
+            
+            // Load schedule configuration
+            loadScheduleConfig();
+            
+            // Schedule editor event listeners
+            toggleScheduleEditor.addEventListener('click', function() {
+                if (scheduleEditor.classList.contains('hidden')) {
+                    scheduleEditor.classList.remove('hidden');
+                    toggleScheduleEditor.textContent = '❌ Cancel Edit';
+                    updateScheduleForm();
+                } else {
+                    scheduleEditor.classList.add('hidden');
+                    toggleScheduleEditor.textContent = '✏️ Edit Schedule';
+                    const validation = document.getElementById('scheduleValidation');
+                    if (validation) validation.innerHTML = '';
+                }
+            });
+            
+            if (saveScheduleBtn) {
+                saveScheduleBtn.addEventListener('click', function() {
+                    if (validateSchedule()) {
+                        const newConfig = collectScheduleFormData();
+                        currentScheduleConfig = newConfig;
+                        saveScheduleConfig();
+                        updateScheduleDisplay();
+                        
+                        showScheduleMessage('✅ Schedule saved successfully! Changes will apply after scheduler restart.', 'success');
+                        
+                        setTimeout(() => {
+                            scheduleEditor.classList.add('hidden');
+                            toggleScheduleEditor.textContent = '✏️ Edit Schedule';
+                        }, 2000);
+                    }
+                });
+            }
+            
+            if (resetScheduleBtn) {
+                resetScheduleBtn.addEventListener('click', function() {
+                    if (confirm('Reset to default schedule? This will discard any custom changes.')) {
+                        resetToDefaultSchedule();
+                        saveScheduleConfig();
+                        showScheduleMessage('✅ Schedule reset to default successfully!', 'success');
+                    }
+                });
+            }
+            
+            if (cancelScheduleEditBtn) {
+                cancelScheduleEditBtn.addEventListener('click', function() {
+                    scheduleEditor.classList.add('hidden');
+                    toggleScheduleEditor.textContent = '✏️ Edit Schedule';
+                    updateScheduleForm(); // Restore original values
+                    const validation = document.getElementById('scheduleValidation');
+                    if (validation) validation.innerHTML = '';
+                });
+            }
+            
+            // Real-time validation while typing
+            for (let i = 1; i <= 6; i++) {
+                const timeInput = document.getElementById(`time${i}`);
+                const sessionSelect = document.getElementById(`session${i}`);
+                
+                if (timeInput) {
+                    timeInput.addEventListener('input', validateSchedule);
+                }
+                if (sessionSelect) {
+                    sessionSelect.addEventListener('change', validateSchedule);
+                }
+            }
+        }
+        
+        // Initialize schedule editor when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Give a small delay to ensure all elements are loaded
+            setTimeout(initializeScheduleEditor, 100);
+        });
         
         // Clean up intervals when page unloads
         window.addEventListener('beforeunload', function() {
