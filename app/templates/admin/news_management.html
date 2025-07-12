@@ -89,6 +89,140 @@
                     {% endif %}
                     {% endif %}
 
+                    <!-- Emergency Scheduler Controls Section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0">🚨 Emergency Scheduler Controls</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-danger">
+                                        <strong>⚠️ EMERGENCY USE ONLY:</strong> These controls are for emergency situations where schedulers are stuck or need immediate termination.
+                                        <br><strong>🔴 WARNING:</strong> Force killing may interrupt running fetch operations and cause data inconsistency.
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <!-- Scheduler Status Display -->
+                                        <div class="col-md-6">
+                                            <div class="card border-info">
+                                                <div class="card-header bg-info text-white">
+                                                    <h6 class="mb-0">📊 Current Status</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div id="schedulerStatus">
+                                                        <div class="d-flex justify-content-between">
+                                                            <span>AI Scheduler:</span>
+                                                            <span id="aiSchedulerStatus" class="badge bg-secondary">Checking...</span>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between mt-1">
+                                                            <span>Fetch Scheduler:</span>
+                                                            <span id="fetchSchedulerStatus" class="badge bg-secondary">Checking...</span>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between mt-1">
+                                                            <span>Active Operations:</span>
+                                                            <span id="activeOperations" class="badge bg-secondary">Checking...</span>
+                                                        </div>
+                                                    </div>
+                                                    <button id="refreshStatusBtn" class="btn btn-sm btn-outline-info mt-2 w-100">
+                                                        🔄 Refresh Status
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Emergency Controls -->
+                                        <div class="col-md-6">
+                                            <div class="card border-danger">
+                                                <div class="card-header bg-danger text-white">
+                                                    <h6 class="mb-0">🚨 Emergency Actions</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="d-grid gap-2">
+                                                        <button id="forceKillBtn" class="btn btn-danger">
+                                                            💀 Force Kill All Schedulers
+                                                        </button>
+                                                        <button id="gracefulStopBtn" class="btn btn-warning">
+                                                            ⏹️ Graceful Stop All
+                                                        </button>
+                                                        <button id="clearJobsBtn" class="btn btn-info">
+                                                            🧹 Clear All Scheduled Jobs
+                                                        </button>
+                                                    </div>
+                                                    
+                                                    <div class="form-check mt-3">
+                                                        <input class="form-check-input" type="checkbox" id="confirmEmergency">
+                                                        <label class="form-check-label text-danger" for="confirmEmergency">
+                                                            <strong>I understand this is for emergency use only</strong>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Emergency Results -->
+                                    <div id="emergencyResults" class="mt-4" style="display: none;">
+                                        <div id="emergencyAlert"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Buffer Management Section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">🗄️ Buffer Management</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <strong>ℹ️ Buffer Table:</strong> The news_articles table serves as a temporary buffer for AI processing. 
+                                        Articles are moved to the permanent news_search_index table after processing.
+                                        <br><strong>✅ Safe Operation:</strong> Clearing the buffer does not affect permanent article storage.
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h6>📊 Buffer Statistics</h6>
+                                                    <div class="row text-center">
+                                                        <div class="col-6">
+                                                            <h4 class="text-warning">{{ "{:,}".format(stats.buffer_count) if stats else 'N/A' }}</h4>
+                                                            <small>Buffer Articles</small>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <h4 class="text-success">{{ "{:,}".format(stats.search_index_count) if stats else 'N/A' }}</h4>
+                                                            <small>Permanent Articles</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h6>🧹 Buffer Actions</h6>
+                                                    <div class="d-grid gap-2">
+                                                        <button id="clearBufferBtn" class="btn btn-outline-warning">
+                                                            🗑️ Clear Buffer Table
+                                                        </button>
+                                                        <small class="text-muted">
+                                                            Safe operation - permanent articles remain intact
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Delete Investing.com Articles Section -->
                     <div class="row">
                         <div class="col-12">
@@ -151,6 +285,22 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Emergency Controls Elements
+    const confirmEmergencyCheckbox = document.getElementById('confirmEmergency');
+    const forceKillBtn = document.getElementById('forceKillBtn');
+    const gracefulStopBtn = document.getElementById('gracefulStopBtn');
+    const clearJobsBtn = document.getElementById('clearJobsBtn');
+    const refreshStatusBtn = document.getElementById('refreshStatusBtn');
+    const clearBufferBtn = document.getElementById('clearBufferBtn');
+    const emergencyResultsDiv = document.getElementById('emergencyResults');
+    const emergencyAlertDiv = document.getElementById('emergencyAlert');
+
+    // Status Elements
+    const aiSchedulerStatus = document.getElementById('aiSchedulerStatus');
+    const fetchSchedulerStatus = document.getElementById('fetchSchedulerStatus');
+    const activeOperations = document.getElementById('activeOperations');
+
+    // Delete form elements (existing)
     const confirmCheckbox = document.getElementById('confirmDelete');
     const deleteBtn = document.getElementById('deleteBtn');
     const deleteForm = document.getElementById('deleteForm');
@@ -158,6 +308,228 @@ document.addEventListener('DOMContentLoaded', function() {
     const alertDiv = document.getElementById('deleteAlert');
     const listDiv = document.getElementById('deletedArticlesList');
 
+    // Function to update emergency button states
+    function updateEmergencyButtons() {
+        const isConfirmed = confirmEmergencyCheckbox.checked;
+        forceKillBtn.disabled = !isConfirmed;
+        gracefulStopBtn.disabled = !isConfirmed;
+        clearJobsBtn.disabled = !isConfirmed;
+    }
+
+    // Function to refresh scheduler status
+    function refreshSchedulerStatus() {
+        refreshStatusBtn.innerHTML = '🔄 Refreshing...';
+        refreshStatusBtn.disabled = true;
+
+        // Check AI Scheduler Status
+        fetch('/news/api/scheduler/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.running) {
+                    aiSchedulerStatus.className = 'badge bg-success';
+                    aiSchedulerStatus.textContent = 'Running';
+                } else {
+                    aiSchedulerStatus.className = 'badge bg-danger';
+                    aiSchedulerStatus.textContent = 'Stopped';
+                }
+            })
+            .catch(error => {
+                aiSchedulerStatus.className = 'badge bg-warning';
+                aiSchedulerStatus.textContent = 'Error';
+            });
+
+        // Check Fetch Scheduler Status
+        fetch('/news/api/fetch-scheduler/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.running) {
+                    fetchSchedulerStatus.className = 'badge bg-success';
+                    fetchSchedulerStatus.textContent = 'Running';
+                } else {
+                    fetchSchedulerStatus.className = 'badge bg-danger';
+                    fetchSchedulerStatus.textContent = 'Stopped';
+                }
+            })
+            .catch(error => {
+                fetchSchedulerStatus.className = 'badge bg-warning';
+                fetchSchedulerStatus.textContent = 'Error';
+            });
+
+        // Check for active operations (simplified)
+        fetch('/news/api/fetch-scheduler/progress')
+            .then(response => response.json())
+            .then(data => {
+                if (data.progress && data.progress.is_active) {
+                    activeOperations.className = 'badge bg-warning';
+                    activeOperations.textContent = 'Active';
+                } else {
+                    activeOperations.className = 'badge bg-secondary';
+                    activeOperations.textContent = 'None';
+                }
+            })
+            .catch(error => {
+                activeOperations.className = 'badge bg-secondary';
+                activeOperations.textContent = 'Unknown';
+            })
+            .finally(() => {
+                refreshStatusBtn.innerHTML = '🔄 Refresh Status';
+                refreshStatusBtn.disabled = false;
+            });
+    }
+
+    // Function to show emergency result
+    function showEmergencyResult(type, message) {
+        emergencyResultsDiv.style.display = 'block';
+        const alertClass = type === 'success' ? 'alert-success' : type === 'warning' ? 'alert-warning' : 'alert-danger';
+        const icon = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '❌';
+        emergencyAlertDiv.innerHTML = `<div class="alert ${alertClass}"><strong>${icon}</strong> ${message}</div>`;
+        
+        // Auto-refresh status after emergency action
+        setTimeout(() => {
+            refreshSchedulerStatus();
+        }, 2000);
+    }
+
+    // Emergency Controls Event Listeners
+    confirmEmergencyCheckbox.addEventListener('change', updateEmergencyButtons);
+
+    refreshStatusBtn.addEventListener('click', refreshSchedulerStatus);
+
+    forceKillBtn.addEventListener('click', function() {
+        if (!confirm('🚨 EMERGENCY FORCE KILL\n\nThis will immediately terminate all schedulers and may cause data inconsistency.\n\nAre you absolutely sure?')) {
+            return;
+        }
+
+        forceKillBtn.innerHTML = '💀 Force Killing...';
+        forceKillBtn.disabled = true;
+
+        fetch('/admin/api/force-kill-schedulers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirm: true })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showEmergencyResult('success', 'Force kill completed successfully. All schedulers have been terminated.');
+            } else {
+                showEmergencyResult('warning', data.message || 'Partial force kill - some schedulers may still be running.');
+            }
+        })
+        .catch(error => {
+            showEmergencyResult('error', 'Force kill failed: ' + error.message);
+        })
+        .finally(() => {
+            forceKillBtn.innerHTML = '💀 Force Kill All Schedulers';
+            forceKillBtn.disabled = !confirmEmergencyCheckbox.checked;
+        });
+    });
+
+    gracefulStopBtn.addEventListener('click', function() {
+        if (!confirm('Stop all schedulers gracefully?\n\nThis will wait for current operations to complete before stopping.')) {
+            return;
+        }
+
+        gracefulStopBtn.innerHTML = '⏹️ Stopping...';
+        gracefulStopBtn.disabled = true;
+
+        // Stop both schedulers gracefully
+        Promise.all([
+            fetch('/news/api/scheduler/stop', { method: 'POST' }),
+            fetch('/news/api/fetch-scheduler/stop', { method: 'POST' })
+        ])
+        .then(responses => Promise.all(responses.map(r => r.json())))
+        .then(results => {
+            const aiResult = results[0];
+            const fetchResult = results[1];
+            
+            if (aiResult.success && fetchResult.status === 'success') {
+                showEmergencyResult('success', 'Both schedulers stopped gracefully.');
+            } else {
+                showEmergencyResult('warning', 'Partial stop - some schedulers may still be running.');
+            }
+        })
+        .catch(error => {
+            showEmergencyResult('error', 'Graceful stop failed: ' + error.message);
+        })
+        .finally(() => {
+            gracefulStopBtn.innerHTML = '⏹️ Graceful Stop All';
+            gracefulStopBtn.disabled = !confirmEmergencyCheckbox.checked;
+        });
+    });
+
+    clearJobsBtn.addEventListener('click', function() {
+        if (!confirm('Clear all scheduled jobs?\n\nThis will remove all pending scheduled tasks.')) {
+            return;
+        }
+
+        clearJobsBtn.innerHTML = '🧹 Clearing...';
+        clearJobsBtn.disabled = true;
+
+        fetch('/admin/api/clear-scheduled-jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirm: true })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showEmergencyResult('success', `Scheduled jobs cleared: ${data.jobs_cleared} jobs removed from scheduler.`);
+            } else {
+                showEmergencyResult('error', data.message || 'Failed to clear scheduled jobs.');
+            }
+        })
+        .catch(error => {
+            showEmergencyResult('error', 'Clear jobs failed: ' + error.message);
+        })
+        .finally(() => {
+            clearJobsBtn.innerHTML = '🧹 Clear All Scheduled Jobs';
+            clearJobsBtn.disabled = !confirmEmergencyCheckbox.checked;
+        });
+    });
+
+    clearBufferBtn.addEventListener('click', function() {
+        if (!confirm('Clear the news buffer table?\n\nThis will remove all articles from the temporary buffer (permanent articles remain safe).')) {
+            return;
+        }
+
+        clearBufferBtn.innerHTML = '🗑️ Clearing...';
+        clearBufferBtn.disabled = true;
+
+        fetch('/admin/api/clear-buffer-articles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirm: true })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showEmergencyResult('success', `Buffer cleared: ${data.cleared_count} articles removed from buffer table.`);
+                // Refresh page to update statistics
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showEmergencyResult('error', data.message || 'Failed to clear buffer table.');
+            }
+        })
+        .catch(error => {
+            showEmergencyResult('error', 'Buffer clear failed: ' + error.message);
+        })
+        .finally(() => {
+            clearBufferBtn.innerHTML = '🗑️ Clear Buffer Table';
+            clearBufferBtn.disabled = false;
+        });
+    });
+
+    // Initialize emergency button states
+    updateEmergencyButtons();
+
+    // Auto-refresh status on page load
+    setTimeout(refreshSchedulerStatus, 1000);
+
+    // Auto-refresh status every 30 seconds
+    setInterval(refreshSchedulerStatus, 30000);
+
+    // === EXISTING DELETE FUNCTIONALITY ===
     // Enable/disable delete button based on confirmation checkbox
     confirmCheckbox.addEventListener('change', function() {
         deleteBtn.disabled = !this.checked;

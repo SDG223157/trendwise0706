@@ -492,21 +492,41 @@ def force_kill_schedulers():
             except Exception as e:
                 logger.error(f"Failed to force kill fetch scheduler: {e}")
             
+            # Clear all scheduled jobs as additional safety measure
+            try:
+                jobs_before = len(schedule.jobs)
+                schedule.clear()
+                logger.info(f"Cleared {jobs_before} scheduled jobs as part of force kill")
+                results['jobs_cleared'] = jobs_before
+            except Exception as e:
+                logger.warning(f"Could not clear scheduled jobs: {e}")
+                results['jobs_cleared'] = 0
+            
             if results['ai'] and results['fetch']:
-                message = "Emergency force kill completed successfully"
+                message = f"Emergency force kill completed successfully. Cleared {results.get('jobs_cleared', 0)} scheduled jobs."
                 logger.info(message)
                 return jsonify({
                     'status': 'success',
                     'message': message,
-                    'results': results
+                    'results': results,
+                    'details': {
+                        'ai_scheduler': 'Force stopped',
+                        'fetch_scheduler': 'Force stopped',
+                        'jobs_cleared': results.get('jobs_cleared', 0)
+                    }
                 })
             else:
-                message = "Partial force kill - some schedulers may still be running"
+                message = f"Partial force kill - some schedulers may still be running. Cleared {results.get('jobs_cleared', 0)} scheduled jobs."
                 logger.warning(message)
                 return jsonify({
                     'status': 'warning',
                     'message': message,
-                    'results': results
+                    'results': results,
+                    'details': {
+                        'ai_scheduler': 'Stopped' if results['ai'] else 'May still be running',
+                        'fetch_scheduler': 'Stopped' if results['fetch'] else 'May still be running',
+                        'jobs_cleared': results.get('jobs_cleared', 0)
+                    }
                 })
                 
         except Exception as e:
@@ -521,6 +541,43 @@ def force_kill_schedulers():
         return jsonify({
             'status': 'error',
             'message': f'Error in force kill API: {str(e)}'
+        }), 500
+
+@bp.route("/api/clear-scheduled-jobs", methods=['POST'])
+@login_required
+@admin_required
+def clear_scheduled_jobs():
+    """Clear all scheduled jobs"""
+    try:
+        data = request.get_json()
+        confirm = data.get('confirm', False)
+        
+        if not confirm:
+            return jsonify({
+                'status': 'error',
+                'message': 'Confirmation required for clearing scheduled jobs'
+            }), 400
+        
+        logger.warning(f"Admin {current_user.username} clearing all scheduled jobs")
+        
+        import schedule
+        
+        jobs_before = len(schedule.jobs)
+        schedule.clear()
+        
+        logger.info(f"Cleared {jobs_before} scheduled jobs")
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Cleared {jobs_before} scheduled jobs',
+            'jobs_cleared': jobs_before
+        })
+        
+    except Exception as e:
+        logger.error(f"Error clearing scheduled jobs: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to clear scheduled jobs: {str(e)}'
         }), 500
 
 @bp.route("/api/delete-investing-articles", methods=['POST'])
