@@ -844,7 +844,23 @@ def fetch_news():
                 'disabled': True
             }), HTTPStatus.FORBIDDEN
             
+        # 📅 TRADING DAY CHECK: Verify if we should fetch news today (unless forced)
         data = request.get_json()
+        force_fetch = data.get('force_fetch_non_trading_day', False) if data else False
+        
+        if not force_fetch:
+            from app.utils.trading_calendar import should_fetch_news_today
+            trading_check = should_fetch_news_today('US')  # Default to US market for manual fetches
+            
+            if not trading_check['should_fetch']:
+                return jsonify({
+                    'status': 'warning',
+                    'message': f"Manual fetch skipped: {trading_check['reason']}",
+                    'trading_info': trading_check,
+                    'suggestion': 'You can override this by enabling "Force fetch on non-trading days" option.',
+                    'skipped_due_to_trading_calendar': True
+                                 }), HTTPStatus.OK
+            
         if not data:
             return jsonify({'status': 'error', 'message': 'No data provided'}), HTTPStatus.BAD_REQUEST
             
@@ -965,6 +981,22 @@ def batch_fetch():
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), HTTPStatus.BAD_REQUEST
+            
+        # 📅 TRADING DAY CHECK: Verify if we should fetch news today (unless forced)
+        force_fetch = data.get('force_fetch_non_trading_day', False)
+        
+        if not force_fetch:
+            from app.utils.trading_calendar import should_fetch_news_today
+            trading_check = should_fetch_news_today('US')  # Default to US market for batch fetches
+            
+            if not trading_check['should_fetch']:
+                return jsonify({
+                    'status': 'warning',
+                    'message': f"Batch fetch skipped: {trading_check['reason']}",
+                    'trading_info': trading_check,
+                    'suggestion': 'You can override this by enabling "Force fetch on non-trading days" option.',
+                    'skipped_due_to_trading_calendar': True
+                }), HTTPStatus.OK
         
         chunk_size = 5  # Process 5 symbols at a time
         symbols = data.get('symbols', DEFAULT_SYMBOLS[:10]) 
@@ -2496,6 +2528,27 @@ def run_fetch_scheduler_now():
         # Get market session from request or use intelligent auto-selection
         data = request.get_json() or {}
         market_session = data.get('market_session', 'auto')  # Default to intelligent selection
+        force_fetch = data.get('force_fetch_non_trading_day', False)
+        
+        # 📅 TRADING DAY CHECK: Verify if we should fetch news today (unless forced)
+        if not force_fetch:
+            # Determine market session for trading check
+            if market_session == 'auto':
+                check_market_session = news_fetch_scheduler._determine_current_market_session()
+            else:
+                check_market_session = market_session
+                
+            from app.utils.trading_calendar import should_fetch_news_today
+            trading_check = should_fetch_news_today(check_market_session)
+            
+            if not trading_check['should_fetch']:
+                return jsonify({
+                    'status': 'warning',
+                    'message': f"Manual scheduler run skipped: {trading_check['reason']}",
+                    'trading_info': trading_check,
+                    'suggestion': 'You can override this by enabling "Force fetch on non-trading days" option.',
+                    'skipped_due_to_trading_calendar': True
+                }), HTTPStatus.OK
         
         # Run the job with intelligent market session selection
         result = news_fetch_scheduler.run_now(market_session=market_session)

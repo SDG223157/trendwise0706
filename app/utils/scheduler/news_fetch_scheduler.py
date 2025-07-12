@@ -440,9 +440,25 @@ class NewsFetchScheduler:
         logger.info("  📊 Maximum 15,114 articles per day")  # Updated calculation
 
     def _run_scheduled_job(self, market_session="Unknown", session_name="Unknown"):
-        """Run the scheduled fetch job with proper Flask app context"""
+        """Run the scheduled fetch job with proper Flask app context and trading day check"""
         try:
             logger.info(f"⏰ Scheduled news fetch job triggered - {session_name}")
+            
+            # 📅 TRADING DAY CHECK: Verify if we should fetch news today
+            from app.utils.trading_calendar import should_fetch_news_today
+            trading_check = should_fetch_news_today(market_session)
+            
+            if not trading_check['should_fetch']:
+                logger.info(f"🚫 {session_name} skipped: {trading_check['reason']}")
+                logger.info(f"📅 Next trading day: {trading_check['next_trading_day']}")
+                return {
+                    'status': 'skipped',
+                    'reason': trading_check['reason'],
+                    'market_session': market_session,
+                    'next_trading_day': trading_check['next_trading_day']
+                }
+            
+            logger.info(f"✅ {session_name} proceeding: {trading_check['reason']}")
             
             # Ensure we have proper Flask app context
             if hasattr(self, 'app') and self.app:
@@ -555,13 +571,29 @@ class NewsFetchScheduler:
         return nearest_session
 
     def _run_initial_job(self):
-        """Run the initial fetch job when scheduler starts with intelligent market session selection"""
+        """Run the initial fetch job when scheduler starts with intelligent market session selection and trading day check"""
         try:
             # Intelligent market session selection based on current UTC time
             current_market_session = self._determine_current_market_session()
             
             logger.info(f"⚡ Initial news fetch job triggered (scheduler start)")
             logger.info(f"🎯 Current time: {datetime.now().strftime('%H:%M UTC')} - Selected market session: {current_market_session}")
+            
+            # 📅 TRADING DAY CHECK: Verify if we should fetch news today
+            from app.utils.trading_calendar import should_fetch_news_today
+            trading_check = should_fetch_news_today(current_market_session)
+            
+            if not trading_check['should_fetch']:
+                logger.info(f"🚫 Initial job skipped: {trading_check['reason']}")
+                logger.info(f"📅 Next trading day: {trading_check['next_trading_day']}")
+                return {
+                    'status': 'skipped',
+                    'reason': trading_check['reason'],
+                    'market_session': current_market_session,
+                    'next_trading_day': trading_check['next_trading_day']
+                }
+            
+            logger.info(f"✅ Initial job proceeding: {trading_check['reason']}")
             
             # Ensure we have proper Flask app context
             if hasattr(self, 'app') and self.app:

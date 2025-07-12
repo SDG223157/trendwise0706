@@ -82,6 +82,14 @@
                     </label>
                 </div>
                 
+                <!-- Force Fetch on Non-Trading Days Option -->
+                <div class="flex items-center">
+                    <input type="checkbox" id="forceNonTradingDay" class="h-4 w-4 text-orange-600 border-gray-300 rounded">
+                    <label for="forceNonTradingDay" class="ml-2 text-sm text-gray-700">
+                        📅 Force fetch on non-trading days (weekends/holidays)
+                    </label>
+                </div>
+                
                 <!-- First row of buttons -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
                     <button type="submit" id="fetchButton" style="background-color: #3b82f6; color: white; padding: 16px; text-align: center; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: background-color 0.2s; border: none;" 
@@ -513,7 +521,8 @@
                             body: JSON.stringify({
                                 symbols: [symbol],
                                 limit: 10,
-                                force_full_limit: document.getElementById('forceFullLimit').checked
+                                force_full_limit: document.getElementById('forceFullLimit').checked,
+                                force_fetch_non_trading_day: document.getElementById('forceNonTradingDay').checked
                             })
                         });
 
@@ -665,7 +674,8 @@
                                                 symbols: [symbol],
                                                 limit: 2,
                                                 timeout: 10000,
-                                                force_full_limit: document.getElementById('forceFullLimit').checked
+                                                force_full_limit: document.getElementById('forceFullLimit').checked,
+                                                force_fetch_non_trading_day: document.getElementById('forceNonTradingDay').checked
                                             }),
                                             signal: AbortSignal.timeout(15000)
                                         });
