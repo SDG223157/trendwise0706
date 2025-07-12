@@ -3,13 +3,103 @@ Trading Calendar Utility
 
 Provides functions to check if current day is a trading day for different markets.
 Helps prevent unnecessary news fetching on weekends and holidays.
+Supports 24/7 trading for digital currencies/cryptocurrencies.
 """
 
 import logging
 from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Set
+import re
 
 logger = logging.getLogger(__name__)
+
+def is_crypto_symbol(symbol: str) -> bool:
+    """
+    Determine if a symbol represents a cryptocurrency or digital currency.
+    
+    Args:
+        symbol: The symbol to check
+        
+    Returns:
+        True if it's a cryptocurrency symbol, False otherwise
+    """
+    if not symbol:
+        return False
+    
+    symbol = symbol.upper().strip()
+    
+    # Direct crypto symbol patterns
+    crypto_patterns = [
+        r'^BINANCE:.*USDT$',        # Binance trading pairs (BINANCE:BTCUSDT)
+        r'^BINANCE:.*USD$',         # Binance USD pairs
+        r'^BINANCE:.*BTC$',         # Binance BTC pairs
+        r'^BINANCE:.*ETH$',         # Binance ETH pairs
+        r'^COINBASE:.*USD$',        # Coinbase pairs (COINBASE:BTCUSD)
+        r'^KRAKEN:.*USD$',          # Kraken pairs (KRAKEN:BTCUSD)
+        r'^BITSTAMP:.*USD$',        # Bitstamp pairs (BITSTAMP:BTCUSD)
+        r'^.*-USD$',                # Generic crypto-USD pairs (BTC-USD, ETH-USD)
+        r'^.*-USDT$',               # Tether pairs (BTC-USDT, ETH-USDT)
+        r'^.*-BTC$',                # Bitcoin pairs (ETH-BTC, LTC-BTC)
+        r'^.*-ETH$',                # Ethereum pairs (LINK-ETH, UNI-ETH)
+    ]
+    
+    # Check against patterns
+    for pattern in crypto_patterns:
+        if re.match(pattern, symbol):
+            return True
+    
+    # Known crypto symbols (base symbols without exchanges)
+    crypto_symbols = {
+        'BTC', 'BITCOIN', 'ETH', 'ETHEREUM', 'BNB', 'XRP', 'RIPPLE', 'ADA', 'CARDANO',
+        'SOL', 'SOLANA', 'DOGE', 'DOGECOIN', 'DOT', 'POLKADOT', 'MATIC', 'POLYGON',
+        'AVAX', 'AVALANCHE', 'SHIB', 'SHIBA', 'UNI', 'UNISWAP', 'LINK', 'CHAINLINK',
+        'LTC', 'LITECOIN', 'BCH', 'BITCOIN CASH', 'ALGO', 'ALGORAND', 'XLM', 'STELLAR',
+        'TRX', 'TRON', 'ATOM', 'COSMOS', 'VET', 'VECHAIN', 'FIL', 'FILECOIN',
+        'ETC', 'ETHEREUM CLASSIC', 'THETA', 'ICP', 'INTERNET COMPUTER', 'NEAR',
+        'FLOW', 'SAND', 'SANDBOX', 'MANA', 'DECENTRALAND', 'GALA', 'AXS', 'AXIE',
+        'AAVE', 'COMP', 'COMPOUND', 'MKR', 'MAKER', 'SUSHI', 'SUSHISWAP', 'YFI',
+        'YEARN', 'SNX', 'SYNTHETIX', 'CRV', 'CURVE', 'BAL', 'BALANCER', 'RUNE',
+        'THORCHAIN', 'LUNA', 'TERRA', 'UST', 'USDC', 'USDT', 'TETHER', 'DAI',
+        'BUSD', 'BINANCE USD', 'TUSD', 'PAXOS', 'GUSD', 'GEMINI USD'
+    }
+    
+    # Check base symbol (remove exchange prefix if present)
+    base_symbol = symbol.split(':')[-1] if ':' in symbol else symbol
+    
+    # Check if base symbol is a known crypto (before removing suffixes)
+    if base_symbol in crypto_symbols:
+        return True
+    
+    # Remove common suffixes for checking
+    for suffix in ['USDT', 'USD', 'BTC', 'ETH', 'BUSD']:
+        if base_symbol.endswith(suffix):
+            base_symbol = base_symbol[:-len(suffix)]
+            break
+    
+    # Check if base symbol (after removing suffixes) is a known crypto
+    if base_symbol in crypto_symbols:
+        return True
+    
+    # Check for common crypto exchange prefixes
+    crypto_exchanges = ['BINANCE', 'COINBASE', 'KRAKEN', 'BITSTAMP', 'BITFINEX', 'HUOBI', 'KUCOIN', 'OKEX']
+    if ':' in symbol:
+        exchange = symbol.split(':')[0]
+        if exchange in crypto_exchanges:
+            return True
+    
+    return False
+
+def has_crypto_symbols(symbols: List[str]) -> bool:
+    """
+    Check if any symbols in the list are crypto symbols.
+    
+    Args:
+        symbols: List of symbols to check
+        
+    Returns:
+        True if any symbol is a crypto symbol, False otherwise
+    """
+    return any(is_crypto_symbol(symbol) for symbol in symbols)
 
 class TradingCalendar:
     """Trading calendar utility for checking trading days across different markets"""
@@ -166,18 +256,35 @@ class TradingCalendar:
         return check_date
     
     @classmethod
-    def should_fetch_news(cls, market_session: str = 'US') -> Dict[str, any]:
+    def should_fetch_news(cls, market_session: str = 'US', symbols: List[str] = None) -> Dict[str, any]:
         """
         Determine if news should be fetched based on trading calendar.
+        Supports 24/7 trading for cryptocurrency symbols.
         
         Args:
             market_session: Market session ('US', 'CHINA_HK', 'CHINA', 'HK')
+            symbols: List of symbols to check (for crypto detection)
             
         Returns:
             Dictionary with decision and reasoning
         """
         today = date.today()
         today_str = today.strftime('%Y-%m-%d')
+        
+        # 🪙 CRYPTO CHECK: Allow 24/7 trading for crypto symbols
+        if symbols and has_crypto_symbols(symbols):
+            crypto_count = sum(1 for symbol in symbols if is_crypto_symbol(symbol))
+            return {
+                'should_fetch': True,
+                'date': today_str,
+                'market_session': market_session,
+                'relevant_markets': ['CRYPTO'],
+                'trading_status': {'CRYPTO': True},
+                'is_weekend': today.weekday() >= 5,
+                'next_trading_day': None,
+                'reason': f"Crypto symbols detected ({crypto_count}/{len(symbols)}) - 24/7 trading allowed",
+                'crypto_symbols': [symbol for symbol in symbols if is_crypto_symbol(symbol)]
+            }
         
         # Map session to relevant markets
         if market_session == 'CHINA_HK':
@@ -235,14 +342,16 @@ def is_trading_day(market: str = 'US') -> bool:
     return TradingCalendar.is_trading_day(market=market)
 
 
-def should_fetch_news_today(market_session: str = 'US') -> Dict[str, any]:
+def should_fetch_news_today(market_session: str = 'US', symbols: List[str] = None) -> Dict[str, any]:
     """
     Simple function to check if news should be fetched today.
+    Supports 24/7 trading for cryptocurrency symbols.
     
     Args:
         market_session: Market session to check
+        symbols: List of symbols to check (for crypto detection)
         
     Returns:
         Dictionary with decision and reasoning
     """
-    return TradingCalendar.should_fetch_news(market_session) 
+    return TradingCalendar.should_fetch_news(market_session, symbols) 

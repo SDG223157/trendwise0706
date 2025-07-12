@@ -845,12 +845,17 @@ def fetch_news():
             }), HTTPStatus.FORBIDDEN
             
         # 📅 TRADING DAY CHECK: Verify if we should fetch news today (unless forced)
+        # 🪙 CRYPTO SUPPORT: Check for crypto symbols and allow 24/7 trading
         data = request.get_json()
         force_fetch = data.get('force_fetch_non_trading_day', False) if data else False
         
         if not force_fetch:
             from app.utils.trading_calendar import should_fetch_news_today
-            trading_check = should_fetch_news_today('US')  # Default to US market for manual fetches
+            
+            # Extract symbols for crypto detection
+            symbols = data.get('symbols', []) if data else []
+            
+            trading_check = should_fetch_news_today('US', symbols)  # Pass symbols for crypto detection
             
             if not trading_check['should_fetch']:
                 return jsonify({
@@ -983,11 +988,16 @@ def batch_fetch():
             return jsonify({'error': 'No data provided'}), HTTPStatus.BAD_REQUEST
             
         # 📅 TRADING DAY CHECK: Verify if we should fetch news today (unless forced)
+        # 🪙 CRYPTO SUPPORT: Check for crypto symbols and allow 24/7 trading
         force_fetch = data.get('force_fetch_non_trading_day', False)
         
         if not force_fetch:
             from app.utils.trading_calendar import should_fetch_news_today
-            trading_check = should_fetch_news_today('US')  # Default to US market for batch fetches
+            
+            # Extract symbols for crypto detection
+            symbols = data.get('symbols', [])
+            
+            trading_check = should_fetch_news_today('US', symbols)  # Pass symbols for crypto detection
             
             if not trading_check['should_fetch']:
                 return jsonify({

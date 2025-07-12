@@ -466,8 +466,14 @@ class NewsFetchScheduler:
             logger.info(f"⏰ Scheduled news fetch job triggered - {session_name}")
             
             # 📅 TRADING DAY CHECK: Verify if we should fetch news today
+            # 🪙 CRYPTO SUPPORT: Extract symbols for crypto detection
             from app.utils.trading_calendar import should_fetch_news_today
-            trading_check = should_fetch_news_today(market_session)
+            
+            # Get symbols for this market session to check for crypto
+            market_symbols = self._get_market_symbols(market_session)
+            symbol_list = [symbol_info['symbol'] for symbol_info in market_symbols] if market_symbols else []
+            
+            trading_check = should_fetch_news_today(market_session, symbol_list)
             
             if not trading_check['should_fetch']:
                 logger.info(f"🚫 {session_name} skipped: {trading_check['reason']}")
@@ -601,8 +607,14 @@ class NewsFetchScheduler:
             logger.info(f"🎯 Current time: {datetime.now().strftime('%H:%M UTC')} - Selected market session: {current_market_session}")
             
             # 📅 TRADING DAY CHECK: Verify if we should fetch news today
+            # 🪙 CRYPTO SUPPORT: Extract symbols for crypto detection
             from app.utils.trading_calendar import should_fetch_news_today
-            trading_check = should_fetch_news_today(current_market_session)
+            
+            # Get symbols for this market session to check for crypto
+            market_symbols = self._get_market_symbols(current_market_session)
+            symbol_list = [symbol_info['symbol'] for symbol_info in market_symbols] if market_symbols else []
+            
+            trading_check = should_fetch_news_today(current_market_session, symbol_list)
             
             if not trading_check['should_fetch']:
                 logger.info(f"🚫 Initial job skipped: {trading_check['reason']}")
