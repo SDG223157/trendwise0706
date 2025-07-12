@@ -718,6 +718,34 @@
         </div>
     </div>
 
+    <!-- Symbol Mapping Notification -->
+    {% if mapped_symbols %}
+    <div class="form-container" style="margin-top: 16px; margin-bottom: 16px;">
+        <div class="mb-0">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-blue-500">🔄</span>
+                <h3 class="text-lg font-semibold" style="color: #ffffff; margin: 0;">Symbol Mapping Applied</h3>
+            </div>
+            <div class="space-y-1">
+                {% for mapping in mapped_symbols %}
+                <div class="text-sm" style="color: #e5e7eb;">
+                    <span class="font-mono bg-gray-600 px-2 py-1 rounded">{{ mapping.original }}</span>
+                    <span class="mx-2">→</span>
+                    <span class="font-mono bg-blue-600 px-2 py-1 rounded">{{ mapping.mapped }}</span>
+                    <span class="ml-2 opacity-75">
+                        {% if mapping.original == 'HKEX:5' and mapping.mapped == 'LSE:HSBA' %}
+                        (HSBC Holdings: Hong Kong listing mapped to primary London listing)
+                        {% else %}
+                        (Symbol mapping applied)
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Results Count -->
     <div class="results-count">
         {% if error %}

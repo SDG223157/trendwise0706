@@ -434,6 +434,25 @@ def search():
             except Exception as e:
                 logger.warning(f"Failed to generate AI suggestions: {str(e)}")
 
+        # Check if any symbols were mapped and provide feedback
+        mapped_symbols = []
+        if search_params.get('symbols'):
+            original_symbols = []
+            # Try to reconstruct original symbols from the search query
+            if search_query:
+                query_parts = search_query.split()
+                original_symbols = [part.upper() for part in query_parts if _is_likely_symbol(part)]
+            if symbol:
+                original_symbols.extend([part.upper() for part in symbol.split()])
+            
+            current_symbols = search_params.get('symbols', [])
+            
+            # Check for mappings
+            for orig in original_symbols:
+                mapped = _map_deprecated_symbols(orig)
+                if mapped != orig and mapped in current_symbols:
+                    mapped_symbols.append({'original': orig, 'mapped': mapped})
+
         return render_template(
             'news/search.html',
             articles=articles,
@@ -441,6 +460,7 @@ def search():
             search_params=search_params,
             search_type='unified',
             ai_suggestions=ai_suggestions,
+            mapped_symbols=mapped_symbols,
             min=min
         )
 
@@ -571,7 +591,9 @@ def _parse_unified_search_params(search_query, symbol, keywords, args):
         for part in query_parts:
             # Check if it looks like a stock symbol
             if _is_likely_symbol(part):
-                extracted_symbols.append(part.upper())
+                # Map deprecated symbols to current equivalents
+                mapped_symbol = _map_deprecated_symbols(part.upper())
+                extracted_symbols.append(mapped_symbol)
             else:
                 extracted_keywords.append(part)
     
@@ -579,8 +601,10 @@ def _parse_unified_search_params(search_query, symbol, keywords, args):
     if symbol:
         symbol_parts = symbol.split()
         for part in symbol_parts:
-            if part.upper() not in extracted_symbols:
-                extracted_symbols.append(part.upper())
+            # Map deprecated symbols to current equivalents
+            mapped_symbol = _map_deprecated_symbols(part.upper())
+            if mapped_symbol not in extracted_symbols:
+                extracted_symbols.append(mapped_symbol)
     
     # Add specific keywords if provided (but avoid duplicates)
     if keywords:
@@ -680,6 +704,9 @@ def _parse_search_params(symbol, args):
         elif clean_symbol.endswith('.SZ'):
             clean_symbol = f"SZSE:{clean_symbol.replace('.SZ', '')}"
         
+        # Map deprecated symbols to current equivalents
+        clean_symbol = _map_deprecated_symbols(clean_symbol)
+        
         from app.utils.search.news_search import NewsSearch
         news_search = NewsSearch(db.session)
         symbols = news_search.get_symbol_variants(clean_symbol)
@@ -697,6 +724,29 @@ def _parse_search_params(symbol, args):
     })
     
     return search_params
+
+def _map_deprecated_symbols(symbol):
+    """Map deprecated or alternative symbols to their current equivalents"""
+    if not symbol:
+        return symbol
+        
+    symbol = symbol.upper().strip()
+    
+    # Symbol mapping dictionary - maps old/alternative symbols to current ones
+    symbol_mappings = {
+        'HKEX:5': 'LSE:HSBA',  # HSBC Holdings: Hong Kong listing -> London listing
+        # Add more mappings here as needed
+        # 'OLD_SYMBOL': 'NEW_SYMBOL',
+    }
+    
+    # Return mapped symbol if found, otherwise return original
+    mapped_symbol = symbol_mappings.get(symbol, symbol)
+    
+    # Log the mapping if a substitution was made
+    if mapped_symbol != symbol:
+        logger.info(f"🔄 Symbol mapping: {symbol} -> {mapped_symbol}")
+    
+    return mapped_symbol
 
 def _is_likely_symbol(text):
     """Determine if a text string is likely a stock symbol - ENHANCED"""
@@ -3058,6 +3108,8 @@ def api_search():
             
         elif search_type == 'symbol':
             search_symbols = symbols or [part for part in search_query.split() if _is_likely_symbol(part)]
+            # Map deprecated symbols to current equivalents
+            search_symbols = [_map_deprecated_symbols(symbol) for symbol in search_symbols]
             articles, total_count, has_more = optimized_search.search_by_symbols(
                 symbols=search_symbols,
                 sentiment_filter=request.args.get('sentiment'),
@@ -3075,6 +3127,10 @@ def api_search():
                 query_parts = search_query.split()
                 symbols = [part for part in query_parts if _is_likely_symbol(part)]
                 keywords = [part for part in query_parts if not _is_likely_symbol(part)]
+            
+            # Map deprecated symbols to current equivalents
+            if symbols:
+                symbols = [_map_deprecated_symbols(symbol) for symbol in symbols]
             
             # 🚀 OPTIMIZED MIXED SEARCH: Use advanced_search for better performance
             articles, total_count = optimized_search.advanced_search(
